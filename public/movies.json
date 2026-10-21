@@ -1,0 +1,112 @@
+[
+  {
+    "id": "metropolis",
+    "title": "Метрополис",
+    "year": 1927,
+    "genres": ["Шинжлэх ухааны уран зөгнөлт", "Драм"],
+    "duration": "2:33:00",
+    "description": "Ирээдүйн аварга хотод баячууд дээд давхарт, ажилчид газар доор амьдарна. Фрицын хүү Фредер хоёр ертөнцийг холбох гэж оролддог.",
+    "video": "videos/metropolis.mp4",
+    "thumbnail": "thumbnails/metropolis.jpg",
+    "added": "2026-10-18"
+  },
+  {
+    "id": "nosferatu",
+    "title": "Носферату",
+    "year": 1922,
+    "genres": ["Аймшгийн"],
+    "duration": "1:34:00",
+    "description": "Үл хөдлөх хөрөнгийн зуучлагч Хуттер нууцлаг гүн Орлокын шилтгээнд очиход аймшигт үйл явдал эхэлнэ.",
+    "video": "videos/nosferatu.mp4",
+    "thumbnail": "thumbnails/nosferatu.jpg",
+    "added": "2026-10-17"
+  },
+  {
+    "id": "the-general",
+    "title": "Генерал",
+    "year": 1926,
+    "genres": ["Инээдмийн", "Адал явдалт"],
+    "duration": "1:18:00",
+    "description": "Бастер Китоны хамгийн алдартай кино. Машинч Жонни хулгайлагдсан галт тэрэг болон хайртай бүсгүйгээ буцааж авахаар хөөцөлдөнө.",
+    "video": "videos/the-general.mp4",
+    "thumbnail": "thumbnails/the-general.jpg",
+    "added": "2026-10-16"
+  },
+  {
+    "id": "night-of-the-living-dead",
+    "title": "Амьд үхэгсдийн шөнө",
+    "year": 1968,
+    "genres": ["Аймшгийн"],
+    "duration": "1:36:00",
+    "description": "Хөдөөний нэгэн байшинд хоргодсон хэдэн хүн шөнөжин үхэгсдийн довтолгооноос хамгаалж үлдэх ёстой.",
+    "video": "videos/night-of-the-living-dead.mp4",
+    "thumbnail": "thumbnails/night-of-the-living-dead.jpg",
+    "added": "2026-10-15"
+  },
+  {
+    "id": "his-girl-friday",
+    "title": "Түүний Баасан гараг",
+    "year": 1940,
+    "genres": ["Инээдмийн", "Романтик"],
+    "duration": "1:32:00",
+    "description": "Сонины редактор хуучин эхнэр, шилдэг сурвалжлагчаа дахин гэрлэхээс нь өмнө ажилдаа буцаан татахыг оролдоно.",
+    "video": "videos/his-girl-friday.mp4",
+    "thumbnail": "thumbnails/his-girl-friday.jpg",
+    "added": "2026-10-14"
+  },
+  {
+    "id": "the-kid",
+    "title": "Хүүхэд",
+    "year": 1921,
+    "genres": ["Инээдмийн", "Драм"],
+    "duration": "1:08:00",
+    "description": "Чарли Чаплины Тэнүүлч гудамжинд орхигдсон нялх хүүхдийг олж, өөрийн хүү шиг өсгөнө.",
+    "video": "videos/the-kid.mp4",
+    "thumbnail": "thumbnails/the-kid.jpg",
+    "added": "2026-10-13"
+  },
+  {
+    "id": "a-trip-to-the-moon",
+    "title": "Сар руу аялал",
+    "year": 1902,
+    "genres": ["Шинжлэх ухааны уран зөгнөлт", "Адал явдалт"],
+    "duration": "0:14:00",
+    "description": "Жорж Мельесийн богино кино. Одон орон судлаачид их буугаар сар руу нисч, тэндхийн оршин суугчидтай уулзана.",
+    "video": "videos/a-trip-to-the-moon.mp4",
+    "thumbnail": "thumbnails/a-trip-to-the-moon.jpg",
+    "added": "2026-10-12"
+  },
+  {
+    "id": "charade",
+    "title": "Шарад",
+    "year": 1963,
+    "genres": ["Триллер", "Романтик"],
+    "duration": "1:53:00",
+    "description": "Нөхрөө алагдсаны дараа Реджина Парист нууцлаг эрчүүдэд мөшгөгдөнө. Тэд бүгд алга болсон мөнгийг хайж байна.",
+    "video": "videos/charade.mp4",
+    "thumbnail": "thumbnails/charade.jpg",
+    "added": "2026-10-11"
+  },
+  {
+    "id": "sherlock-jr",
+    "title": "Шерлок бага",
+    "year": 1924,
+    "genres": ["Инээдмийн"],
+    "duration": "0:45:00",
+    "description": "Кино театрын проекторч мөрдөгч болохыг мөрөөдөж, зүүдэндээ дэлгэц рүү орж нууцыг тайлна.",
+    "video": "videos/sherlock-jr.mp4",
+    "thumbnail": "thumbnails/sherlock-jr.jpg",
+    "added": "2026-10-10"
+  },
+  {
+    "id": "the-cabinet-of-dr-caligari",
+    "title": "Доктор Калигаригийн кабинет",
+    "year": 1920,
+    "genres": ["Аймшгийн", "Триллер"],
+    "duration": "1:16:00",
+    "description": "Германы экспрессионизмын сонгодог бүтээл. Ид шидтэн Калигари болон түүний нойрсогч Чезаре хотод айдас тарина.",
+    "video": "videos/the-cabinet-of-dr-caligari.mp4",
+    "thumbnail": "thumbnails/the-cabinet-of-dr-caligari.jpg",
+    "added": "2026-10-09"
+  }
+]
