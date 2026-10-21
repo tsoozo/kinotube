@@ -1,26 +1,26 @@
 import {
   ArrowLeft,
-  ClockRotateRight,
-  HomeSimpleDoor,
+  CirclePlay,
+  CircleUserRound,
+  Clapperboard,
+  History,
+  House,
   Menu,
-  Movie,
-  Play,
   Search,
-  User,
-  Xmark,
-} from 'iconoir-react'
+  X,
+} from 'lucide-react'
 
-// Iconoir айконуудыг нэг ижил хэмжээ, зураасны зузаантай болгоно
+// Lucide айконуудыг нимгэн, бөөрөнхий зураастай (Claude маягийн) нэг ижил хэмжээтэй болгоно
 const icon = (Icon) => (props) => (
-  <Icon width="24" height="24" strokeWidth={1.6} aria-hidden="true" {...props} />
+  <Icon size={24} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" {...props} />
 )
 
 export const MenuIcon = icon(Menu)
 export const SearchIcon = icon(Search)
-export const HomeIcon = icon(HomeSimpleDoor)
-export const HistoryIcon = icon(ClockRotateRight)
-export const FilmIcon = icon(Movie)
-export const PlayIcon = icon(Play)
-export const UserIcon = icon(User)
-export const CloseIcon = icon(Xmark)
+export const HomeIcon = icon(House)
+export const HistoryIcon = icon(History)
+export const FilmIcon = icon(Clapperboard)
+export const PlayIcon = icon(CirclePlay)
+export const UserIcon = icon(CircleUserRound)
+export const CloseIcon = icon(X)
 export const BackIcon = icon(ArrowLeft)
