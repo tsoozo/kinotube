@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { BackIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from './Icons.jsx'
+import { BackIcon, CloseIcon, SearchIcon, UserIcon } from './Icons.jsx'
 import Logo from './Logo.jsx'
 
-export default function Header({ query, user, onSearch, onMenu, onHome, onNavigate }) {
+export default function Header({ query, user, onSearch, onHome, onNavigate }) {
   const [text, setText] = useState(query)
   const [mobileSearch, setMobileSearch] = useState(false)
   const inputRef = useRef(null)
@@ -22,9 +22,6 @@ export default function Header({ query, user, onSearch, onMenu, onHome, onNaviga
   return (
     <header className={`header ${mobileSearch ? 'searching' : ''}`}>
       <div className="header-left">
-        <button className="icon-btn" onClick={onMenu} aria-label="Цэс">
-          <MenuIcon />
-        </button>
         <Logo onClick={(e) => { e.preventDefault(); onHome() }} />
       </div>
       <form className="search" onSubmit={submit} role="search">

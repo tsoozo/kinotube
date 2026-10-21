@@ -7,7 +7,6 @@ import {
   Clapperboard,
   History,
   House,
-  Menu,
   Search,
   SquarePlay,
   Volume2,
@@ -21,7 +20,6 @@ const icon = (Icon) => (props) => (
   <Icon size={24} strokeWidth={1.5} absoluteStrokeWidth aria-hidden="true" {...props} />
 )
 
-export const MenuIcon = icon(Menu)
 export const SearchIcon = icon(Search)
 export const HomeIcon = icon(House)
 export const HistoryIcon = icon(History)

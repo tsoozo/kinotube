@@ -1,4 +1,4 @@
-/* Layout: fixed top bar, collapsible left rail, responsive card grid; watch page = player + recommended column. */
+/* Layout: fixed top bar, fixed bottom nav, responsive card grid; watch page = player + recommended column. */
 :root {
   --bg: #ffffff;
   --surface: #f2f2f2;
@@ -25,8 +25,8 @@
   --font-display: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
   --header-h: 56px;
   --safe-top: env(safe-area-inset-top, 0px);
-  --side-w: 240px;
-  --mini-w: 72px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 52px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -131,48 +131,33 @@ body::before {
 }
 .signin-btn:hover { background: var(--link-bg); border-color: transparent; }
 
-/* Sidebar */
-.sidebar {
-  position: fixed; top: calc(var(--header-h) + var(--safe-top)); bottom: 0; left: 0; z-index: 25;
-  width: var(--side-w); padding: 12px; overflow-y: auto;
-  background: var(--bg);
-  transform: translateX(-100%); transition: transform 0.2s ease;
+/* Доод цэс: YouTube утасны апп шиг байнга харагдана. */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  height: calc(var(--nav-h) + var(--safe-bottom)); padding: 0 env(safe-area-inset-right, 0px) var(--safe-bottom) env(safe-area-inset-left, 0px);
+  display: flex; justify-content: center;
+  background: var(--bg); border-top: 1px solid var(--border);
 }
-.sidebar.open { transform: none; }
-.side-item {
-  width: 100%; height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent;
-  display: flex; align-items: center; gap: 24px; text-align: left;
+.bottom-item {
+  flex: 1; max-width: 160px; min-width: 0; border: 0; background: transparent; color: var(--fg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px;
 }
-.side-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.side-item svg { flex-shrink: 0; }
-.side-item:hover { background: var(--surface); }
-.side-item.active { background: var(--surface); font-weight: 500; }
-.scrim { position: fixed; inset: 0; z-index: 24; background: rgba(0, 0, 0, 0.5); }
+.bottom-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bottom-item.active { font-weight: 500; }
+.bottom-item.active svg { stroke-width: 2.25; }
+.bottom-item:hover:not(.active) { color: var(--muted); }
+.bottom-avatar {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--on-media);
+  display: grid; place-items: center; font-size: 12px; font-weight: 500;
+}
+.bottom-item.active .bottom-avatar { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--fg); }
 
-.mini-sidebar {
-  position: fixed; top: calc(var(--header-h) + var(--safe-top)); left: 0; bottom: 0; z-index: 20;
-  width: var(--mini-w); padding: 4px; display: none; flex-direction: column; gap: 4px;
-  background: var(--bg);
+.main {
+  padding: calc(var(--header-h) + 8px) max(16px, env(safe-area-inset-right, 0px)) calc(var(--nav-h) + var(--safe-bottom) + 32px) max(16px, env(safe-area-inset-left, 0px));
 }
-.mini-sidebar button {
-  border: 0; background: transparent; border-radius: 10px; padding: 16px 0 14px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 10px;
-}
-.mini-sidebar button:hover, .mini-sidebar button.active { background: var(--surface); }
-
-.main { padding: calc(var(--header-h) + 8px) max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
-
 @media (min-width: 800px) {
-  .mini-sidebar { display: flex; }
-  .main { margin-left: var(--mini-w); padding-left: 24px; padding-right: 24px; }
-  .is-focus .mini-sidebar { display: none; }
-  .is-focus .main { margin-left: 0; }
-}
-@media (min-width: 1100px) {
-  .app:not(.is-focus) .scrim { display: none; }
-  .app.sidebar-open:not(.is-focus) .mini-sidebar { display: none; }
-  .app.sidebar-open:not(.is-focus) .main { margin-left: var(--side-w); }
-  .app:not(.is-focus) .sidebar { z-index: 20; transition: none; }
+  .main { padding-left: 24px; padding-right: 24px; }
 }
 
 /* Chips */
@@ -387,10 +372,10 @@ body::before {
 }
 
 /* Shorts: босоо, нэг дэлгэцэнд нэг бичлэг, scroll-snap-аар шилжинэ. */
-.is-shorts .main { padding-top: calc(var(--header-h) + var(--safe-top)); padding-bottom: 0; }
+.is-shorts .main { padding-top: calc(var(--header-h) + var(--safe-top)); padding-bottom: calc(var(--nav-h) + var(--safe-bottom)); }
 .shorts { position: relative; }
 .shorts-feed {
-  height: calc(100dvh - var(--header-h) - var(--safe-top));
+  height: calc(100dvh - var(--header-h) - var(--safe-top) - var(--nav-h) - var(--safe-bottom));
   overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none;
 }
 .shorts-feed::-webkit-scrollbar { display: none; }

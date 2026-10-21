@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Header from './components/Header.jsx'
-import Sidebar from './components/Sidebar.jsx'
+import BottomNav from './components/BottomNav.jsx'
 import Home from './components/Home.jsx'
 import Watch from './components/Watch.jsx'
 import Login from './components/Login.jsx'
@@ -27,7 +27,6 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [genre, setGenre] = useState('Бүгд')
   const [user, setUser] = useState(currentUser)
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 1100)
 
   useEffect(() => {
     loadMovies().then(setMovies).catch((e) => setError(e.message))
@@ -44,11 +43,6 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
-
-  // Үзэх, профайл, нэвтрэх хуудас руу ороход хажуугийн цэсийг хаана.
-  useEffect(() => {
-    if (!['home', 'history', 'shorts'].includes(route.page) || window.innerWidth <= 1100) setSidebarOpen(false)
-  }, [route])
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
   useEffect(() => {
@@ -82,6 +76,12 @@ export default function App() {
   const onLogin = (u) => {
     setUser(u)
     go('#profile')
+  }
+
+  const goHome = () => {
+    setQuery('')
+    setGenre('Бүгд')
+    go('')
   }
 
   const onLogout = () => {
@@ -119,25 +119,16 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''}`}>
+    <div className={`app ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''}`}>
       <Header
         query={query}
         user={user}
         onSearch={onSearch}
-        onMenu={() => setSidebarOpen((v) => !v)}
-        onHome={() => { setQuery(''); setGenre('Бүгд'); go('') }}
+        onHome={goHome}
         onNavigate={go}
-      />
-      <Sidebar
-        open={sidebarOpen}
-        page={page}
-        user={user}
-        genre={genre}
-        onGenre={(g) => { setGenre(g); go('') }}
-        onNavigate={go}
-        onClose={() => setSidebarOpen(false)}
       />
       <main className="main">{content}</main>
+      <BottomNav page={page} user={user} onHome={goHome} onNavigate={go} />
     </div>
   )
 }
