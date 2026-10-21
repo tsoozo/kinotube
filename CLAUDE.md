@@ -9,7 +9,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 - Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#history`, `#profile`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
 - Сервер байхгүй: хэрэглэгч, данс, эрх бүгд `src/auth.js` дотор localStorage-д (mock). SMS, төлбөр жинхэнэ биш.
 - Кино өгөгдөл: `public/movies.json`. Видео `public/videos/`, зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
-- Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна.
+- Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
 
 ## Команд
 
@@ -28,6 +28,7 @@ npm run preview  # build-ийг шалгах
 src/App.jsx            hash route, төлөв, хуудас сонголт
 src/data.js            movies.json унших, хайлт, жанр, санал болгох
 src/auth.js            нэвтрэх, бүртгэл, данс, эрх (localStorage mock)
+src/notifications.js   мэдэгдлийн жагсаалт (шинэ кино, эрх дуусах сануулга)
 src/components/        нэг файлд нэг компонент (PascalCase.jsx)
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
@@ -46,7 +47,7 @@ public/movies.json     киноны жагсаалт
 
 - Сайтын бүх бичвэр **монгол хэлээр** (кирилл). Брэнд нэр л латин.
 - YouTube маягийн, минимал, цэвэрхэн загвар.
-- **Айкон**: зөвхөн [Iconoir](https://iconoir.com) (`iconoir-react`). Шинэ айкон хэрэгтэй бол `src/components/Icons.jsx`-д `icon(...)`-ээр нэмж, тэндээс импортлоно. Компонент дотор шууд `<svg>` бичихгүй, өөр айкон сан ашиглахгүй.
+- **Айкон**: эцсийн айкон сан хараахан сонгогдоогүй. Одоогоор [Iconoir](https://iconoir.com) (`iconoir-react`) ашиглаж байгаа ч минимал загвартай өөр нээлттэй сан (Lucide, Phosphor, Tabler г.м.) ч болно. Ямар ч сан ашигласан бүх айкон `src/components/Icons.jsx`-д `icon(...)`-ээр нэмэгдэж, тэндээс импортлогдоно. Компонент дотор шууд `<svg>` бичихгүй. Ингэснээр сан солиход зөвхөн энэ файл өөрчлөгдөнө.
 - Өнгө: `src/styles.css`-ийн `:root` дээрх CSS хувьсагч (`--bg`, `--fg`, `--accent` ...) ашиглана. Hex өнгө шууд бичихгүй. Шинэ өнгө нэмбэл dark mode (`prefers-color-scheme: dark`) хэсэгт ч мөн нэмнэ.
 - Фонт: Roboto (үндсэн), Poppins 600 (лого), Roboto Condensed (зурган дээрх гарчиг).
 - Утас (≈360px) болон desktop хоёулан дээр ажиллах ёстой. Хэвтээ scroll гарахгүй.
@@ -60,7 +61,7 @@ public/movies.json     киноны жагсаалт
 
 ## Git
 
-- `main` руу шууд push хийхгүй: салбар үүсгэж PR нээнэ (`main` = live сайт).
+- `main` руу шууд push хийж болно (zoye зөвшөөрсөн). `main` = live сайт тул push хийхээс өмнө `npm run build` амжилттай болсон, хөтөч дээр шалгасан байх ёстой.
 - Commit мессеж монголоор, юу өөрчилснийг товч бичнэ.
 - `node_modules`, `dist`, видео файлуудыг commit хийхгүй.
 - Том өөрчлөлтийн дараа `README.md`-г шинэчилнэ.

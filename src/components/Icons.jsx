@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Bell,
   ClockRotateRight,
   HomeSimpleDoor,
   Menu,
@@ -7,10 +8,11 @@ import {
   Play,
   Search,
   User,
+  WarningCircle,
   Xmark,
 } from 'iconoir-react'
 
-// Iconoir айконуудыг нэг ижил хэмжээ, зураасны зузаантай болгоно
+// Айконуудыг нэг ижил хэмжээ, зураасны зузаантай болгоно
 const icon = (Icon) => (props) => (
   <Icon width="24" height="24" strokeWidth={1.6} aria-hidden="true" {...props} />
 )
@@ -24,3 +26,5 @@ export const PlayIcon = icon(Play)
 export const UserIcon = icon(User)
 export const CloseIcon = icon(Xmark)
 export const BackIcon = icon(ArrowLeft)
+export const BellIcon = icon(Bell)
+export const WarningIcon = icon(WarningCircle)
