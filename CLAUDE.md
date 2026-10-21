@@ -28,7 +28,6 @@ npm run preview  # build-ийг шалгах
 src/App.jsx            hash route, төлөв, хуудас сонголт
 src/data.js            movies.json унших, хайлт, жанр, санал болгох
 src/auth.js            нэвтрэх, бүртгэл, данс, эрх (localStorage mock)
-src/notifications.js   мэдэгдлийн жагсаалт (шинэ кино, эрх дуусах сануулга)
 src/components/        нэг файлд нэг компонент (PascalCase.jsx)
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
@@ -45,6 +44,7 @@ public/movies.json     киноны жагсаалт
 
 ## UI ба дизайн
 
+- Сайтад мэдэгдэл (notification, хонх) хийхгүй (zoye, 2026-10-21).
 - Сайтын бүх бичвэр **монгол хэлээр** (кирилл). Брэнд нэр л латин.
 - YouTube маягийн, минимал, цэвэрхэн загвар.
 - **Айкон**: эцсийн айкон сан хараахан сонгогдоогүй. Одоогоор [Iconoir](https://iconoir.com) (`iconoir-react`) ашиглаж байгаа ч минимал загвартай өөр нээлттэй сан (Lucide, Phosphor, Tabler г.м.) ч болно. Ямар ч сан ашигласан бүх айкон `src/components/Icons.jsx`-д `icon(...)`-ээр нэмэгдэж, тэндээс импортлогдоно. Компонент дотор шууд `<svg>` бичихгүй. Ингэснээр сан солиход зөвхөн энэ файл өөрчлөгдөнө.

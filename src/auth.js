@@ -5,7 +5,6 @@
 const USERS_KEY = 'kino-users'
 const SESSION_KEY = 'kino-session'
 const GUEST_HISTORY_KEY = 'kino-history'
-const NOTIF_SEEN_KEY = 'kino-notif-seen'
 
 let memory = {}
 
@@ -215,11 +214,3 @@ export function formatDateTime(iso) {
 export const formatMoney = (n) => `${n.toLocaleString('en-US')}₮`
 
 export const formatPhone = (p) => `${p.slice(0, 4)} ${p.slice(4)}`
-
-// Уншсан мэдэгдлийн id-ууд (хөтөч дээр).
-export const getSeenNotifications = () => read(NOTIF_SEEN_KEY, [])
-
-export function markNotificationsSeen(ids) {
-  const seen = new Set([...getSeenNotifications(), ...ids])
-  write(NOTIF_SEEN_KEY, [...seen].slice(-200))
-}

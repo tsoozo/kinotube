@@ -48,10 +48,6 @@ npm run build      # dist/ хавтсанд бэлэн сайт гарна
 
 Туршилтын бүртгэл: `99112233`, код `1234`.
 
-## Мэдэгдэл
-
-Толгойн хэсгийн хонх дээр сүүлийн 30 хоногт нэмэгдсэн кино (`movies.json`-ийн `added`) болон үзэх эрх 7 хоногийн дотор дуусах/дууссан сануулга гарна. Уншсан мэдэгдэл хөтөч дээр (`kino-notif-seen`) хадгалагдана. Логик нь `src/notifications.js`.
-
 ## Deploy
 
 `main` руу push хийхэд Vercel автоматаар https://kinotube.vercel.app дээр гаргана. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт build шалгана.

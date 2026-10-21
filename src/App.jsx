@@ -109,7 +109,6 @@ export default function App() {
       <Header
         query={query}
         user={user}
-        movies={movies}
         onSearch={onSearch}
         onMenu={() => setSidebarOpen((v) => !v)}
         onHome={() => { setQuery(''); setGenre('Бүгд'); go('') }}

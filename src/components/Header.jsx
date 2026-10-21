@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { BackIcon, CloseIcon, MenuIcon, SearchIcon, UserIcon } from './Icons.jsx'
 import Logo from './Logo.jsx'
-import Notifications from './Notifications.jsx'
 
-export default function Header({ query, user, movies, onSearch, onMenu, onHome, onNavigate }) {
+export default function Header({ query, user, onSearch, onMenu, onHome, onNavigate }) {
   const [text, setText] = useState(query)
   const [mobileSearch, setMobileSearch] = useState(false)
   const inputRef = useRef(null)
@@ -56,7 +55,6 @@ export default function Header({ query, user, movies, onSearch, onMenu, onHome, 
         <button className="icon-btn search-open" onClick={openMobileSearch} aria-label="Хайх">
           <SearchIcon />
         </button>
-        <Notifications movies={movies} user={user} />
         {user ? (
           <button className="avatar-btn" onClick={() => onNavigate('#profile')} aria-label="Профайл" title={user.name}>
             {user.name.slice(0, 1)}
