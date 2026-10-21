@@ -6,10 +6,17 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-// Зугаа апп-ын хаяг: "Гүйлгээ хийсэн" болон банкны мэдээллийг тэндээс авна.
+// Зугаа апп-ын хаяг: "Гүйлгээ хийсэн" дарахад Telegram мессежийг тэр илгээнэ.
 const ZUGAA_URL = (import.meta.env.VITE_ZUGAA_URL || '').replace(/\/+$/, '')
 
 export const APP = 'kino'
+
+// Төлбөр хүлээн авах данс. Төлбөрийн дэлгэц дээр харагдана.
+export const BANK = {
+  name: 'Хаан банк',
+  accountNumber: '600005005303317077',
+  accountHolder: 'Батмэнд Хишигцогзол',
+}
 export const configured = Boolean(SUPABASE_URL && SUPABASE_KEY && ZUGAA_URL)
 export const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_KEY) : null
 
@@ -153,14 +160,6 @@ async function zugaa(path, init = {}) {
   return { res, json }
 }
 
-let bankPromise = null
-export function getBank() {
-  bankPromise ??= zugaa('/api/payments/bank').then(({ json }) => json || {}).catch((e) => {
-    bankPromise = null
-    throw e
-  })
-  return bankPromise
-}
 
 // "Гүйлгээ хийсэн": created → submitted, Telegram руу админд мэдэгдэнэ.
 export async function submitPayment(id) {

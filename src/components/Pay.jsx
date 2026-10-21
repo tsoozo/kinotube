@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  effectiveStatus, formatMoney, getBank, getPayment, submitPayment, watchPayment,
+  BANK as bank, effectiveStatus, formatMoney, getPayment, submitPayment, watchPayment,
 } from '../auth.js'
 
 async function copyText(text) {
@@ -58,7 +58,6 @@ function Row({ label, value, copy, mono, strong }) {
 export default function Pay({ id, onPaid }) {
   const [payment, setPayment] = useState(null)
   const [missing, setMissing] = useState(false)
-  const [bank, setBank] = useState(null)
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
 
@@ -66,7 +65,6 @@ export default function Pay({ id, onPaid }) {
     setPayment(null)
     setMissing(false)
     getPayment(id).then((p) => (p ? setPayment(p) : setMissing(true))).catch((e) => setError(e.message))
-    getBank().then(setBank).catch((e) => setError(e.message))
   }, [id])
 
   const status = payment ? effectiveStatus(payment) : null
@@ -151,9 +149,9 @@ export default function Pay({ id, onPaid }) {
         </div>
         <dl className="pay-rows">
           <Row label="Дүн" value={formatMoney(amount)} copy={String(amount)} strong />
-          <Row label="Банк" value={bank?.name} />
-          <Row label="Дансны дугаар" value={bank?.accountNumber} copy={bank?.accountNumber?.replace(/\s/g, '')} mono />
-          <Row label="Хүлээн авагч" value={bank?.accountHolder} />
+          <Row label="Банк" value={bank.name} />
+          <Row label="Дансны дугаар" value={bank.accountNumber} copy={bank.accountNumber} mono />
+          <Row label="Хүлээн авагч" value={bank.accountHolder} />
           <Row label="Гүйлгээний утга" value={ref} copy={ref} mono strong />
         </dl>
         <p>Гүйлгээний утга дээр <strong className="ref">{ref}</strong> гэж бичнэ үү.</p>
