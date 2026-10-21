@@ -331,6 +331,12 @@ body::before {
   .search-submit { width: 48px; }
   .card-compact .thumb { width: 140px; }
   .player { border-radius: 0; margin: 0 -16px; max-width: none; width: calc(100% + 32px); }
+  /* Утсан дээр тоглуулагч босоо 9:16, дэлгэцэд багтахуйц өндөр. Хэвтээ бичлэг ачаалагдвал 16:9 болно. */
+  .player:not(.is-wide) {
+    aspect-ratio: 9 / 16;
+    max-height: calc(100dvh - var(--header-h) - var(--nav-h) - var(--safe-top) - var(--safe-bottom) - 16px);
+  }
+  .player:not(.is-wide) .vp.is-vertical video { object-fit: cover; }
 }
 /* Search summary */
 .search-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 20px; font-size: 16px; }

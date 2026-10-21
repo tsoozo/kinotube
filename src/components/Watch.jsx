@@ -8,6 +8,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [resumed, setResumed] = useState(0)
+  const [shape, setShape] = useState('tall')
   const videoRef = useRef(null)
   const lastSave = useRef(0)
   const canWatch = isActive(user)
@@ -16,6 +17,7 @@ export default function Watch({ movie, movies, user, onUser }) {
     setVideoError(false)
     setExpanded(false)
     setResumed(0)
+    setShape('tall')
   }, [movie.id])
 
   const save = () => {
@@ -91,6 +93,7 @@ export default function Watch({ movie, movies, user, onUser }) {
       <Player
         key={movie.id}
         videoRef={videoRef}
+        onShape={setShape}
         src={movie.video}
         poster={movie.thumbnail}
         onLoadedMetadata={onLoaded}
@@ -105,7 +108,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   return (
     <div className="watch">
       <div className="watch-primary">
-        <div className="player">{player}</div>
+        <div className={`player ${shape === 'wide' ? 'is-wide' : ''}`}>{player}</div>
         {resumed > 0 && (
           <p className="resume-note">
             {formatTime(resumed)}-аас үргэлжлүүлж байна ·{' '}

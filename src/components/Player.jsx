@@ -7,7 +7,7 @@ import {
 const SKIP = 10
 
 // Кино тоглуулагч: зогсоох, гүйлгэх, ±10 секунд, бүтэн дэлгэц. Хоёр товшилтоор зүүн/баруун тал руу 10 секунд.
-export default function Player({ videoRef, src, poster, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError }) {
+export default function Player({ videoRef, src, poster, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError }) {
   const boxRef = useRef(null)
   const hideTimer = useRef(0)
   const tapTimer = useRef(0)
@@ -149,6 +149,7 @@ export default function Player({ videoRef, src, poster, onLoadedMetadata, onTime
         onLoadedMetadata={(e) => {
           setDuration(e.target.duration)
           setVertical(e.target.videoHeight > e.target.videoWidth)
+          onShape?.(e.target.videoHeight > e.target.videoWidth ? 'tall' : 'wide')
           onLoadedMetadata?.(e)
         }}
         onDurationChange={(e) => setDuration(e.target.duration)}
