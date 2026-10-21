@@ -7,7 +7,7 @@ import {
 const SKIP = 10
 
 // Кино тоглуулагч: зогсоох, гүйлгэх, ±10 секунд, бүтэн дэлгэц. Хоёр товшилтоор зүүн/баруун тал руу 10 секунд.
-export default function Player({ videoRef, src, poster, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError }) {
+export default function Player({ videoRef, src, poster, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError, children }) {
   const boxRef = useRef(null)
   const hideTimer = useRef(0)
   const tapTimer = useRef(0)
@@ -169,7 +169,10 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
         onEnded={onEnded}
         onError={onError}
         onVolumeChange={(e) => setMuted(e.target.muted)}
-      />
+      >
+        {/* Хадмалын <track>-ууд */}
+        {children}
+      </video>
       <div className="vp-surface" onPointerUp={onSurface} />
       {flash && (
         <span key={flash.at} className={`vp-flash ${flash.dir}`} aria-hidden="true">

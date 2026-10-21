@@ -1,13 +1,20 @@
 import {
   ArrowLeft,
+  BookmarkCheck,
+  BookmarkPlus,
+  Captions,
+  CaptionsOff,
   ChevronDown,
   ChevronUp,
   CirclePlay,
   CircleUserRound,
   Clapperboard,
+  Clock,
   Download,
+  Gauge,
   History,
   House,
+  Lock,
   LogOut,
   Maximize,
   Minimize,
@@ -57,3 +64,10 @@ export const BackTenIcon = icon(RotateCcw)
 export const ForwardTenIcon = icon(RotateCw)
 export const FullscreenIcon = icon(Maximize)
 export const FullscreenExitIcon = icon(Minimize)
+export const LaterIcon = icon(Clock)
+export const SaveIcon = icon(BookmarkPlus)
+export const SavedIcon = icon(BookmarkCheck)
+export const CaptionsIcon = icon(Captions)
+export const CaptionsOffIcon = icon(CaptionsOff)
+export const SpeedIcon = icon(Gauge)
+export const LockIcon = icon(Lock)

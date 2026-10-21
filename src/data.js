@@ -38,6 +38,14 @@ export function recommended(movies, current) {
     .map((x) => x.m)
 }
 
+// Хадмал: "subtitles": "subtitles/x.vtt" (монгол) эсвэл [{ "src", "lang", "label" }].
+export function subtitlesOf(movie) {
+  const s = movie.subtitles
+  if (!s) return []
+  if (typeof s === 'string') return [{ src: s, lang: 'mn', label: 'Монгол' }]
+  return s.filter((t) => t?.src).map((t) => ({ src: t.src, lang: t.lang || 'mn', label: t.label || 'Монгол' }))
+}
+
 export function timeAgo(dateStr) {
   if (!dateStr) return ''
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)

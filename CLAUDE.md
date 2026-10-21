@@ -6,7 +6,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 - **KinoTube**: YouTube загвартай кино үзэх сайт. Брэнд нэр латинаар "KinoTube".
 - Стек: React 19 + Vite 6, цэвэр JavaScript (`.jsx`), TypeScript ашиглахгүй.
-- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#profile`, `#admin`, `#admin-<таб>`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
+- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
 - Сервер байхгүй: хэрэглэгч, данс, эрх бүгд `src/auth.js` дотор localStorage-д (mock). SMS, төлбөр жинхэнэ биш.
 - Кино өгөгдөл: `public/movies.json`. Видео `public/videos/`, зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
 - Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
@@ -57,7 +57,7 @@ public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
 
 ## Өгөгдөл
 
-- `movies.json` мөр бүр: `id` (латин, зураас), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `video`, `thumbnail`, `added` ("YYYY-MM-DD").
+- `movies.json` мөр бүр: `id` (латин, зураас), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `video`, `thumbnail`, `added` ("YYYY-MM-DD"), `subtitles` (заавал биш, `.vtt` зам эсвэл `[{src, lang, label}]`).
 - Нүүрний жанрын чип `genres`-ээс автоматаар үүснэ, гараар жагсаалт бичихгүй. Хажуу цэс байхгүй: үндсэн цэс нь доод талын тогтмол bottom nav (`BottomNav.jsx`: Нүүр, Shorts, Түүх, Профайл), бүх дэлгэцийн хэмжээнд (zoye, 2026-10-21).
 - localStorage түлхүүрүүд `kino-` угтвартай. `auth.js`-ийн `read`/`write`-ээр дамжуулна (try/catch хамгаалалттай).
 

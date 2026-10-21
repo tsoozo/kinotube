@@ -1,17 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
-import { formatTime, recommended, timeAgo } from '../data.js'
-import { formatDate, getProgress, isActive, pushHistory, saveProgress, setReturnTo, watchedRatio } from '../auth.js'
+import { CaptionsIcon, CaptionsOffIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
+import { formatTime, recommended, subtitlesOf, timeAgo } from '../data.js'
+import {
+  formatDate, formatMoney, getProgress, isActive, isLater, minPlanPrice, pushHistory, saveProgress, setReturnTo,
+  toggleLater, watchedRatio,
+} from '../auth.js'
+
+const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
 
 export default function Watch({ movie, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [resumed, setResumed] = useState(0)
   const [shape, setShape] = useState('tall')
+  const [speed, setSpeed] = useState(1)
+  const [captions, setCaptions] = useState(true)
+  const [flash, setFlash] = useState('')
   const videoRef = useRef(null)
   const lastSave = useRef(0)
+  const flashTimer = useRef(0)
   const canWatch = isActive(user)
+  const subs = subtitlesOf(movie)
+  const saved = isLater(user, movie.id)
 
   useEffect(() => {
     setVideoError(false)
@@ -19,6 +31,46 @@ export default function Watch({ movie, movies, user, onUser }) {
     setResumed(0)
     setShape('tall')
   }, [movie.id])
+
+  // Хурд, хадмалыг тоглуулагчид тохируулна.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = speed
+  }, [speed])
+
+  useEffect(() => {
+    const tracks = videoRef.current?.textTracks
+    if (!tracks) return
+    for (let i = 0; i < tracks.length; i++) tracks[i].mode = captions && i === 0 ? 'showing' : 'hidden'
+  }, [captions, movie.id, canWatch, videoError])
+
+  const show = (text) => {
+    setFlash(text)
+    clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setFlash(''), 900)
+  }
+
+  const changeSpeed = (s) => {
+    setSpeed(s)
+    show(`${s}×`)
+  }
+
+  // Тоглуулагчийн товчлолоос гадна: C хадмал, < > хурд.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!videoRef.current || e.ctrlKey || e.metaKey || e.altKey) return
+      if (e.target.closest?.('input, textarea, select, [contenteditable]')) return
+      if (e.key.toLowerCase() === 'c' && subs.length) {
+        setCaptions((c) => !c)
+        show(captions ? 'Хадмал унтраав' : 'Хадмал асаав')
+      } else if (e.key === '>' || e.key === '<') {
+        const i = SPEEDS.indexOf(speed) + (e.key === '>' ? 1 : -1)
+        changeSpeed(SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i))])
+      } else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   const save = () => {
     const v = videoRef.current
@@ -40,6 +92,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   const onLoaded = () => {
     const h = getProgress(user, movie.id)
     const v = videoRef.current
+    if (v) v.playbackRate = speed
     if (v && h && !h.done && h.pos > 5 && h.pos < v.duration - 10) {
       v.currentTime = h.pos
       setResumed(h.pos)
@@ -67,25 +120,35 @@ export default function Watch({ movie, movies, user, onUser }) {
   const list = recommended(movies, movie)
 
   let player
+  const price = formatMoney(minPlanPrice())
   if (!user) {
     player = (
-      <div className="player-error">
-        <p>Кино үзэхийн тулд нэвтэрнэ үү</p>
+      <div className="player-error player-locked">
+        <LockIcon />
+        <p className="player-lead">Кино үзэхийн тулд нэвтэрнэ үү</p>
+        <p className="player-sub">Бүх кино сард {price}-өөс</p>
         <a className="btn-primary" href="#login" onClick={() => setReturnTo(movie.id)}>Нэвтрэх</a>
       </div>
     )
   } else if (!canWatch) {
     player = (
-      <div className="player-error">
-        <p>Таны үзэх эрх {user.subscription ? `${formatDate(user.subscription.endsAt)}-нд дууссан` : 'алга'} байна</p>
-        <a className="btn-primary" href="#profile" onClick={() => setReturnTo(movie.id)}>Эрх авах</a>
+      <div className="player-error player-locked">
+        <LockIcon />
+        <p className="player-lead">
+          {user.subscription ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : 'Энэ киног үзэхийн тулд эрх авна уу'}
+        </p>
+        <p className="player-sub">Бүх кино хязгааргүй · сард {price}-өөс</p>
+        <a className="btn-primary" href="#profile" onClick={() => setReturnTo(movie.id)}>
+          {user.subscription ? 'Эрх сунгах' : 'Эрх авах'}
+        </a>
       </div>
     )
   } else if (videoError) {
     player = (
       <div className="player-error">
-        <p>Видео файл олдсонгүй</p>
-        <code>public/{movie.video}</code>
+        <p className="player-lead">Энэ кино удахгүй нэмэгдэнэ</p>
+        <p className="player-sub">Видеог бэлтгэж байна. Дараа дахин орж үзээрэй.</p>
+        {import.meta.env.DEV && <code>public/{movie.video}</code>}
       </div>
     )
   } else {
@@ -101,14 +164,22 @@ export default function Watch({ movie, movies, user, onUser }) {
         onPause={save}
         onEnded={save}
         onError={() => setVideoError(true)}
-      />
+      >
+        {subs.map((t, i) => (
+          <track key={t.src} kind="subtitles" src={t.src} srcLang={t.lang} label={t.label} default={i === 0} />
+        ))}
+      </Player>
     )
   }
+  const playing = user && canWatch && !videoError
 
   return (
     <div className="watch">
       <div className="watch-primary">
-        <div className={`player ${shape === 'wide' ? 'is-wide' : ''}`}>{player}</div>
+        <div className={`player ${shape === 'wide' ? 'is-wide' : ''}`}>
+          {player}
+          {flash && <span className="player-flash" aria-live="polite">{flash}</span>}
+        </div>
         {resumed > 0 && (
           <p className="resume-note">
             {formatTime(resumed)}-аас үргэлжлүүлж байна ·{' '}
@@ -124,6 +195,33 @@ export default function Watch({ movie, movies, user, onUser }) {
           </p>
         )}
         <h1 className="watch-title">{movie.title}</h1>
+        <div className="watch-actions">
+          <button
+            className={`action-btn ${saved ? 'active' : ''}`}
+            aria-pressed={saved}
+            onClick={() => {
+              if (!user) {
+                setReturnTo(movie.id)
+                location.hash = 'login'
+              } else onUser(toggleLater(user, movie.id))
+            }}
+          >
+            {saved ? <SavedIcon /> : <SaveIcon />}
+            <span>{saved ? 'Хадгалсан' : 'Дараа үзэх'}</span>
+          </button>
+          {playing && subs.length > 0 && (
+            <button className={`action-btn ${captions ? 'active' : ''}`} aria-pressed={captions} title="Хадмал (C)" onClick={() => setCaptions((c) => !c)}>
+              {captions ? <CaptionsIcon /> : <CaptionsOffIcon />}
+              <span>Хадмал</span>
+            </button>
+          )}
+          {playing && (
+            <button className="action-btn" title="Тоглуулах хурд (< >)" onClick={() => changeSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}>
+              <SpeedIcon />
+              <span>{speed}×</span>
+            </button>
+          )}
+        </div>
         <div className="watch-chips">
           {(movie.genres || []).map((g) => (
             <span key={g} className="tag">{g}</span>

@@ -14,7 +14,7 @@ export default function BottomNav({ page, user, onHome, onNavigate }) {
     <nav className="bottom-nav" aria-label="Үндсэн цэс">
       {item(page === 'home', <HomeIcon />, 'Нүүр', onHome)}
       {item(page === 'shorts', <ShortsIcon />, 'Shorts', () => onNavigate('#shorts'))}
-      {item(page === 'history', <HistoryIcon />, 'Түүх', () => onNavigate('#history'))}
+      {item(page === 'history' || page === 'later', <HistoryIcon />, 'Түүх', () => onNavigate('#history'))}
       {item(
         isProfile,
         user ? <span className="bottom-avatar">{user.name.slice(0, 1)}</span> : <UserIcon />,

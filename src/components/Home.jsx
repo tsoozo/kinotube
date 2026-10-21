@@ -1,7 +1,9 @@
 import MovieCard from './MovieCard.jsx'
 import ShortsShelf from './ShortsShelf.jsx'
+import ContinueShelf from './ContinueShelf.jsx'
+import SkeletonGrid from './SkeletonGrid.jsx'
 
-export default function Home({ movies, genres, genre, onGenre, query, onClearSearch, loading, progressOf, shorts = [] }) {
+export default function Home({ movies, genres, genre, onGenre, query, onClearSearch, loading, progressOf, shorts = [], continueItems = [] }) {
   return (
     <div className="home">
       <div className="chips" role="tablist">
@@ -20,7 +22,7 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
         </div>
       )}
       {loading ? (
-        <p className="notice">Ачаалж байна…</p>
+        <SkeletonGrid />
       ) : movies.length === 0 ? (
         <p className="notice">
           {query ? `"${query}" хайлтаар кино олдсонгүй.` : 'Кино алга.'}
@@ -28,6 +30,7 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
       ) : (
         <>
           {/* Shorts хамгийн эхэнд харагдана. */}
+          <ContinueShelf items={continueItems} />
           <ShortsShelf shorts={shorts} />
           <div className="grid">
             {movies.map((m) => (

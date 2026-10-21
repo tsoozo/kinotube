@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
-import { CloseIcon, SearchIcon, TrashIcon } from './Icons.jsx'
+import { CloseIcon, LaterIcon, SearchIcon, TrashIcon } from './Icons.jsx'
 import { formatTime, matches } from '../data.js'
-import { clearHistory, formatDate, getHistory, removeHistory, watchedRatio } from '../auth.js'
+import { clearHistory, formatDate, getHistory, getLater, removeHistory, watchedRatio } from '../auth.js'
 
 // Үзсэн огноогоор нь бүлэглэнэ: Өнөөдөр, Өчигдөр, Энэ долоо хоног, эсвэл огноо.
 function dayLabel(iso) {
@@ -101,6 +101,10 @@ export default function History({ movies, user, onUser }) {
       </div>
 
       <aside className="history-side">
+        <a className="side-action" href="#later">
+          <LaterIcon />
+          <span>Дараа үзэх{getLater(user).length ? ` (${getLater(user).length})` : ''}</span>
+        </a>
         <label className="history-search">
           <SearchIcon />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Түүхээс хайх" />

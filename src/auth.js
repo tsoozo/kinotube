@@ -266,6 +266,27 @@ export function clearHistory(user) {
   return saveHistory(user, [])
 }
 
+// Дараа үзэх жагсаалт: хэрэглэгч бүрт тусдаа, сүүлд нэмсэн нь эхэндээ.
+export function getLater(user) {
+  if (!user) return []
+  return users()[user.phone]?.later || user.later || []
+}
+
+export const isLater = (user, id) => getLater(user).some((x) => x.id === id)
+
+export function toggleLater(user, id) {
+  const list = getLater(user)
+  const next = list.some((x) => x.id === id)
+    ? list.filter((x) => x.id !== id)
+    : [{ id, at: new Date().toISOString() }, ...list].slice(0, 200)
+  const u = { ...users()[user.phone], later: next }
+  saveUser(u)
+  return u
+}
+
+// Хамгийн хямд эрхийн үнэ ("9,900₮-өөс").
+export const minPlanPrice = () => Math.min(...PLANS.map((p) => p.price))
+
 export function formatDate(iso) {
   const d = new Date(iso)
   const pad = (n) => String(n).padStart(2, '0')

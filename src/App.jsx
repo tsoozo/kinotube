@@ -8,16 +8,17 @@ import Profile from './components/Profile.jsx'
 import Shorts from './components/Shorts.jsx'
 import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
+import Later from './components/Later.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
 import { currentUser, getHistory, isActive, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
 
-// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
   if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
-  if (['history', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
+  if (['history', 'later', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
   return { page: 'home' }
 }
 
@@ -85,6 +86,17 @@ export default function App() {
     return map
   }, [user])
 
+  // Нүүрний "Үргэлжлүүлэн үзэх": дуусгаагүй, сүүлд үзсэн нь эхэндээ.
+  const continueItems = useMemo(
+    () =>
+      getHistory(user)
+        .filter((h) => !h.done && h.pos > 0)
+        .map((h) => ({ movie: movies.find((m) => m.id === h.id), progress: watchedRatio(h) }))
+        .filter((x) => x.movie)
+        .slice(0, 12),
+    [user, movies],
+  )
+
   const go = (hash) => {
     if (location.hash === hash || (hash === '' && !location.hash)) window.dispatchEvent(new HashChangeEvent('hashchange'))
     else location.hash = hash
@@ -143,6 +155,7 @@ export default function App() {
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
   else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={movies} shorts={shorts || []} onCatalog={onCatalog} onUser={setUser} />
   else if (page === 'history') content = <History movies={movies} user={user} onUser={setUser} />
+  else if (page === 'later') content = <Later movies={movies} user={user} onUser={setUser} />
   else if (!isWatch)
     content = (
       <Home
@@ -155,6 +168,7 @@ export default function App() {
         progressOf={(id) => progress[id]}
         loading={movies.length === 0}
         shorts={page === 'home' && genre === 'Бүгд' && !query.trim() ? shorts || [] : []}
+        continueItems={page === 'home' && genre === 'Бүгд' && !query.trim() ? continueItems : []}
       />
     )
 

@@ -534,6 +534,45 @@ body::before {
 @media (max-width: 600px) { .short-card { flex-basis: 150px; } }
 
 
+/* Нүүр: "Үргэлжлүүлэн үзэх" мөр */
+.movie-shelf { margin: 0 0 32px; min-width: 0; }
+.shelf-card { flex: 0 0 300px; min-width: 0; }
+@media (max-width: 600px) { .shelf-card { flex-basis: 260px; } }
+
+/* Ачаалж байх үеийн карт */
+.sk-block, .sk-line { background: var(--surface); }
+.sk-line { display: block; width: 90%; height: 14px; border-radius: 7px; margin: 4px 0 10px; }
+.sk-line-short { width: 55%; }
+.skeleton .card-text { flex: 1; }
+.skeleton .sk-block, .skeleton .sk-line { animation: sk-pulse 1.4s ease-in-out infinite; }
+@keyframes sk-pulse { 50% { opacity: 0.45; } }
+
+/* Үзэх хуудас: товчнууд, түгжээ, товчлолын тэмдэг */
+.watch-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.action-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px 0 10px;
+  border: 0; border-radius: 18px; background: var(--surface); font-weight: 500;
+}
+.action-btn:hover { background: var(--surface-hover); }
+.action-btn svg { width: 20px; height: 20px; }
+.action-btn.active { background: var(--chip-active-bg); color: var(--chip-active-fg); }
+.player { position: relative; }
+.player-flash {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 3;
+  padding: 6px 14px; border-radius: 16px; background: var(--media-shade); color: var(--on-media); font-weight: 500;
+}
+.player-lead { margin: 0; font-size: 17px; font-weight: 500; }
+.player-sub { margin: 0 0 8px; font-size: 14px; opacity: 0.75; }
+.player-locked svg { width: 32px; height: 32px; opacity: 0.8; }
+
+/* Дараа үзэх */
+.later-page { max-width: 1400px; margin: 0 auto; padding-top: 16px; }
+.later-count { margin: 8px 0 16px; }
+.later-back { display: inline-flex; margin: -8px 0 0 -12px; }
+.later-item { position: relative; min-width: 0; }
+.later-remove { position: absolute; top: 8px; right: 8px; background: var(--media-shade); color: var(--on-media); }
+.later-remove:hover { background: var(--media-shade); opacity: 0.85; }
+
 /* Үзсэн түүх */
 .resume-note { margin: 10px 0 0; color: var(--muted); }
 .history-page {
@@ -598,6 +637,7 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .skeleton .sk-block, .skeleton .sk-line { animation: none; }
   * { transition: none !important; }
 }
 
