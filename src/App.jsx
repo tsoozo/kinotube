@@ -121,10 +121,12 @@ export default function App() {
     else (list ? Promise.resolve(list) : loadShorts()).then(setShorts)
   }
 
+  // Эхлээд нүүр рүү шилжинэ, эс бөгөөс профайлын хамгаалалт нэвтрэх хуудас руу аваачна.
   const onLogout = () => {
     logout()
+    location.hash = ''
+    setRoute({ page: 'home' })
     setUser(null)
-    go('')
   }
 
   const page = route.page

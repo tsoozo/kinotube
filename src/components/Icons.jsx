@@ -8,6 +8,7 @@ import {
   Download,
   History,
   House,
+  LogOut,
   Pencil,
   Plus,
   RotateCcw,
@@ -44,3 +45,4 @@ export const EditIcon = icon(Pencil)
 export const DownloadIcon = icon(Download)
 export const ResetIcon = icon(RotateCcw)
 export const AdminIcon = icon(ShieldCheck)
+export const LogoutIcon = icon(LogOut)
