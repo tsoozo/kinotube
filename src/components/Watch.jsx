@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
+import Player from './Player.jsx'
 import { formatTime, recommended, timeAgo } from '../data.js'
 import { formatDate, getProgress, isActive, pushHistory, saveProgress, setReturnTo, watchedRatio } from '../auth.js'
 
@@ -87,13 +88,11 @@ export default function Watch({ movie, movies, user, onUser }) {
     )
   } else {
     player = (
-      <video
+      <Player
         key={movie.id}
-        ref={videoRef}
+        videoRef={videoRef}
         src={movie.video}
         poster={movie.thumbnail}
-        controls
-        playsInline
         onLoadedMetadata={onLoaded}
         onTimeUpdate={onTime}
         onPause={save}

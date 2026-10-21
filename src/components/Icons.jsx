@@ -9,9 +9,14 @@ import {
   History,
   House,
   LogOut,
+  Maximize,
+  Minimize,
+  Pause,
+  Play,
   Pencil,
   Plus,
   RotateCcw,
+  RotateCw,
   Search,
   ShieldCheck,
   SquarePlay,
@@ -46,3 +51,9 @@ export const DownloadIcon = icon(Download)
 export const ResetIcon = icon(RotateCcw)
 export const AdminIcon = icon(ShieldCheck)
 export const LogoutIcon = icon(LogOut)
+export const PlayArrowIcon = icon(Play)
+export const PauseIcon = icon(Pause)
+export const BackTenIcon = icon(RotateCcw)
+export const ForwardTenIcon = icon(RotateCw)
+export const FullscreenIcon = icon(Maximize)
+export const FullscreenExitIcon = icon(Minimize)
