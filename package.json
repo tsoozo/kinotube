@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "iconoir-react": "^7.12.1",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
