@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import PinInput from './PinInput.jsx'
 import Thumbnail from './Thumbnail.jsx'
+import { AdminIcon } from './Icons.jsx'
 import {
   PLANS, TOPUP_AMOUNTS, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
-  formatPhone, isActive, isValidPin, topUp, updateName, watchedRatio,
+  formatPhone, isActive, isAdmin, isValidPin, topUp, updateName, watchedRatio,
 } from '../auth.js'
 
 export default function Profile({ user, movies, onUser, onLogout }) {
@@ -44,6 +45,7 @@ export default function Profile({ user, movies, onUser, onLogout }) {
           <p className="muted">{formatPhone(user.phone)} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
         </div>
         <div className="profile-actions">
+          {isAdmin(user) && <a className="btn-secondary" href="#admin"><AdminIcon width="20" height="20" /> Админ</a>}
           <button className="btn-secondary" onClick={() => setPinForm(pinForm ? null : { old: '', next: '' })}>Код солих</button>
           <button className="btn-secondary" onClick={onLogout}>Гарах</button>
         </div>

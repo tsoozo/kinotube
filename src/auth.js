@@ -9,7 +9,7 @@ const RETURN_KEY = 'kino-return'
 
 let memory = {}
 
-function read(key, fallback) {
+export function read(key, fallback) {
   try {
     const v = localStorage.getItem(key)
     return v === null ? fallback : JSON.parse(v)
@@ -18,7 +18,7 @@ function read(key, fallback) {
   }
 }
 
-function write(key, value) {
+export function write(key, value) {
   memory[key] = value
   try {
     localStorage.setItem(key, JSON.stringify(value))
@@ -37,9 +37,12 @@ export const TOPUP_AMOUNTS = [5000, 10000, 20000, 50000]
 
 export const DEMO = { phone: '99112233', pin: '1234' }
 
+// Туршилтын админ данс. Supabase-д шилжихэд эрхийг серверт (RLS) шалгана.
+export const ADMIN_DEMO = { phone: '88112233', pin: '2580' }
+
 function seed() {
   const users = read(USERS_KEY, null)
-  if (users) return users
+  if (users) return ensureAdmin(users)
   const demo = {
     phone: DEMO.phone,
     pin: DEMO.pin,
@@ -57,13 +60,39 @@ function seed() {
       { id: 'the-general', at: '2026-10-18T19:30:00.000Z', pos: 0, dur: 4520, done: true },
     ],
   }
-  const initial = { [DEMO.phone]: demo }
-  write(USERS_KEY, initial)
-  return initial
+  return ensureAdmin({ [DEMO.phone]: demo })
+}
+
+// Өмнө нь үүссэн хөтөч дээр ч админ данс байхгүй бол нэмнэ.
+function ensureAdmin(list) {
+  if (list[ADMIN_DEMO.phone]) return list
+  const admin = {
+    phone: ADMIN_DEMO.phone,
+    pin: ADMIN_DEMO.pin,
+    name: 'Админ',
+    role: 'admin',
+    createdAt: '2026-10-21T10:00:00.000Z',
+    balance: 0,
+    subscription: null,
+    transactions: [],
+    history: [],
+  }
+  const next = { ...list, [admin.phone]: admin }
+  write(USERS_KEY, next)
+  return next
 }
 
 const users = () => seed()
-const saveUser = (u) => write(USERS_KEY, { ...users(), [u.phone]: u })
+export const allUsers = () => Object.values(users())
+export const findUser = (phone) => users()[phone] || null
+export const saveUser = (u) => write(USERS_KEY, { ...users(), [u.phone]: u })
+
+export function removeUser(phone) {
+  const { [phone]: _, ...rest } = users()
+  write(USERS_KEY, rest)
+}
+
+export const isAdmin = (user) => user?.role === 'admin'
 
 export const normalizePhone = (s) => s.replace(/\D/g, '')
 export const isValidPhone = (s) => /^[6-9]\d{7}$/.test(normalizePhone(s))
@@ -71,7 +100,8 @@ export const isValidPin = (s) => /^\d{4}$/.test(s)
 
 export function currentUser() {
   const phone = read(SESSION_KEY, null)
-  return (phone && users()[phone]) || null
+  const u = phone && users()[phone]
+  return u && !u.blocked ? u : null
 }
 
 export function userExists(phone) {
@@ -82,6 +112,7 @@ export function login(phone, pin) {
   const u = users()[normalizePhone(phone)]
   if (!u) throw new Error('Энэ дугаараар бүртгэл олдсонгүй. Эхлээд бүртгүүлнэ үү.')
   if (u.pin !== pin) throw new Error('Код буруу байна. Дахин оролдоно уу.')
+  if (u.blocked) throw new Error('Таны бүртгэл түр хаагдсан байна.')
   write(SESSION_KEY, u.phone)
   return u
 }
@@ -152,7 +183,7 @@ export function topUp(user, amount) {
   return u
 }
 
-function addMonths(date, months) {
+export function addMonths(date, months) {
   const d = new Date(date)
   d.setMonth(d.getMonth() + months)
   return d

@@ -2,7 +2,7 @@ import { HistoryIcon, HomeIcon, ShortsIcon, UserIcon } from './Icons.jsx'
 
 // YouTube утасны апп шиг доод талд байнга харагдах цэс.
 export default function BottomNav({ page, user, onHome, onNavigate }) {
-  const isProfile = ['profile', 'login', 'register', 'forgot'].includes(page)
+  const isProfile = ['profile', 'admin', 'login', 'register', 'forgot'].includes(page)
   const item = (active, icon, label, onClick) => (
     <button className={`bottom-item ${active ? 'active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}>
       {icon}

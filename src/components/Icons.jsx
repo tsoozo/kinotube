@@ -5,9 +5,14 @@ import {
   CirclePlay,
   CircleUserRound,
   Clapperboard,
+  Download,
   History,
   House,
+  Pencil,
+  Plus,
+  RotateCcw,
   Search,
+  ShieldCheck,
   SquarePlay,
   Volume2,
   VolumeX,
@@ -34,3 +39,8 @@ export const DownIcon = icon(ChevronDown)
 export const SoundIcon = icon(Volume2)
 export const MuteIcon = icon(VolumeX)
 export const TrashIcon = icon(Trash2)
+export const PlusIcon = icon(Plus)
+export const EditIcon = icon(Pencil)
+export const DownloadIcon = icon(Download)
+export const ResetIcon = icon(RotateCcw)
+export const AdminIcon = icon(ShieldCheck)

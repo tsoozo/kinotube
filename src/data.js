@@ -1,6 +1,13 @@
+import { read } from './auth.js'
+
+// Админ энэ хөтөч дээр засварласан жагсаалт (байвал json файлын оронд).
+export const CATALOG_KEYS = { movies: 'kino-catalog-movies', shorts: 'kino-catalog-shorts' }
+
 // Киноны жагсаалтыг public/movies.json файлаас уншина.
 export async function loadMovies() {
   if (window.__MOVIES__) return window.__MOVIES__
+  const local = read(CATALOG_KEYS.movies, null)
+  if (local) return local
   const res = await fetch('movies.json')
   if (!res.ok) throw new Error('movies.json файлыг уншиж чадсангүй')
   return res.json()
@@ -59,9 +66,12 @@ export function toSeconds(duration) {
 
 // public/shorts.json-ийг уншаад 20 минутаас урт бичлэгийг хасна.
 export async function loadShorts() {
-  const res = await fetch('shorts.json')
-  if (!res.ok) throw new Error('shorts.json файлыг уншиж чадсангүй')
-  const list = await res.json()
+  let list = read(CATALOG_KEYS.shorts, null)
+  if (!list) {
+    const res = await fetch('shorts.json')
+    if (!res.ok) throw new Error('shorts.json файлыг уншиж чадсангүй')
+    list = await res.json()
+  }
   return list.filter((s) => {
     const sec = toSeconds(s.duration)
     if (sec > 0 && sec <= SHORTS_MAX_SECONDS) return true

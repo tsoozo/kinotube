@@ -7,14 +7,16 @@ import Login from './components/Login.jsx'
 import Profile from './components/Profile.jsx'
 import Shorts from './components/Shorts.jsx'
 import History from './components/History.jsx'
+import Admin from './components/Admin.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
-import { currentUser, getHistory, isActive, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
+import { currentUser, getHistory, isActive, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
 
-// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #profile, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
   if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
+  if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
   if (['history', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
   return { page: 'home' }
 }
@@ -66,7 +68,7 @@ export default function App() {
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
   useEffect(() => {
-    if (route.page === 'profile' && !user) location.hash = 'login'
+    if ((route.page === 'profile' || route.page === 'admin') && !user) location.hash = 'login'
   }, [route, user])
 
   const genres = useMemo(() => allGenres(movies), [movies])
@@ -97,7 +99,7 @@ export default function App() {
   const onLogin = (u) => {
     setUser(u)
     const id = isActive(u) ? takeReturnTo() : peekReturnTo()
-    go(id ? `#watch-${encodeURIComponent(id)}` : '#profile')
+    go(id ? `#watch-${encodeURIComponent(id)}` : isAdmin(u) ? '#admin' : '#profile')
   }
 
   // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.
@@ -111,6 +113,12 @@ export default function App() {
     setQuery('')
     setGenre('Бүгд')
     go('')
+  }
+
+  // Админ жагсаалт засахад бүх хуудсанд шууд харагдана. null бол json файлаас дахин уншина.
+  const onCatalog = (kind, list) => {
+    if (kind === 'movies') (list ? Promise.resolve(list) : loadMovies()).then(setMovies)
+    else (list ? Promise.resolve(list) : loadShorts()).then(setShorts)
   }
 
   const onLogout = () => {
@@ -131,6 +139,7 @@ export default function App() {
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
   else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
+  else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={movies} shorts={shorts || []} onCatalog={onCatalog} onUser={setUser} />
   else if (page === 'history') content = <History movies={movies} user={user} onUser={setUser} />
   else if (!isWatch)
     content = (
@@ -148,7 +157,7 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
+    <div className={`app ${isWatch || isAuth || page === 'profile' || page === 'admin' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
       <Header
         query={query}
         user={user}
