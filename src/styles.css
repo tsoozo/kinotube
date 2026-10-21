@@ -89,7 +89,12 @@ body::before {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
   background: var(--bg);
+  transition: transform 0.2s ease;
 }
+/* Доош гүйлгэхэд дээд хэсэг нуугдана. --top: дээд хэсгийн доод ирмэг. */
+.app { --top: calc(var(--header-h) + var(--safe-top)); }
+.app.header-hidden { --top: var(--safe-top); }
+.header-hidden .header:not(.searching) { transform: translateY(calc(-100% - var(--safe-top))); }
 .header-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .icon-btn {
   width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent;
@@ -162,7 +167,7 @@ body::before {
 
 /* Chips */
 .chips {
-  position: sticky; top: calc(var(--header-h) + var(--safe-top)); z-index: 10;
+  position: sticky; top: var(--top); transition: top 0.2s ease; z-index: 10;
   display: flex; gap: 12px; overflow-x: auto; padding: 12px 0; margin-bottom: 12px;
   background: var(--bg); scrollbar-width: none;
 }
@@ -372,15 +377,16 @@ body::before {
 }
 
 /* Shorts: босоо, нэг дэлгэцэнд нэг бичлэг, scroll-snap-аар шилжинэ. */
-.is-shorts .main { padding-top: calc(var(--header-h) + var(--safe-top)); padding-bottom: calc(var(--nav-h) + var(--safe-bottom)); }
+.is-shorts .main { padding-top: var(--safe-top); padding-bottom: calc(var(--nav-h) + var(--safe-bottom)); }
 .shorts { position: relative; }
 .shorts-feed {
-  height: calc(100dvh - var(--header-h) - var(--safe-top) - var(--nav-h) - var(--safe-bottom));
+  height: calc(100dvh - var(--safe-top) - var(--nav-h) - var(--safe-bottom));
   overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none;
 }
 .shorts-feed::-webkit-scrollbar { display: none; }
 .short {
-  height: 100%; padding: 12px 0; display: flex; justify-content: center;
+  height: 100%; padding: calc(var(--top) - var(--safe-top) + 12px) 0 12px; display: flex; justify-content: center;
+  transition: padding-top 0.2s ease;
   scroll-snap-align: start; scroll-snap-stop: always;
 }
 .short-frame {
@@ -446,7 +452,7 @@ body::before {
 @media (min-width: 800px) { .shorts-nav { display: flex; } }
 @media (max-width: 600px) {
   .shorts { margin: 0 -16px; }
-  .short { padding: 0; }
+  .short { padding: calc(var(--top) - var(--safe-top)) 0 0; }
   .short-frame { width: 100%; aspect-ratio: auto; border-radius: 0; }
 }
 
@@ -490,7 +496,7 @@ body::before {
 }
 .history-remove { flex-shrink: 0; }
 .history-side {
-  grid-area: side; position: sticky; top: calc(var(--header-h) + var(--safe-top) + 16px);
+  grid-area: side; position: sticky; top: calc(var(--top) + 16px); transition: top 0.2s ease;
   display: flex; flex-direction: column; gap: 12px;
 }
 .history-search {

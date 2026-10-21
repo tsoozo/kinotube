@@ -27,6 +27,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [genre, setGenre] = useState('Бүгд')
   const [user, setUser] = useState(currentUser)
+  const [headerHidden, setHeaderHidden] = useState(false)
 
   useEffect(() => {
     loadMovies().then(setMovies).catch((e) => setError(e.message))
@@ -43,6 +44,25 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // Доош гүйлгэхэд дээд хэсгийг нууж, дээш гүйлгэхэд буцааж гаргана (Shorts-ийн жагсаалт ч мөн).
+  useEffect(() => {
+    const last = new WeakMap()
+    const onScroll = (e) => {
+      const el = e.target === document ? document.documentElement : e.target
+      if (!(el instanceof Element)) return
+      const y = el === document.documentElement ? window.scrollY : el.scrollTop
+      const prev = last.get(el) ?? 0
+      last.set(el, y)
+      if (y < 56) setHeaderHidden(false)
+      else if (y - prev > 6) setHeaderHidden(true)
+      else if (prev - y > 6) setHeaderHidden(false)
+    }
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true })
+    return () => document.removeEventListener('scroll', onScroll, { capture: true })
+  }, [])
+
+  useEffect(() => setHeaderHidden(false), [route])
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
   useEffect(() => {
@@ -128,7 +148,7 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''}`}>
+    <div className={`app ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
       <Header
         query={query}
         user={user}
