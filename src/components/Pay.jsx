@@ -53,7 +53,7 @@ function Row({ label, value, copy, mono, strong }) {
   )
 }
 
-// Банкны шилжүүлгээр эрх авах дэлгэц (#pay-<id>). Зугаагийн төлбөрийн дэлгэцтэй ижил дараалал:
+// Банкны шилжүүлгээр эрх авах дэлгэц (#pay-<id>). Дараалал:
 // төлбөр хүлээгдэж байна → "Гүйлгээ хийсэн" → шалгаж байна → батлагдсан / татгалзсан / хугацаа дууссан.
 export default function Pay({ id, onPaid }) {
   const [payment, setPayment] = useState(null)

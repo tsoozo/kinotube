@@ -1,15 +1,11 @@
-// Хэрэглэгч, үзэх эрх, төлбөр Зугаагийн нэгдсэн Supabase төсөл дээр хадгалагдана.
+// Хэрэглэгч, үзэх эрх, төлбөр KinoTube-ийн Supabase төсөл дээр хадгалагдана (supabase/migrations).
 // Нэвтрэлт: имэйлээр ирэх 6 оронтой код. Төлбөр: банкны шилжүүлэг → "Гүйлгээ хийсэн" →
-// Зугаагийн Telegram бот руу ✅/❌ товчтой мессеж → админ баталмагц эрх нээгдэнэ.
+// Telegram бот руу ✅/❌ товчтой мессеж (api/) → админ баталмагц эрх нээгдэнэ.
 // Үнэ, эрх олгох бүх шийдвэрийг сервер (Postgres функцууд) гаргана.
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-// Зугаа апп-ын хаяг: "Гүйлгээ хийсэн" дарахад Telegram мессежийг тэр илгээнэ.
-const ZUGAA_URL = (import.meta.env.VITE_ZUGAA_URL || '').replace(/\/+$/, '')
-
-export const APP = 'kino'
 
 // Төлбөр хүлээн авах данс. Төлбөрийн дэлгэц дээр харагдана.
 export const BANK = {
@@ -17,13 +13,13 @@ export const BANK = {
   accountNumber: '600005005303317077',
   accountHolder: 'Батмэнд Хишигцогзол',
 }
-export const configured = Boolean(SUPABASE_URL && SUPABASE_KEY && ZUGAA_URL)
+export const configured = Boolean(SUPABASE_URL && SUPABASE_KEY)
 export const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_KEY) : null
 
 const GUEST_HISTORY_KEY = 'kino-history'
 const POLL_MS = 10_000
 
-// SQL функцуудын алдааны кодыг монгол текст болгоно (Зугаатай ижил).
+// SQL функцуудын алдааны кодыг монгол текст болгоно.
 const ERROR_TEXT = {
   not_authenticated: 'Нэвтэрнэ үү.',
   not_found: 'Олдсонгүй.',
@@ -72,7 +68,7 @@ export async function loadUser() {
   if (!u) return null
   const [{ data: profile }, { data: until }] = await Promise.all([
     supabase.from('profiles').select('display_name, created_at').eq('id', u.id).maybeSingle(),
-    supabase.rpc('my_access_until', { p_app: APP }),
+    supabase.rpc('my_access_until'),
   ])
   return {
     id: u.id,
@@ -108,27 +104,25 @@ export function daysLeft(user) {
 
 /* Төлбөр */
 
-// Үнэ products хүснэгтээс (app = 'kino'); Зугаагийн админ самбараас өөрчилнө.
+// Үнэ products хүснэгтээс; Supabase → Table Editor → products дээр өөрчилнө.
 export async function listPlans() {
   const { data, error } = await need()
     .from('products')
     .select('code, title, description, price_mnt, duration_days')
-    .eq('app', APP)
-    .eq('kind', 'subscription')
     .eq('active', true)
     .order('sort_order')
   if (error) throw fail(error)
   return data
 }
 
-// ZG-1234 гүйлгээний утгатай хүсэлт үүсгэнэ. Дүнг сервер products-оос авна.
+// KT-1234 гүйлгээний утгатай хүсэлт үүсгэнэ. Дүнг сервер products-оос авна.
 export async function createPayment(productCode) {
   const { data, error } = await need().rpc('create_payment_request', { p_product_code: productCode })
   if (error) throw fail(error)
   return data
 }
 
-const PAYMENT_COLUMNS = 'id, ref_code, amount_mnt, status, reject_reason, created_at, products!inner(title, app)'
+const PAYMENT_COLUMNS = 'id, ref_code, amount_mnt, status, reject_reason, created_at, products(title)'
 
 export async function getPayment(id) {
   const { data, error } = await need().from('payment_requests').select(PAYMENT_COLUMNS).eq('id', id).maybeSingle()
@@ -140,7 +134,6 @@ export async function listPayments() {
   const { data, error } = await need()
     .from('payment_requests')
     .select(PAYMENT_COLUMNS)
-    .eq('products.app', APP)
     .order('created_at', { ascending: false })
     .limit(50)
   if (error) throw fail(error)
@@ -152,23 +145,17 @@ export function effectiveStatus(p) {
   return p.status === 'created' && Date.now() - new Date(p.created_at) > 24 * 3600_000 ? 'expired' : p.status
 }
 
-async function zugaa(path, init = {}) {
-  if (!ZUGAA_URL) throw new Error('VITE_ZUGAA_URL тохируулаагүй байна.')
-  const res = await fetch(`${ZUGAA_URL}${path}`, init).catch(() => null)
-  const json = res && (await res.json().catch(() => null))
-  if (!res) throw new Error('Сервертэй холбогдож чадсангүй. Дахин оролдоно уу.')
-  return { res, json }
-}
 
-
-// "Гүйлгээ хийсэн": created → submitted, Telegram руу админд мэдэгдэнэ.
+// "Гүйлгээ хийсэн": created → submitted, Telegram руу админд мэдэгдэнэ (api/payments/[id]/submit.js).
 export async function submitPayment(id) {
   const { data } = await need().auth.getSession()
   if (!data.session) throw new Error('Нэвтэрнэ үү.')
-  const { json } = await zugaa(`/api/payments/${encodeURIComponent(id)}/submit`, {
+  const res = await fetch(`/api/payments/${encodeURIComponent(id)}/submit`, {
     method: 'POST',
     headers: { authorization: `Bearer ${data.session.access_token}` },
-  })
+  }).catch(() => null)
+  if (!res) throw new Error('Сервертэй холбогдож чадсангүй. Дахин оролдоно уу.')
+  const json = await res.json().catch(() => null)
   if (!json || json.error) throw new Error(json?.error || 'Алдаа гарлаа. Дахин оролдоно уу.')
   return json.status
 }

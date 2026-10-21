@@ -3,7 +3,7 @@ import PinInput from './PinInput.jsx'
 import Logo from './Logo.jsx'
 import { configured, isValidEmail, sendCode, verifyCode } from '../auth.js'
 
-// Зугаатай нэг бүртгэл: имэйл рүү ирсэн 6 оронтой кодоор нэвтэрнэ, шинэ хэрэглэгч автоматаар бүртгэгдэнэ.
+// Имэйл рүү ирсэн 6 оронтой кодоор нэвтэрнэ, шинэ хэрэглэгч автоматаар бүртгэгдэнэ.
 export default function Login({ onDone }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -50,7 +50,7 @@ export default function Login({ onDone }) {
     body = (
       <form onSubmit={send} noValidate>
         <h1>Нэвтрэх</h1>
-        <p className="form-hint">Зугаа бүртгэлээрээ нэвтэрнэ. Бүртгэлгүй бол код оруулахад шинээр үүснэ.</p>
+        <p className="form-hint">Имэйл рүү тань нэвтрэх код илгээнэ. Бүртгэлгүй бол код оруулахад шинээр үүснэ.</p>
         <label className="field">
           <span>Имэйл</span>
           <input

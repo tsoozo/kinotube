@@ -47,7 +47,7 @@ export default function App() {
     if (!['home', 'history'].includes(route.page) || window.innerWidth <= 1100) setSidebarOpen(false)
   }, [route])
 
-  // Зугаагийн нэвтрэлтийн session-ийг уншиж, нэвтрэх/гарахыг дагана.
+  // Нэвтрэлтийн session-ийг уншиж, нэвтрэх/гарахыг дагана.
   useEffect(() => {
     if (!supabase) return
     loadUser().then(setUser).catch(() => setUser(null)).finally(() => setAuthReady(true))
