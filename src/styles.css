@@ -476,10 +476,11 @@ body::before {
 /* Үзсэн түүх */
 .resume-note { margin: 10px 0 0; color: var(--muted); }
 .history-page {
-  display: flex; gap: 32px; max-width: 1100px; margin: 0 auto; padding-top: 16px; align-items: flex-start;
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: 'head .' 'main side';
+  column-gap: 32px; max-width: 1100px; margin: 0 auto; padding-top: 16px; align-items: start;
 }
-.history-main { flex: 1; min-width: 0; }
-.history-heading { font-size: 28px; font-weight: 700; margin: 0 0 16px; }
+.history-heading { grid-area: head; font-size: 28px; font-weight: 700; margin: 0 0 16px; }
+.history-main { grid-area: main; min-width: 0; }
 .history-group { margin-bottom: 24px; }
 .history-group h2 { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
 .history-item { display: flex; gap: 14px; align-items: flex-start; }
@@ -498,8 +499,8 @@ body::before {
 }
 .history-remove { flex-shrink: 0; }
 .history-side {
-  width: 300px; flex-shrink: 0; position: sticky; top: calc(var(--header-h) + var(--safe-top) + 16px);
-  display: flex; flex-direction: column; gap: 12px; padding-top: 56px;
+  grid-area: side; position: sticky; top: calc(var(--header-h) + var(--safe-top) + 16px);
+  display: flex; flex-direction: column; gap: 12px;
 }
 .history-search {
   display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding: 4px 0;
@@ -519,11 +520,12 @@ body::before {
 .history-confirm p { margin: 0 0 10px; }
 .history-confirm div { display: flex; gap: 8px; }
 .btn-sm { height: 34px; padding: 0 14px; }
+.history-page:has(.history-empty) { display: block; }
 .history-empty { text-align: center; padding: 40px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; }
 .history-empty h1 { margin: 0; font-size: 24px; }
 @media (max-width: 900px) {
-  .history-page { flex-direction: column-reverse; gap: 8px; }
-  .history-side { position: static; width: 100%; padding-top: 0; }
+  .history-page { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'head' 'side' 'main'; }
+  .history-side { position: static; margin-bottom: 16px; }
   .history-thumb { width: 168px; }
 }
 @media (max-width: 600px) {

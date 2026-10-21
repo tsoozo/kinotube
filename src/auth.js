@@ -183,7 +183,8 @@ export function daysLeft(user) {
 
 // Үзсэн түүх: нэвтэрсэн бол хэрэглэгч бүрт тусдаа, үгүй бол хөтөч дээр.
 export function getHistory(user) {
-  if (user) return user.history || []
+  // Хуучирсан user объект биш, хадгалсан сүүлийн төлвөөс уншина.
+  if (user) return users()[user.phone]?.history || user.history || []
   return read(GUEST_HISTORY_KEY, []).map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
 }
 

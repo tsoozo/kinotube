@@ -57,8 +57,8 @@ export default function History({ movies, user, onUser }) {
 
   return (
     <div className="history-page">
+      <h1 className="history-heading">Үзсэн түүх</h1>
       <div className="history-main">
-        <h1 className="history-heading">Үзсэн түүх</h1>
         {movies.length === 0 ? (
           <p className="notice">Ачаалж байна…</p>
         ) : items.length === 0 ? (

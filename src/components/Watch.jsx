@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import { formatTime, recommended, timeAgo } from '../data.js'
-import { formatDate, getProgress, isActive, pushHistory, saveProgress } from '../auth.js'
+import { formatDate, getProgress, isActive, pushHistory, saveProgress, watchedRatio } from '../auth.js'
 
 export default function Watch({ movie, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
@@ -139,7 +139,7 @@ export default function Watch({ movie, movies, user, onUser }) {
       <aside className="watch-secondary">
         <h2 className="section-title">Санал болгох</h2>
         {list.map((m) => (
-          <MovieCard key={m.id} movie={m} compact />
+          <MovieCard key={m.id} movie={m} compact progress={user ? watchedRatio(getProgress(user, m.id)) : 0} />
         ))}
       </aside>
     </div>
