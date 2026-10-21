@@ -1,30 +1,55 @@
-import { useState } from 'react'
-import PinInput from './PinInput.jsx'
+import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import {
-  PLANS, TOPUP_AMOUNTS, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
-  formatPhone, isActive, isValidPin, topUp, updateName, watchedRatio,
+  PAYMENT_STATUS_TEXT, createPayment, daysLeft, effectiveStatus, formatDate, formatDateTime, formatMoney,
+  getHistory, isActive, listPayments, listPlans, updateName, watchedRatio,
 } from '../auth.js'
 
-export default function Profile({ user, movies, onUser, onLogout }) {
+const STATUS_PILL = { approved: 'ok', rejected: 'bad', expired: 'bad', created: 'wait', submitted: 'wait' }
+
+export default function Profile({ user, movies, onUser, onLogout, onNavigate }) {
   const [tab, setTab] = useState('history')
   const [message, setMessage] = useState(null)
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(user.name)
-  const [pinForm, setPinForm] = useState(null)
+  const [plans, setPlans] = useState(null)
+  const [payments, setPayments] = useState(null)
+  const [buying, setBuying] = useState(null)
 
-  const act = (fn, ok) => {
+  useEffect(() => {
+    listPlans().then(setPlans).catch((e) => { setPlans([]); setMessage({ ok: false, text: e.message }) })
+    listPayments().then(setPayments).catch(() => setPayments([]))
+  }, [user.id])
+
+  const saveName = async (e) => {
+    e.preventDefault()
     try {
-      onUser(fn())
-      setMessage({ ok: true, text: ok })
-    } catch (e) {
-      setMessage({ ok: false, text: e.message })
+      onUser(await updateName(user, name))
+      setMessage({ ok: true, text: 'Нэр хадгалагдлаа' })
+    } catch (err) {
+      setMessage({ ok: false, text: err.message })
+    }
+    setEditing(false)
+  }
+
+  // Эрх сонгоход төлбөрийн хүсэлт үүсч, банкны шилжүүлгийн дэлгэц рүү шилжинэ.
+  const buy = async (code) => {
+    setMessage(null)
+    setBuying(code)
+    try {
+      const p = await createPayment(code)
+      onNavigate(`#pay-${p.id}`)
+    } catch (err) {
+      setMessage({ ok: false, text: err.message })
+    } finally {
+      setBuying(null)
     }
   }
 
   const active = isActive(user)
   const left = daysLeft(user)
-  const history = (user.history || [])
+  const open = (payments || []).filter((p) => ['created', 'submitted'].includes(effectiveStatus(p)))
+  const history = getHistory(user)
     .map((h) => ({ ...h, movie: movies.find((m) => m.id === h.id) }))
     .filter((h) => h.movie)
 
@@ -34,36 +59,19 @@ export default function Profile({ user, movies, onUser, onLogout }) {
         <span className="profile-avatar">{user.name.slice(0, 1)}</span>
         <div className="profile-id">
           {editing ? (
-            <form className="inline-form" onSubmit={(e) => { e.preventDefault(); act(() => updateName(user, name), 'Нэр хадгалагдлаа'); setEditing(false) }}>
-              <input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <form className="inline-form" onSubmit={saveName}>
+              <input id="profile-name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus />
               <button className="btn-small" type="submit">Хадгалах</button>
             </form>
           ) : (
             <h1>{user.name} <button className="link-btn" onClick={() => setEditing(true)}>Засах</button></h1>
           )}
-          <p className="muted">{formatPhone(user.phone)} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
+          <p className="muted">{user.email} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
         </div>
         <div className="profile-actions">
-          <button className="btn-secondary" onClick={() => setPinForm(pinForm ? null : { old: '', next: '' })}>Код солих</button>
           <button className="btn-secondary" onClick={onLogout}>Гарах</button>
         </div>
       </section>
-
-      {pinForm && (
-        <form
-          className="panel pin-change"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!isValidPin(pinForm.next)) return setMessage({ ok: false, text: 'Шинэ код 4 оронтой тоо байх ёстой.' })
-            act(() => changePin(user, pinForm.old, pinForm.next), 'Код солигдлоо')
-            setPinForm(null)
-          }}
-        >
-          <div className="field"><span>Одоогийн код</span><PinInput id="old-pin" value={pinForm.old} onChange={(v) => setPinForm({ ...pinForm, old: v })} /></div>
-          <div className="field"><span>Шинэ код</span><PinInput id="next-pin" value={pinForm.next} onChange={(v) => setPinForm({ ...pinForm, next: v })} /></div>
-          <button className="btn-primary" type="submit">Солих</button>
-        </form>
-      )}
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
 
@@ -72,47 +80,56 @@ export default function Profile({ user, movies, onUser, onLogout }) {
           <h2>Үзэх эрх</h2>
           {active ? (
             <>
-              <p className="plan-status"><span className="pill ok">Идэвхтэй</span> {user.subscription.label}</p>
-              <p className="big">{formatDate(user.subscription.endsAt)}-нд дуусна</p>
+              <p className="plan-status"><span className="pill ok">Идэвхтэй</span></p>
+              <p className="big">{formatDate(user.accessUntil)}-нд дуусна</p>
               <p className="muted">{left} хоног үлдсэн</p>
             </>
           ) : (
             <>
               <p className="plan-status"><span className="pill bad">Эрхгүй</span></p>
               <p className="big">Кино үзэхийн тулд эрх авна уу</p>
-              {user.subscription && <p className="muted">Сүүлийн эрх {formatDate(user.subscription.endsAt)}-нд дууссан</p>}
             </>
           )}
           <div className="plans">
-            {PLANS.map((p) => (
-              <button key={p.id} className="plan" onClick={() => act(() => buyPlan(user, p.id), `${p.label} авлаа`)}>
-                <span>{p.label}</span>
-                <b>{formatMoney(p.price)}</b>
-                <small>{active ? 'Сунгах' : 'Авах'}</small>
+            {plans === null && <p className="muted">Ачаалж байна…</p>}
+            {plans?.map((p) => (
+              <button key={p.code} className="plan" disabled={buying !== null} onClick={() => buy(p.code)}>
+                <span>{p.title}</span>
+                <b>{formatMoney(p.price_mnt)}</b>
+                <small>{buying === p.code ? 'Түр хүлээнэ үү…' : active ? 'Сунгах' : 'Авах'}</small>
               </button>
             ))}
           </div>
+          {active && <p className="muted small">Сунгавал одоогийн эрх дууссаны дараагаас эхэлнэ.</p>}
         </section>
 
         <section className="panel">
-          <h2>Данс</h2>
-          <p className="muted">Үлдэгдэл</p>
-          <p className="big balance">{formatMoney(user.balance)}</p>
-          <p className="muted">Цэнэглэх дүн</p>
-          <div className="amounts">
-            {TOPUP_AMOUNTS.map((a) => (
-              <button key={a} className="chip" onClick={() => act(() => topUp(user, a), `${formatMoney(a)} цэнэглэлээ`)}>
-                +{formatMoney(a)}
-              </button>
-            ))}
-          </div>
-          <p className="demo-note">Туршилтын горим: жинхэнэ төлбөр авахгүй, үлдэгдэл шууд нэмэгдэнэ.</p>
+          <h2>Төлбөр</h2>
+          {open.length > 0 ? (
+            <ul className="open-payments">
+              {open.map((p) => (
+                <li key={p.id}>
+                  <a href={`#pay-${p.id}`}>
+                    <span><b>{p.products.title}</b> · {p.ref_code}</span>
+                    <span className="pill wait">{PAYMENT_STATUS_TEXT[effectiveStatus(p)]}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ol className="steps">
+              <li>Эрхээ сонгоно</li>
+              <li>Дансанд банкаар шилжүүлнэ, гүйлгээний утга дээр <b>KT-</b> кодоо бичнэ</li>
+              <li>"Гүйлгээ хийсэн" товч дарна</li>
+              <li>Шалгаж баталгаажмагц эрх тань автоматаар нээгдэнэ</li>
+            </ol>
+          )}
         </section>
       </div>
 
       <div className="tabs">
         <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Үзсэн түүх</button>
-        <button className={tab === 'payments' ? 'active' : ''} onClick={() => setTab('payments')}>Гүйлгээний түүх</button>
+        <button className={tab === 'payments' ? 'active' : ''} onClick={() => setTab('payments')}>Төлбөрийн түүх</button>
       </div>
 
       {tab === 'history' ? (
@@ -134,20 +151,27 @@ export default function Profile({ user, movies, onUser, onLogout }) {
             ))}
           </ul>
         )
-      ) : user.transactions.length === 0 ? (
-        <p className="notice">Гүйлгээ алга.</p>
+      ) : payments === null ? (
+        <p className="notice">Ачаалж байна…</p>
+      ) : payments.length === 0 ? (
+        <p className="notice">Төлбөр алга.</p>
       ) : (
         <div className="table-wrap">
           <table className="tx">
-            <thead><tr><th>Огноо</th><th>Утга</th><th className="num">Дүн</th></tr></thead>
+            <thead><tr><th>Огноо</th><th>Утга</th><th>Код</th><th>Төлөв</th><th className="num">Дүн</th></tr></thead>
             <tbody>
-              {user.transactions.map((t, i) => (
-                <tr key={i}>
-                  <td>{formatDateTime(t.at)}</td>
-                  <td>{t.note}</td>
-                  <td className={`num ${t.amount > 0 ? 'plus' : ''}`}>{t.amount > 0 ? '+' : '−'}{formatMoney(Math.abs(t.amount))}</td>
-                </tr>
-              ))}
+              {payments.map((p) => {
+                const s = effectiveStatus(p)
+                return (
+                  <tr key={p.id}>
+                    <td>{formatDateTime(p.created_at)}</td>
+                    <td>{p.products.title}</td>
+                    <td><a href={`#pay-${p.id}`}>{p.ref_code}</a></td>
+                    <td><span className={`pill ${STATUS_PILL[s]}`}>{PAYMENT_STATUS_TEXT[s]}</span></td>
+                    <td className="num">{formatMoney(p.amount_mnt)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

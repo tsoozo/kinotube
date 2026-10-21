@@ -6,8 +6,8 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 - **KinoTube**: YouTube загвартай кино үзэх сайт. Брэнд нэр латинаар "KinoTube".
 - Стек: React 19 + Vite 6, цэвэр JavaScript (`.jsx`), TypeScript ашиглахгүй.
-- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#profile`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
-- Сервер байхгүй: хэрэглэгч, данс, эрх бүгд `src/auth.js` дотор localStorage-д (mock). SMS, төлбөр жинхэнэ биш.
+- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#profile`, `#login`, `#pay-<id>`). Хуучин `#register`, `#forgot` нь `#login` руу очно. Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
+- Хэрэглэгч, эрх, төлбөр: Supabase (имэйл кодоор нэвтрэх, `supabase/migrations/`). Төлбөр: банкны шилжүүлэг → Telegram ботоор админ батална (`api/` дахь Vercel Functions). Үзсэн түүх localStorage-д, хэрэглэгч бүрт тусдаа.
 - Кино өгөгдөл: `public/movies.json`. Видео `public/videos/`, зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
 - Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
 
@@ -15,24 +15,27 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:5173 (зөвхөн сайт)
+npx vercel dev   # сайт + api/ (төлбөр, Telegram)
 npm run build    # dist/ — өөрчлөлт бүрийн дараа заавал ажиллуулж шалгана
 npm run preview  # build-ийг шалгах
 ```
 
-Тест, linter одоогоор байхгүй. Build амжилттай болж, хөтөч дээр харж шалгасан байх ёстой.
+Өгөгдлийн сангийн тест: `supabase/tests/` (pgTAP, `npx supabase test db`). Linter байхгүй. Build амжилттай болж, хөтөч дээр харж шалгасан байх ёстой.
 
 ## Бүтэц
 
 ```
 src/App.jsx            hash route, төлөв, хуудас сонголт
 src/data.js            movies.json унших, хайлт, жанр, санал болгох
-src/auth.js            нэвтрэх, бүртгэл, данс, эрх (localStorage mock)
+src/auth.js            нэвтрэх, эрх, төлбөр (Supabase), үзсэн түүх (localStorage), данс `BANK`
 src/components/        нэг файлд нэг компонент (PascalCase.jsx)
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
 public/movies.json     киноны жагсаалт
 public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
+api/                   Vercel Functions: "Гүйлгээ хийсэн", Telegram webhook (`_lib/` нь endpoint биш)
+supabase/migrations/   хүснэгт, RLS, төлбөрийн функцууд, эрхийн үнэ
 ```
 
 ## Код бичих дүрэм

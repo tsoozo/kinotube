@@ -1,10 +1,190 @@
-// Хэрэглэгч, данс, эрхийн мэдээллийг хөтөч дотор (localStorage) хадгална.
-// Энэ бол сервергүй туршилтын хувилбар: жинхэнэ сайтад эдгээр функцийг
-// серверийн API дуудлагаар солих хэрэгтэй (SMS илгээх, төлбөр авах, код шалгах).
+// Хэрэглэгч, үзэх эрх, төлбөр KinoTube-ийн Supabase төсөл дээр хадгалагдана (supabase/migrations).
+// Нэвтрэлт: имэйлээр ирэх 6 оронтой код. Төлбөр: банкны шилжүүлэг → "Гүйлгээ хийсэн" →
+// Telegram бот руу ✅/❌ товчтой мессеж (api/) → админ баталмагц эрх нээгдэнэ.
+// Үнэ, эрх олгох бүх шийдвэрийг сервер (Postgres функцууд) гаргана.
+import { createClient } from '@supabase/supabase-js'
 
-const USERS_KEY = 'kino-users'
-const SESSION_KEY = 'kino-session'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+// Төлбөр хүлээн авах данс. Төлбөрийн дэлгэц дээр харагдана.
+export const BANK = {
+  name: 'Хаан банк',
+  accountNumber: '600005005303317077',
+  accountHolder: 'Батмэнд Хишигцогзол',
+}
+export const configured = Boolean(SUPABASE_URL && SUPABASE_KEY)
+export const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_KEY) : null
+
 const GUEST_HISTORY_KEY = 'kino-history'
+const POLL_MS = 10_000
+
+// SQL функцуудын алдааны кодыг монгол текст болгоно.
+const ERROR_TEXT = {
+  not_authenticated: 'Нэвтэрнэ үү.',
+  not_found: 'Олдсонгүй.',
+  product_not_found: 'Бүтээгдэхүүн олдсонгүй.',
+  too_many_open: 'Танд дуусаагүй 3 төлбөрийн хүсэлт байна. Эхлээд тэдгээрийг дуусгана уу.',
+  rate_limited: 'Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.',
+  forbidden: 'Эрхгүй.',
+}
+const fail = (error) => new Error(ERROR_TEXT[error?.message?.trim()] || 'Алдаа гарлаа. Дахин оролдоно уу.')
+
+function need() {
+  if (!supabase) throw new Error('Сервер тохируулаагүй байна. README-ийн дагуу .env файлаа бөглөнө үү.')
+  return supabase
+}
+
+export const PAYMENT_STATUS_TEXT = {
+  created: 'Төлбөр хүлээгдэж байна',
+  submitted: 'Шалгаж байна',
+  approved: 'Батлагдсан',
+  rejected: 'Татгалзсан',
+  expired: 'Хугацаа дууссан',
+}
+
+/* Нэвтрэлт */
+
+export const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim())
+
+export async function sendCode(email) {
+  const { error } = await need().auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } })
+  if (error) {
+    throw new Error(error.status === 429 ? 'Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.' : 'Код илгээж чадсангүй. Дахин оролдоно уу.')
+  }
+}
+
+export async function verifyCode(email, code) {
+  const { error } = await need().auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: 'email' })
+  if (error) throw new Error('Код буруу эсвэл хугацаа нь дууссан байна.')
+  return loadUser()
+}
+
+// Нэвтэрсэн хэрэглэгч: нэр, имэйл, KinoTube-ийн эрх хэзээ хүртэл.
+export async function loadUser() {
+  if (!supabase) return null
+  const { data } = await supabase.auth.getSession()
+  const u = data.session?.user
+  if (!u) return null
+  const [{ data: profile }, { data: until }] = await Promise.all([
+    supabase.from('profiles').select('display_name, created_at').eq('id', u.id).maybeSingle(),
+    supabase.rpc('my_access_until'),
+  ])
+  return {
+    id: u.id,
+    email: u.email,
+    name: profile?.display_name || u.email?.split('@')[0] || 'Хэрэглэгч',
+    createdAt: profile?.created_at || u.created_at,
+    accessUntil: until || null,
+  }
+}
+
+export async function logout() {
+  await supabase?.auth.signOut()
+}
+
+export async function updateName(user, name) {
+  const display = name.trim()
+  if (!display || display === user.name) return user
+  const { error } = await need().from('profiles').update({ display_name: display.slice(0, 80) }).eq('id', user.id)
+  if (error) throw fail(error)
+  return { ...user, name: display }
+}
+
+/* Эрх */
+
+export function isActive(user) {
+  return Boolean(user?.accessUntil && new Date(user.accessUntil) > new Date())
+}
+
+export function daysLeft(user) {
+  if (!isActive(user)) return 0
+  return Math.ceil((new Date(user.accessUntil) - new Date()) / 86400000)
+}
+
+/* Төлбөр */
+
+// Үнэ products хүснэгтээс; Supabase → Table Editor → products дээр өөрчилнө.
+export async function listPlans() {
+  const { data, error } = await need()
+    .from('products')
+    .select('code, title, description, price_mnt, duration_days')
+    .eq('active', true)
+    .order('sort_order')
+  if (error) throw fail(error)
+  return data
+}
+
+// KT-1234 гүйлгээний утгатай хүсэлт үүсгэнэ. Дүнг сервер products-оос авна.
+export async function createPayment(productCode) {
+  const { data, error } = await need().rpc('create_payment_request', { p_product_code: productCode })
+  if (error) throw fail(error)
+  return data
+}
+
+const PAYMENT_COLUMNS = 'id, ref_code, amount_mnt, status, reject_reason, created_at, products(title)'
+
+export async function getPayment(id) {
+  const { data, error } = await need().from('payment_requests').select(PAYMENT_COLUMNS).eq('id', id).maybeSingle()
+  if (error) throw fail(error)
+  return data
+}
+
+export async function listPayments() {
+  const { data, error } = await need()
+    .from('payment_requests')
+    .select(PAYMENT_COLUMNS)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw fail(error)
+  return data
+}
+
+// Баталгаажуулаагүй хүсэлт 24 цагийн дараа хүчингүй болно (сервер ч мөн адил).
+export function effectiveStatus(p) {
+  return p.status === 'created' && Date.now() - new Date(p.created_at) > 24 * 3600_000 ? 'expired' : p.status
+}
+
+
+// "Гүйлгээ хийсэн": created → submitted, Telegram руу админд мэдэгдэнэ (api/payments/[id]/submit.js).
+export async function submitPayment(id) {
+  const { data } = await need().auth.getSession()
+  if (!data.session) throw new Error('Нэвтэрнэ үү.')
+  const res = await fetch(`/api/payments/${encodeURIComponent(id)}/submit`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${data.session.access_token}` },
+  }).catch(() => null)
+  if (!res) throw new Error('Сервертэй холбогдож чадсангүй. Дахин оролдоно уу.')
+  const json = await res.json().catch(() => null)
+  if (!json || json.error) throw new Error(json?.error || 'Алдаа гарлаа. Дахин оролдоно уу.')
+  return json.status
+}
+
+// Төлөв өөрчлөгдөхийг Realtime-аар, 10 секунд тутмын шалгалтаар нөөцлөн хүлээнэ.
+export function watchPayment(id, onChange) {
+  const sb = need()
+  let stopped = false
+  const refresh = () => getPayment(id).then((p) => !stopped && p && onChange(p)).catch(() => {})
+  const channel = sb.channel(`payment:${id}`)
+  sb.auth.getSession().then(({ data }) => {
+    if (stopped) return
+    if (data.session) sb.realtime.setAuth(data.session.access_token)
+    channel
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'payment_requests', filter: `id=eq.${id}` }, refresh)
+      .subscribe((state) => {
+        // Сувагт холбогдохоос өмнө шийдвэрлэгдсэн байж болзошгүй.
+        if (state === 'SUBSCRIBED') refresh()
+      })
+  })
+  const timer = setInterval(refresh, POLL_MS)
+  return () => {
+    stopped = true
+    clearInterval(timer)
+    sb.removeChannel(channel)
+  }
+}
+
+/* Үзсэн түүх: хөтөч дээр (localStorage), хэрэглэгч бүрт тусдаа. */
 
 let memory = {}
 
@@ -26,176 +206,16 @@ function write(key, value) {
   }
 }
 
-export const PLANS = [
-  { id: '1m', label: '1 сарын эрх', months: 1, price: 9900 },
-  { id: '3m', label: '3 сарын эрх', months: 3, price: 24900 },
-  { id: '12m', label: '1 жилийн эрх', months: 12, price: 89000 },
-]
+const historyKey = (user) => (user ? `${GUEST_HISTORY_KEY}:${user.id}` : GUEST_HISTORY_KEY)
 
-export const TOPUP_AMOUNTS = [5000, 10000, 20000, 50000]
-
-export const DEMO = { phone: '99112233', pin: '1234' }
-
-function seed() {
-  const users = read(USERS_KEY, null)
-  if (users) return users
-  const demo = {
-    phone: DEMO.phone,
-    pin: DEMO.pin,
-    name: 'Туршилтын хэрэглэгч',
-    createdAt: '2026-09-01T10:00:00.000Z',
-    balance: 15000,
-    subscription: { plan: '1m', label: '1 сарын эрх', endsAt: '2026-11-01T15:00:00.000Z' },
-    transactions: [
-      { at: '2026-10-01T09:12:00.000Z', type: 'topup', amount: 20000, note: 'Данс цэнэглэлт' },
-      { at: '2026-10-01T09:13:00.000Z', type: 'plan', amount: -9900, note: '1 сарын эрх' },
-      { at: '2026-10-15T18:40:00.000Z', type: 'topup', amount: 5000, note: 'Данс цэнэглэлт' },
-    ],
-    history: [
-      { id: 'nosferatu', at: '2026-10-19T21:05:00.000Z', pos: 2130, dur: 5640 },
-      { id: 'the-general', at: '2026-10-18T19:30:00.000Z', pos: 0, dur: 4520, done: true },
-    ],
-  }
-  const initial = { [DEMO.phone]: demo }
-  write(USERS_KEY, initial)
-  return initial
-}
-
-const users = () => seed()
-const saveUser = (u) => write(USERS_KEY, { ...users(), [u.phone]: u })
-
-export const normalizePhone = (s) => s.replace(/\D/g, '')
-export const isValidPhone = (s) => /^[6-9]\d{7}$/.test(normalizePhone(s))
-export const isValidPin = (s) => /^\d{4}$/.test(s)
-
-export function currentUser() {
-  const phone = read(SESSION_KEY, null)
-  return (phone && users()[phone]) || null
-}
-
-export function userExists(phone) {
-  return Boolean(users()[normalizePhone(phone)])
-}
-
-export function login(phone, pin) {
-  const u = users()[normalizePhone(phone)]
-  if (!u) throw new Error('Энэ дугаараар бүртгэл олдсонгүй. Эхлээд бүртгүүлнэ үү.')
-  if (u.pin !== pin) throw new Error('Код буруу байна. Дахин оролдоно уу.')
-  write(SESSION_KEY, u.phone)
-  return u
-}
-
-export function register(phone, name, pin) {
-  const p = normalizePhone(phone)
-  if (users()[p]) throw new Error('Энэ дугаар бүртгэлтэй байна. Нэвтэрнэ үү.')
-  const u = {
-    phone: p,
-    pin,
-    name: name.trim() || 'Хэрэглэгч',
-    createdAt: new Date().toISOString(),
-    balance: 0,
-    subscription: null,
-    transactions: [],
-    history: [],
-  }
-  saveUser(u)
-  write(SESSION_KEY, p)
-  return u
-}
-
-export function logout() {
-  write(SESSION_KEY, null)
-}
-
-// Код мартсан: SMS-ээр илгээх баталгаажуулах кодыг туршилтад дэлгэцэнд харуулна.
-let pendingReset = null
-
-export function requestReset(phone) {
-  const p = normalizePhone(phone)
-  if (!users()[p]) throw new Error('Энэ дугаараар бүртгэл олдсонгүй.')
-  const code = String(Math.floor(100000 + Math.random() * 900000))
-  pendingReset = { phone: p, code, expires: Date.now() + 5 * 60 * 1000 }
-  return code
-}
-
-export function confirmReset(smsCode, newPin) {
-  if (!pendingReset || Date.now() > pendingReset.expires) throw new Error('Кодын хугацаа дууссан. Дахин код авна уу.')
-  if (smsCode !== pendingReset.code) throw new Error('Баталгаажуулах код буруу байна.')
-  const u = { ...users()[pendingReset.phone], pin: newPin }
-  saveUser(u)
-  write(SESSION_KEY, u.phone)
-  pendingReset = null
-  return u
-}
-
-export function updateName(user, name) {
-  const u = { ...user, name: name.trim() || user.name }
-  saveUser(u)
-  return u
-}
-
-export function changePin(user, oldPin, newPin) {
-  if (user.pin !== oldPin) throw new Error('Одоогийн код буруу байна.')
-  const u = { ...user, pin: newPin }
-  saveUser(u)
-  return u
-}
-
-export function topUp(user, amount) {
-  const u = {
-    ...user,
-    balance: user.balance + amount,
-    transactions: [{ at: new Date().toISOString(), type: 'topup', amount, note: 'Данс цэнэглэлт' }, ...user.transactions],
-  }
-  saveUser(u)
-  return u
-}
-
-function addMonths(date, months) {
-  const d = new Date(date)
-  d.setMonth(d.getMonth() + months)
-  return d
-}
-
-// Эрх идэвхтэй байвал дуусах хугацаан дээр нь нэмж сунгана.
-export function buyPlan(user, planId) {
-  const plan = PLANS.find((p) => p.id === planId)
-  if (user.balance < plan.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
-  const base = isActive(user) ? new Date(user.subscription.endsAt) : new Date()
-  const u = {
-    ...user,
-    balance: user.balance - plan.price,
-    subscription: { plan: plan.id, label: plan.label, endsAt: addMonths(base, plan.months).toISOString() },
-    transactions: [{ at: new Date().toISOString(), type: 'plan', amount: -plan.price, note: plan.label }, ...user.transactions],
-  }
-  saveUser(u)
-  return u
-}
-
-export function isActive(user) {
-  return Boolean(user?.subscription && new Date(user.subscription.endsAt) > new Date())
-}
-
-export function daysLeft(user) {
-  if (!isActive(user)) return 0
-  return Math.ceil((new Date(user.subscription.endsAt) - new Date()) / 86400000)
-}
-
-// Үзсэн түүх: нэвтэрсэн бол хэрэглэгч бүрт тусдаа, үгүй бол хөтөч дээр.
 export function getHistory(user) {
-  // Хуучирсан user объект биш, хадгалсан сүүлийн төлвөөс уншина.
-  if (user) return users()[user.phone]?.history || user.history || []
-  return read(GUEST_HISTORY_KEY, []).map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
+  return read(historyKey(user), []).map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
 }
 
+// Хадгалаад шинэ user объект буцаана (дахин зурахад), зочин бол null.
 function saveHistory(user, list) {
-  if (user) {
-    const u = { ...users()[user.phone], history: list }
-    saveUser(u)
-    return u
-  }
-  write(GUEST_HISTORY_KEY, list)
-  return null
+  write(historyKey(user), list)
+  return user ? { ...user } : null
 }
 
 // Үзэж эхэлсэн киног түүхийн эхэнд гаргана. Өмнөх байрлалыг (pos) хадгална.
@@ -234,6 +254,8 @@ export function clearHistory(user) {
   return saveHistory(user, [])
 }
 
+/* Формат */
+
 export function formatDate(iso) {
   const d = new Date(iso)
   const pad = (n) => String(n).padStart(2, '0')
@@ -247,5 +269,3 @@ export function formatDateTime(iso) {
 }
 
 export const formatMoney = (n) => `${n.toLocaleString('en-US')}₮`
-
-export const formatPhone = (p) => `${p.slice(0, 4)} ${p.slice(4)}`

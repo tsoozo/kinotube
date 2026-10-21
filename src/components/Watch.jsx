@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import { formatTime, recommended, timeAgo } from '../data.js'
-import { formatDate, getProgress, isActive, pushHistory, saveProgress, watchedRatio } from '../auth.js'
+import { getProgress, isActive, pushHistory, saveProgress, watchedRatio } from '../auth.js'
 
-export default function Watch({ movie, movies, user, onUser }) {
+export default function Watch({ movie, movies, user }) {
   const [videoError, setVideoError] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [resumed, setResumed] = useState(0)
@@ -31,7 +31,7 @@ export default function Watch({ movie, movies, user, onUser }) {
       if (v && user && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.phone, canWatch])
+  }, [movie.id, user?.id, canWatch])
 
   // Өмнө зогссон газраас нь үргэлжлүүлнэ.
   const onLoaded = () => {
@@ -54,12 +54,9 @@ export default function Watch({ movie, movies, user, onUser }) {
 
   // Эрхтэй үед л үзсэн түүхэнд нэмнэ.
   useEffect(() => {
-    if (canWatch) {
-      const u = pushHistory(user, movie.id)
-      if (u) onUser(u)
-    }
+    if (canWatch) pushHistory(user, movie.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.phone, canWatch])
+  }, [movie.id, user?.id, canWatch])
 
   const list = recommended(movies, movie)
 
@@ -74,7 +71,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   } else if (!canWatch) {
     player = (
       <div className="player-error">
-        <p>Таны үзэх эрх {user.subscription ? `${formatDate(user.subscription.endsAt)}-нд дууссан` : 'алга'} байна</p>
+        <p>Танд кино үзэх эрх алга байна</p>
         <a className="btn-primary" href="#profile">Эрх авах</a>
       </div>
     )
