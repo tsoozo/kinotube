@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import { recommended, timeAgo } from '../data.js'
 import { formatDate, isActive, pushHistory } from '../auth.js'
+import { bunnyEmbed, mediaUrl } from '../media.js'
 
 export default function Watch({ movie, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
@@ -23,6 +24,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   }, [movie.id, user?.phone, canWatch])
 
   const list = recommended(movies, movie)
+  const embed = bunnyEmbed(movie)
 
   let player
   if (!user) {
@@ -43,12 +45,22 @@ export default function Watch({ movie, movies, user, onUser }) {
     player = (
       <div className="player-error">
         <p>Видео файл олдсонгүй</p>
-        <code>public/{movie.video}</code>
+        <code>{mediaUrl(movie.video)}</code>
       </div>
+    )
+  } else if (embed) {
+    player = (
+      <iframe
+        key={movie.id}
+        src={embed}
+        title={movie.title}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen
+      />
     )
   } else {
     player = (
-      <video key={movie.id} src={movie.video} poster={movie.thumbnail} controls playsInline onError={() => setVideoError(true)} />
+      <video key={movie.id} src={mediaUrl(movie.video)} poster={mediaUrl(movie.thumbnail)} controls playsInline onError={() => setVideoError(true)} />
     )
   }
 

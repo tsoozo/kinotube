@@ -18,6 +18,11 @@ export default function Sidebar({ open, page, user, genres, genre, onGenre, onNa
         <hr />
         <h3>Төрөл</h3>
         {genres.map((g) => item(page === 'home' && genre === g, FilmIcon, g, () => onGenre(g)))}
+        <hr />
+        <div className="side-legal">
+          <a href="#terms">Үйлчилгээний нөхцөл</a>
+          <a href="#privacy">Нууцлалын бодлого</a>
+        </div>
       </nav>
       <nav className="mini-sidebar" aria-label="Товч цэс">
         <button className={page === 'home' ? 'active' : ''} onClick={() => onGenre('Бүгд')}><HomeIcon /><span>Нүүр</span></button>

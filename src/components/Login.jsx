@@ -70,6 +70,9 @@ export default function Login({ mode, onDone, onNavigate }) {
         <div className="field"><span>4 оронтой код үүсгэх</span><PinInput id="new-pin" value={pin} onChange={setPin} /></div>
         <div className="field"><span>Кодоо давтах</span><PinInput id="new-pin2" value={pin2} onChange={setPin2} /></div>
         {error && <p className="form-error">{error}</p>}
+        <p className="form-consent">
+          Бүртгүүлснээр та <a href="#terms">Үйлчилгээний нөхцөл</a>, <a href="#privacy">Нууцлалын бодлого</a>-г зөвшөөрч байна.
+        </p>
         <button className="btn-primary" type="submit">Бүртгүүлэх</button>
         <p className="form-links">
           Бүртгэлтэй юу? <button type="button" onClick={() => switchTo('login')}>Нэвтрэх</button>
