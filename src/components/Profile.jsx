@@ -3,7 +3,7 @@ import PinInput from './PinInput.jsx'
 import Thumbnail from './Thumbnail.jsx'
 import {
   PLANS, TOPUP_AMOUNTS, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
-  formatPhone, isActive, isValidPin, topUp, updateName,
+  formatPhone, isActive, isValidPin, topUp, updateName, watchedRatio,
 } from '../auth.js'
 
 export default function Profile({ user, movies, onUser, onLogout }) {
@@ -123,7 +123,7 @@ export default function Profile({ user, movies, onUser, onLogout }) {
             {history.map((h) => (
               <li key={h.id}>
                 <a className="history-row" href={`#watch-${encodeURIComponent(h.id)}`}>
-                  <Thumbnail movie={h.movie} small />
+                  <Thumbnail movie={h.movie} small progress={watchedRatio(h)} />
                   <div>
                     <b>{h.movie.title}</b>
                     <p className="muted">{h.movie.year} он · {h.movie.duration}</p>

@@ -12,6 +12,7 @@ import {
   SquarePlay,
   Volume2,
   VolumeX,
+  Trash2,
   X,
 } from 'lucide-react'
 
@@ -34,3 +35,4 @@ export const UpIcon = icon(ChevronUp)
 export const DownIcon = icon(ChevronDown)
 export const SoundIcon = icon(Volume2)
 export const MuteIcon = icon(VolumeX)
+export const TrashIcon = icon(Trash2)

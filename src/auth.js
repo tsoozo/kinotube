@@ -52,8 +52,8 @@ function seed() {
       { at: '2026-10-15T18:40:00.000Z', type: 'topup', amount: 5000, note: 'Данс цэнэглэлт' },
     ],
     history: [
-      { id: 'nosferatu', at: '2026-10-19T21:05:00.000Z' },
-      { id: 'the-general', at: '2026-10-18T19:30:00.000Z' },
+      { id: 'nosferatu', at: '2026-10-19T21:05:00.000Z', pos: 2130, dur: 5640 },
+      { id: 'the-general', at: '2026-10-18T19:30:00.000Z', pos: 0, dur: 4520, done: true },
     ],
   }
   const initial = { [DEMO.phone]: demo }
@@ -187,9 +187,7 @@ export function getHistory(user) {
   return read(GUEST_HISTORY_KEY, []).map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
 }
 
-export function pushHistory(user, id) {
-  const entry = { id, at: new Date().toISOString() }
-  const list = [entry, ...getHistory(user).filter((x) => x.id !== id)].slice(0, 50)
+function saveHistory(user, list) {
   if (user) {
     const u = { ...users()[user.phone], history: list }
     saveUser(u)
@@ -197,6 +195,42 @@ export function pushHistory(user, id) {
   }
   write(GUEST_HISTORY_KEY, list)
   return null
+}
+
+// Үзэж эхэлсэн киног түүхийн эхэнд гаргана. Өмнөх байрлалыг (pos) хадгална.
+export function pushHistory(user, id) {
+  const old = getHistory(user).find((x) => x.id === id)
+  const entry = { ...old, id, at: new Date().toISOString() }
+  return saveHistory(user, [entry, ...getHistory(user).filter((x) => x.id !== id)].slice(0, 100))
+}
+
+// Хаана хүртэл үзсэнийг (секунд) хадгална. Төгсгөлд ойртвол дууссан гэж үзнэ.
+export function saveProgress(user, id, pos, dur) {
+  if (!dur || !isFinite(dur)) return null
+  const done = pos > dur - 30 || pos / dur > 0.97
+  const list = getHistory(user).map((x) =>
+    x.id === id ? { ...x, pos: done ? 0 : Math.floor(pos), dur: Math.floor(dur), done } : x,
+  )
+  return saveHistory(user, list)
+}
+
+// Үзсэн хэсгийн харьцаа (0..1), картын улаан зурвасанд.
+export function watchedRatio(h) {
+  if (!h) return 0
+  if (h.done) return 1
+  return h.dur ? Math.min(1, (h.pos || 0) / h.dur) : 0
+}
+
+export function getProgress(user, id) {
+  return getHistory(user).find((x) => x.id === id) || null
+}
+
+export function removeHistory(user, id) {
+  return saveHistory(user, getHistory(user).filter((x) => x.id !== id))
+}
+
+export function clearHistory(user) {
+  return saveHistory(user, [])
 }
 
 export function formatDate(iso) {

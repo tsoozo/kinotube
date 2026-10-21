@@ -14,7 +14,7 @@ export default function Sidebar({ open, page, user, genre, onGenre, onNavigate, 
       <nav className={`sidebar ${open ? 'open' : ''}`} aria-label="Үндсэн цэс">
         {item(page === 'home' && genre === 'Бүгд', HomeIcon, 'Нүүр', () => onGenre('Бүгд'))}
         {item(page === 'shorts', ShortsIcon, 'Shorts', () => onNavigate('#shorts'))}
-        {item(page === 'history', HistoryIcon, 'Сүүлд үзсэн', () => onNavigate('#history'))}
+        {item(page === 'history', HistoryIcon, 'Үзсэн түүх', () => onNavigate('#history'))}
         {item(page === 'profile', UserIcon, user ? 'Миний профайл' : 'Нэвтрэх', () => onNavigate(user ? '#profile' : '#login'))}
       </nav>
       <nav className="mini-sidebar" aria-label="Товч цэс">
