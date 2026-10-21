@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import {
   PAYMENT_STATUS_TEXT, createPayment, daysLeft, effectiveStatus, formatDate, formatDateTime, formatMoney,
-  getHistory, isActive, listPayments, listPlans, updateName,
+  getHistory, isActive, listPayments, listPlans, updateName, watchedRatio,
 } from '../auth.js'
 
 const STATUS_PILL = { approved: 'ok', rejected: 'bad', expired: 'bad', created: 'wait', submitted: 'wait' }
@@ -140,7 +140,7 @@ export default function Profile({ user, movies, onUser, onLogout, onNavigate }) 
             {history.map((h) => (
               <li key={h.id}>
                 <a className="history-row" href={`#watch-${encodeURIComponent(h.id)}`}>
-                  <Thumbnail movie={h.movie} small />
+                  <Thumbnail movie={h.movie} small progress={watchedRatio(h)} />
                   <div>
                     <b>{h.movie.title}</b>
                     <p className="muted">{h.movie.year} он · {h.movie.duration}</p>

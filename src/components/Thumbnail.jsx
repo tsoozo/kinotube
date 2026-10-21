@@ -1,13 +1,8 @@
 import { useState } from 'react'
-
-function hue(str) {
-  let h = 0
-  for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return h
-}
+import { hue } from '../data.js'
 
 // Зураг байхгүй үед киноны нэр бүхий өнгөт зураг харуулна.
-export default function Thumbnail({ movie, small }) {
+export default function Thumbnail({ movie, small, progress = 0 }) {
   const [failed, setFailed] = useState(!movie.thumbnail)
   const h = hue(movie.id)
 
@@ -24,7 +19,12 @@ export default function Thumbnail({ movie, small }) {
       ) : (
         <img src={movie.thumbnail} alt="" loading="lazy" onError={() => setFailed(true)} />
       )}
-      {movie.duration && <span className="duration">{movie.duration.replace(/^0:/, '')}</span>}
+      {movie.duration && <span className="duration">{progress >= 1 ? 'Үзсэн' : movie.duration.replace(/^0:/, '')}</span>}
+      {progress > 0 && (
+        <span className="thumb-progress">
+          <span style={{ width: `${Math.max(progress * 100, 3)}%` }} />
+        </span>
+      )}
     </div>
   )
 }

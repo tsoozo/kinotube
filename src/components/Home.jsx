@@ -1,6 +1,7 @@
 import MovieCard from './MovieCard.jsx'
+import ShortsShelf from './ShortsShelf.jsx'
 
-export default function Home({ movies, genres, genre, onGenre, query, onClearSearch, title, loading }) {
+export default function Home({ movies, genres, genre, onGenre, query, onClearSearch, loading, progressOf, shorts = [] }) {
   return (
     <div className="home">
       <div className="chips" role="tablist">
@@ -10,7 +11,6 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
           </button>
         ))}
       </div>
-      {title && <h2 className="section-title">{title}</h2>}
       {query.trim() && !loading && (
         <div className="search-summary">
           <span>
@@ -23,14 +23,24 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
         <p className="notice">Ачаалж байна…</p>
       ) : movies.length === 0 ? (
         <p className="notice">
-          {query ? `"${query}" хайлтаар кино олдсонгүй.` : title ? 'Та одоогоор кино үзээгүй байна.' : 'Кино алга.'}
+          {query ? `"${query}" хайлтаар кино олдсонгүй.` : 'Кино алга.'}
         </p>
       ) : (
-        <div className="grid">
-          {movies.map((m) => (
-            <MovieCard key={m.id} movie={m} />
-          ))}
-        </div>
+        <>
+          <div className="grid">
+            {movies.slice(0, shorts.length ? 8 : undefined).map((m) => (
+              <MovieCard key={m.id} movie={m} progress={progressOf?.(m.id)} />
+            ))}
+          </div>
+          <ShortsShelf shorts={shorts} />
+          {shorts.length > 0 && movies.length > 8 && (
+            <div className="grid">
+              {movies.slice(8).map((m) => (
+                <MovieCard key={m.id} movie={m} progress={progressOf?.(m.id)} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

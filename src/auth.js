@@ -184,26 +184,74 @@ export function watchPayment(id, onChange) {
   }
 }
 
-/* Үзсэн түүх: хөтөч дээр, хэрэглэгч бүрт тусдаа. */
+/* Үзсэн түүх: хөтөч дээр (localStorage), хэрэглэгч бүрт тусдаа. */
+
+let memory = {}
+
+function read(key, fallback) {
+  try {
+    const v = localStorage.getItem(key)
+    return v === null ? fallback : JSON.parse(v)
+  } catch {
+    return key in memory ? memory[key] : fallback
+  }
+}
+
+function write(key, value) {
+  memory[key] = value
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Хадгалах боломжгүй үед санах ойд л үлдэнэ.
+  }
+}
 
 const historyKey = (user) => (user ? `${GUEST_HISTORY_KEY}:${user.id}` : GUEST_HISTORY_KEY)
 
 export function getHistory(user) {
-  try {
-    const list = JSON.parse(localStorage.getItem(historyKey(user)) || '[]')
-    return list.map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
-  } catch {
-    return []
-  }
+  return read(historyKey(user), []).map((x) => (typeof x === 'string' ? { id: x, at: null } : x))
 }
 
+// Хадгалаад шинэ user объект буцаана (дахин зурахад), зочин бол null.
+function saveHistory(user, list) {
+  write(historyKey(user), list)
+  return user ? { ...user } : null
+}
+
+// Үзэж эхэлсэн киног түүхийн эхэнд гаргана. Өмнөх байрлалыг (pos) хадгална.
 export function pushHistory(user, id) {
-  const list = [{ id, at: new Date().toISOString() }, ...getHistory(user).filter((x) => x.id !== id)].slice(0, 50)
-  try {
-    localStorage.setItem(historyKey(user), JSON.stringify(list))
-  } catch {
-    // Хадгалах боломжгүй (хувийн цонх г.м.) үед түүх хадгалагдахгүй.
-  }
+  const old = getHistory(user).find((x) => x.id === id)
+  const entry = { ...old, id, at: new Date().toISOString() }
+  return saveHistory(user, [entry, ...getHistory(user).filter((x) => x.id !== id)].slice(0, 100))
+}
+
+// Хаана хүртэл үзсэнийг (секунд) хадгална. Төгсгөлд ойртвол дууссан гэж үзнэ.
+export function saveProgress(user, id, pos, dur) {
+  if (!dur || !isFinite(dur)) return null
+  const done = pos > dur - 30 || pos / dur > 0.97
+  const list = getHistory(user).map((x) =>
+    x.id === id ? { ...x, pos: done ? 0 : Math.floor(pos), dur: Math.floor(dur), done } : x,
+  )
+  return saveHistory(user, list)
+}
+
+// Үзсэн хэсгийн харьцаа (0..1), картын улаан зурвасанд.
+export function watchedRatio(h) {
+  if (!h) return 0
+  if (h.done) return 1
+  return h.dur ? Math.min(1, (h.pos || 0) / h.dur) : 0
+}
+
+export function getProgress(user, id) {
+  return getHistory(user).find((x) => x.id === id) || null
+}
+
+export function removeHistory(user, id) {
+  return saveHistory(user, getHistory(user).filter((x) => x.id !== id))
+}
+
+export function clearHistory(user) {
+  return saveHistory(user, [])
 }
 
 /* Формат */
