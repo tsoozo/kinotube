@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { mediaUrl } from '../media.js'
 
 function hue(str) {
   let h = 0
@@ -22,7 +23,7 @@ export default function Thumbnail({ movie, small }) {
           <span className="thumb-year">{movie.year}</span>
         </div>
       ) : (
-        <img src={movie.thumbnail} alt="" loading="lazy" onError={() => setFailed(true)} />
+        <img src={mediaUrl(movie.thumbnail)} alt="" loading="lazy" onError={() => setFailed(true)} />
       )}
       {movie.duration && <span className="duration">{movie.duration.replace(/^0:/, '')}</span>}
     </div>

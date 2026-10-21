@@ -5,14 +5,15 @@ import Home from './components/Home.jsx'
 import Watch from './components/Watch.jsx'
 import Login from './components/Login.jsx'
 import Profile from './components/Profile.jsx'
+import Legal from './components/Legal.jsx'
 import { allGenres, loadMovies, matches } from './data.js'
 import { currentUser, getHistory, logout } from './auth.js'
 
-// Хаяг: #watch-<id>, #history, #profile, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #history, #profile, #login, #register, #forgot, #terms, #privacy, бусад үед нүүр.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
-  if (['history', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
+  if (['history', 'profile', 'login', 'register', 'forgot', 'terms', 'privacy'].includes(hash)) return { page: hash }
   return { page: 'home' }
 }
 
@@ -87,6 +88,7 @@ export default function App() {
   let content
   if (error) content = <p className="notice">{error}</p>
   else if (isAuth) content = <Login mode={page} onDone={onLogin} onNavigate={go} />
+  else if (page === 'terms' || page === 'privacy') content = <Legal page={page} />
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
@@ -105,7 +107,7 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''}`}>
+    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} ${isWatch || isAuth || ['profile', 'terms', 'privacy'].includes(page) ? 'is-focus' : ''}`}>
       <Header
         query={query}
         user={user}
