@@ -1,5 +1,7 @@
 import {
   ArrowLeft,
+  ChevronDown,
+  ChevronUp,
   CirclePlay,
   CircleUserRound,
   Clapperboard,
@@ -7,6 +9,9 @@ import {
   House,
   Menu,
   Search,
+  SquarePlay,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react'
 
@@ -24,3 +29,8 @@ export const PlayIcon = icon(CirclePlay)
 export const UserIcon = icon(CircleUserRound)
 export const CloseIcon = icon(X)
 export const BackIcon = icon(ArrowLeft)
+export const ShortsIcon = icon(SquarePlay)
+export const UpIcon = icon(ChevronUp)
+export const DownIcon = icon(ChevronDown)
+export const SoundIcon = icon(Volume2)
+export const MuteIcon = icon(VolumeX)

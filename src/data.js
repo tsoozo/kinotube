@@ -39,3 +39,33 @@ export function timeAgo(dateStr) {
   if (days < 365) return `${Math.floor(days / 30)} сарын өмнө`
   return `${Math.floor(days / 365)} жилийн өмнө`
 }
+
+// id-аас тогтмол өнгө (зураггүй үеийн fallback-д).
+export function hue(str) {
+  let h = 0
+  for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) % 360
+  return h
+}
+
+// Shorts-ийн дээд урт: 20 минут.
+export const SHORTS_MAX_SECONDS = 20 * 60
+
+// "Ц:ММ:СС" эсвэл "М:СС" -> секунд.
+export function toSeconds(duration) {
+  return String(duration || '')
+    .split(':')
+    .reduce((sum, part) => sum * 60 + (Number(part) || 0), 0)
+}
+
+// public/shorts.json-ийг уншаад 20 минутаас урт бичлэгийг хасна.
+export async function loadShorts() {
+  const res = await fetch('shorts.json')
+  if (!res.ok) throw new Error('shorts.json файлыг уншиж чадсангүй')
+  const list = await res.json()
+  return list.filter((s) => {
+    const sec = toSeconds(s.duration)
+    if (sec > 0 && sec <= SHORTS_MAX_SECONDS) return true
+    console.warn(`Shorts "${s.id}" хасагдлаа: урт нь ${s.duration || 'тодорхойгүй'} (дээд тал нь 20:00)`)
+    return false
+  })
+}

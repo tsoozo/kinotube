@@ -6,7 +6,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 - **KinoTube**: YouTube загвартай кино үзэх сайт. Брэнд нэр латинаар "KinoTube".
 - Стек: React 19 + Vite 6, цэвэр JavaScript (`.jsx`), TypeScript ашиглахгүй.
-- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#history`, `#profile`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
+- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#profile`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
 - Сервер байхгүй: хэрэглэгч, данс, эрх бүгд `src/auth.js` дотор localStorage-д (mock). SMS, төлбөр жинхэнэ биш.
 - Кино өгөгдөл: `public/movies.json`. Видео `public/videos/`, зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
 - Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
@@ -32,6 +32,7 @@ src/components/        нэг файлд нэг компонент (PascalCase.j
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
 public/movies.json     киноны жагсаалт
+public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
 ```
 
 ## Код бичих дүрэм

@@ -1,10 +1,5 @@
 import { useState } from 'react'
-
-function hue(str) {
-  let h = 0
-  for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return h
-}
+import { hue } from '../data.js'
 
 // Зураг байхгүй үед киноны нэр бүхий өнгөт зураг харуулна.
 export default function Thumbnail({ movie, small }) {

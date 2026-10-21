@@ -5,19 +5,22 @@ import Home from './components/Home.jsx'
 import Watch from './components/Watch.jsx'
 import Login from './components/Login.jsx'
 import Profile from './components/Profile.jsx'
-import { allGenres, loadMovies, matches } from './data.js'
+import Shorts from './components/Shorts.jsx'
+import { allGenres, loadMovies, loadShorts, matches } from './data.js'
 import { currentUser, getHistory, logout } from './auth.js'
 
-// Хаяг: #watch-<id>, #history, #profile, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #profile, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
+  if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
   if (['history', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
   return { page: 'home' }
 }
 
 export default function App() {
   const [movies, setMovies] = useState([])
+  const [shorts, setShorts] = useState(null)
   const [error, setError] = useState('')
   const [route, setRoute] = useState(readRoute)
   const [query, setQuery] = useState('')
@@ -27,6 +30,7 @@ export default function App() {
 
   useEffect(() => {
     loadMovies().then(setMovies).catch((e) => setError(e.message))
+    loadShorts().then(setShorts).catch(() => setShorts([]))
   }, [])
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function App() {
 
   // Үзэх, профайл, нэвтрэх хуудас руу ороход хажуугийн цэсийг хаана.
   useEffect(() => {
-    if (!['home', 'history'].includes(route.page) || window.innerWidth <= 1100) setSidebarOpen(false)
+    if (!['home', 'history', 'shorts'].includes(route.page) || window.innerWidth <= 1100) setSidebarOpen(false)
   }, [route])
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
@@ -89,6 +93,7 @@ export default function App() {
   else if (isAuth) content = <Login mode={page} onDone={onLogin} onNavigate={go} />
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
+  else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
   else if (!isWatch)
     content = (
@@ -101,11 +106,12 @@ export default function App() {
         onClearSearch={() => setQuery('')}
         title={page === 'history' ? 'Сүүлд үзсэн' : null}
         loading={movies.length === 0}
+        shorts={page === 'home' && genre === 'Бүгд' && !query.trim() ? shorts || [] : []}
       />
     )
 
   return (
-    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''}`}>
+    <div className={`app ${sidebarOpen ? 'sidebar-open' : ''} ${isWatch || isAuth || page === 'profile' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''}`}>
       <Header
         query={query}
         user={user}
