@@ -27,19 +27,13 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
         </p>
       ) : (
         <>
+          {/* Shorts хамгийн эхэнд харагдана. */}
+          <ShortsShelf shorts={shorts} />
           <div className="grid">
-            {movies.slice(0, shorts.length ? 8 : undefined).map((m) => (
+            {movies.map((m) => (
               <MovieCard key={m.id} movie={m} progress={progressOf?.(m.id)} />
             ))}
           </div>
-          <ShortsShelf shorts={shorts} />
-          {shorts.length > 0 && movies.length > 8 && (
-            <div className="grid">
-              {movies.slice(8).map((m) => (
-                <MovieCard key={m.id} movie={m} progress={progressOf?.(m.id)} />
-              ))}
-            </div>
-          )}
         </>
       )}
     </div>

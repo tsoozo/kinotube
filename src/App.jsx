@@ -8,7 +8,7 @@ import Profile from './components/Profile.jsx'
 import Shorts from './components/Shorts.jsx'
 import History from './components/History.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
-import { currentUser, getHistory, logout, watchedRatio } from './auth.js'
+import { currentUser, getHistory, isActive, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
 
 // Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #profile, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
@@ -73,10 +73,19 @@ export default function App() {
     if (route.page !== 'home') go('')
   }
 
+  // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу буцна.
   const onLogin = (u) => {
     setUser(u)
-    go('#profile')
+    const id = isActive(u) ? takeReturnTo() : peekReturnTo()
+    go(id ? `#watch-${encodeURIComponent(id)}` : '#profile')
   }
+
+  // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.
+  useEffect(() => {
+    if (route.page !== 'profile' || !isActive(user)) return
+    const id = takeReturnTo()
+    if (id) location.hash = `watch-${encodeURIComponent(id)}`
+  }, [route, user])
 
   const goHome = () => {
     setQuery('')

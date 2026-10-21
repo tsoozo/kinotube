@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import { formatTime, recommended, timeAgo } from '../data.js'
-import { formatDate, getProgress, isActive, pushHistory, saveProgress, watchedRatio } from '../auth.js'
+import { formatDate, getProgress, isActive, pushHistory, saveProgress, setReturnTo, watchedRatio } from '../auth.js'
 
 export default function Watch({ movie, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
@@ -68,14 +68,14 @@ export default function Watch({ movie, movies, user, onUser }) {
     player = (
       <div className="player-error">
         <p>Кино үзэхийн тулд нэвтэрнэ үү</p>
-        <a className="btn-primary" href="#login">Нэвтрэх</a>
+        <a className="btn-primary" href="#login" onClick={() => setReturnTo(movie.id)}>Нэвтрэх</a>
       </div>
     )
   } else if (!canWatch) {
     player = (
       <div className="player-error">
         <p>Таны үзэх эрх {user.subscription ? `${formatDate(user.subscription.endsAt)}-нд дууссан` : 'алга'} байна</p>
-        <a className="btn-primary" href="#profile">Эрх авах</a>
+        <a className="btn-primary" href="#profile" onClick={() => setReturnTo(movie.id)}>Эрх авах</a>
       </div>
     )
   } else if (videoError) {

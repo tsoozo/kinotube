@@ -5,6 +5,7 @@
 const USERS_KEY = 'kino-users'
 const SESSION_KEY = 'kino-session'
 const GUEST_HISTORY_KEY = 'kino-history'
+const RETURN_KEY = 'kino-return'
 
 let memory = {}
 
@@ -249,3 +250,19 @@ export function formatDateTime(iso) {
 export const formatMoney = (n) => `${n.toLocaleString('en-US')}₮`
 
 export const formatPhone = (p) => `${p.slice(0, 4)} ${p.slice(4)}`
+
+// Нэвтэрч, эрх авсны дараа буцаж орох кино (30 минутын дотор).
+export function setReturnTo(movieId) {
+  write(RETURN_KEY, { id: movieId, at: Date.now() })
+}
+
+export function peekReturnTo() {
+  const r = read(RETURN_KEY, null)
+  return r && Date.now() - r.at < 30 * 60000 ? r.id : null
+}
+
+export function takeReturnTo() {
+  const id = peekReturnTo()
+  write(RETURN_KEY, null)
+  return id
+}

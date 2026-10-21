@@ -7,6 +7,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
   const [failed, setFailed] = useState(!short.video)
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [ended, setEnded] = useState(false)
 
   // Идэвхтэй болоход эхнээс нь тоглуулна, бусад үед зогсооно.
   useEffect(() => {
@@ -15,6 +16,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
     if (active) {
       v.currentTime = 0
       setPaused(false)
+      setEnded(false)
       v.play().catch(() => setPaused(true))
     } else v.pause()
   }, [active])
@@ -22,6 +24,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
   const toggle = () => {
     const v = ref.current
     if (!v) return
+    setEnded(false)
     if (v.paused) v.play().then(() => setPaused(false)).catch(() => {})
     else {
       v.pause()
@@ -44,14 +47,15 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
               src={short.video}
               poster={short.thumbnail}
               muted={muted}
-              loop
+              loop={!movie}
               playsInline
               preload={active ? 'auto' : 'none'}
               onClick={toggle}
               onError={() => setFailed(true)}
+              onEnded={() => setEnded(true)}
               onTimeUpdate={(e) => setProgress(e.target.currentTime / (e.target.duration || 1))}
             />
-            {paused && <span className="short-paused" aria-hidden="true"><PlayIcon /></span>}
+            {paused && !ended && <span className="short-paused" aria-hidden="true"><PlayIcon /></span>}
             <div className="short-progress"><span style={{ width: `${progress * 100}%` }} /></div>
           </>
         )}
@@ -60,8 +64,12 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
           <h2>{short.title}</h2>
           {short.description && <p>{short.description}</p>}
           {movie && (
-            <a className="short-movie" href={`#watch-${encodeURIComponent(movie.id)}`}>
-              <FilmIcon /> <span>Бүтэн кино: {movie.title}</span>
+            <span className="short-movie"><FilmIcon /> <span>{movie.title}</span></span>
+          )}
+          {/* Бичлэг дуусахад (видеогүй үед шууд) бүтэн кино руу орох товч. */}
+          {movie && (ended || failed) && (
+            <a className="short-continue" href={`#watch-${encodeURIComponent(movie.id)}`}>
+              <PlayIcon /> Цааш үзэх
             </a>
           )}
         </div>

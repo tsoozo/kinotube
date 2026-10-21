@@ -426,6 +426,12 @@ body::before {
 }
 .short-movie svg { width: 18px; height: 18px; flex-shrink: 0; }
 .short-movie span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.short-continue {
+  pointer-events: auto; margin-top: 12px; height: 44px; border-radius: 22px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--accent); color: var(--on-media); font-size: 15px; font-weight: 500;
+}
+.short-continue svg { width: 22px; height: 22px; }
 .short-action {
   position: absolute; right: 12px; bottom: 24px; width: 44px; height: 44px; border: 0; border-radius: 50%;
   background: var(--media-shade); color: var(--on-media); display: grid; place-items: center;
@@ -445,7 +451,7 @@ body::before {
 }
 
 /* Нүүр хуудсан дээрх Shorts мөр */
-.shorts-shelf { margin: 40px 0; min-width: 0; }
+.shorts-shelf { margin: 0 0 32px; min-width: 0; }
 .shelf-title { display: flex; align-items: center; gap: 8px; }
 .shelf-title svg { color: var(--accent); }
 .shelf-row { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
