@@ -8,6 +8,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
   const [ended, setEnded] = useState(false)
+  const [vertical, setVertical] = useState(false)
 
   // Идэвхтэй болоход эхнээс нь тоглуулна, бусад үед зогсооно.
   useEffect(() => {
@@ -34,7 +35,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
 
   return (
     <article className="short" data-index={index}>
-      <div className="short-frame">
+      <div className={`short-frame ${vertical ? 'is-vertical' : ''}`}>
         {failed ? (
           <div className="short-missing">
             <ShortPoster short={short} />
@@ -52,6 +53,8 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
               preload={active ? 'auto' : 'none'}
               onClick={toggle}
               onError={() => setFailed(true)}
+              // Reel маягийн босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
+              onLoadedMetadata={(e) => setVertical(e.target.videoHeight / e.target.videoWidth >= 1.6)}
               onEnded={() => setEnded(true)}
               onTimeUpdate={(e) => setProgress(e.target.currentTime / (e.target.duration || 1))}
             />
