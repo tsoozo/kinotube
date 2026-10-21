@@ -57,7 +57,7 @@ public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
 ## Өгөгдөл
 
 - `movies.json` мөр бүр: `id` (латин, зураас), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `video`, `thumbnail`, `added` ("YYYY-MM-DD").
-- Жанрын цэс `genres`-ээс автоматаар үүснэ, гараар жагсаалт бичихгүй.
+- Нүүрний жанрын чип `genres`-ээс автоматаар үүснэ, гараар жагсаалт бичихгүй. Хажуу цэсэнд "Төрөл" хэсэг байхгүй (zoye, 2026-10-21).
 - localStorage түлхүүрүүд `kino-` угтвартай. `auth.js`-ийн `read`/`write`-ээр дамжуулна (try/catch хамгаалалттай).
 
 ## Git

@@ -124,7 +124,6 @@ export default function App() {
         open={sidebarOpen}
         page={page}
         user={user}
-        genres={genres}
         genre={genre}
         onGenre={(g) => { setGenre(g); go('') }}
         onNavigate={go}
