@@ -107,11 +107,11 @@ export default function App() {
     if (route.page !== 'home') go('')
   }
 
-  // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу буцна.
+  // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол Shorts руу.
   const onLogin = (u) => {
     setUser(u)
     const id = isActive(u) ? takeReturnTo() : peekReturnTo()
-    go(id ? `#watch-${encodeURIComponent(id)}` : isAdmin(u) ? '#admin' : '#profile')
+    go(id ? `#watch-${encodeURIComponent(id)}` : isAdmin(u) ? '#admin' : '#shorts')
   }
 
   // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.
