@@ -24,21 +24,24 @@ export default function AdminStats({ movies, shorts }) {
       </div>
 
       <div className="profile-cards">
-        <section className="panel">
-          <h2>Их үзсэн кино</h2>
-          {s.top.length === 0 ? (
-            <p className="muted">Үзсэн түүх алга.</p>
-          ) : (
-            <ol className="rank">
-              {s.top.map((x) => (
-                <li key={x.movie.id}>
-                  <a href={`#watch-${encodeURIComponent(x.movie.id)}`}>{x.movie.title}</a>
-                  <span className="muted">{x.count} хүн</span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+        {[['Их үзэлттэй кино', s.top], ['Бага үзэлттэй кино', s.least]].map(([title, list]) => (
+          <section className="panel" key={title}>
+            <h2>{title}</h2>
+            {list.length === 0 ? (
+              <p className="muted">Үзсэн түүх алга.</p>
+            ) : (
+              <ol className="rank">
+                {list.map((x) => (
+                  <li key={x.movie.id}>
+                    <a href={`#watch-${encodeURIComponent(x.movie.id)}`}>{x.movie.title}</a>
+                    <span className="muted">{x.count} хүн</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <a className="muted panel-more" href="#admin-views">Бүгдийг харах</a>
+          </section>
+        ))}
         <section className="panel">
           <h2>Шинэ хэрэглэгч</h2>
           <ol className="rank">

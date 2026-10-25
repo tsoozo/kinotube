@@ -681,6 +681,8 @@ body::before {
 .rank li > * { display: inline; }
 .rank li { line-height: 20px; }
 .rank .muted { margin-left: 8px; }
+.panel-more { display: inline-block; margin-top: 12px; font-size: 14px; }
+.panel-more:hover { color: var(--fg); }
 .admin-users > li { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
 .admin-users > li.open { border-color: var(--fg); }
 .admin-user {

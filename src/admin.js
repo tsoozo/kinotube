@@ -132,6 +132,23 @@ export function allTransactions() {
     .sort((a, b) => b.at.localeCompare(a.at))
 }
 
+// Кино бүрийг хэдэн хэрэглэгч үзсэн, хэд нь дуусгасан. Үзээгүй кино 0-тэй орно.
+// Ихээс бага руу эрэмбэлсэн.
+export function viewRanking(movies) {
+  const views = {}
+  allUsers().forEach((u) =>
+    (u.history || []).forEach((h) => {
+      const v = (views[h.id] ||= { count: 0, done: 0, last: null })
+      v.count++
+      if (h.done) v.done++
+      if (h.at && (!v.last || h.at > v.last)) v.last = h.at
+    })
+  )
+  return movies
+    .map((movie) => ({ movie, count: 0, done: 0, last: null, ...views[movie.id] }))
+    .sort((a, b) => b.count - a.count || b.done - a.done || a.movie.title.localeCompare(b.movie.title))
+}
+
 export function stats(movies, shorts) {
   const users = allUsers()
   const tx = allTransactions()
@@ -141,14 +158,9 @@ export function stats(movies, shorts) {
   const thisMonth = tx.filter((t) => new Date(t.at) >= monthStart)
   const sum = (list, type) => list.filter((t) => t.type === type).reduce((s, t) => s + Math.abs(t.amount), 0)
 
-  // Хэдэн хэрэглэгч тухайн киног үзсэн бэ.
-  const views = {}
-  users.forEach((u) => (u.history || []).forEach((h) => (views[h.id] = (views[h.id] || 0) + 1)))
-  const top = Object.entries(views)
-    .map(([id, count]) => ({ movie: movies.find((m) => m.id === id), count }))
-    .filter((x) => x.movie)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
+  const ranking = viewRanking(movies)
+  const top = ranking.filter((x) => x.count > 0).slice(0, 5)
+  const least = ranking.slice(-5).reverse()
 
   const monthAgo = Date.now() - 30 * 86400000
   return {
@@ -165,6 +177,7 @@ export function stats(movies, shorts) {
     movies: movies.length,
     shorts: shorts.length,
     top,
+    least,
     recent: users.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
   }
 }

@@ -2,10 +2,12 @@ import AdminCatalog from './AdminCatalog.jsx'
 import AdminPayments from './AdminPayments.jsx'
 import AdminStats from './AdminStats.jsx'
 import AdminUsers from './AdminUsers.jsx'
+import AdminViews from './AdminViews.jsx'
 import { isAdmin } from '../auth.js'
 
 const TABS = [
   { id: 'stats', label: 'Тойм' },
+  { id: 'views', label: 'Үзэлт' },
   { id: 'movies', label: 'Кино' },
   { id: 'shorts', label: 'Shorts' },
   { id: 'users', label: 'Хэрэглэгч' },
@@ -21,6 +23,7 @@ export default function Admin({ tab, user, movies, shorts, onCatalog, onUser }) 
   if (current === 'movies' || current === 'shorts')
     content = <AdminCatalog key={current} kind={current} list={current === 'movies' ? movies : shorts} movies={movies} onCatalog={onCatalog} />
   else if (current === 'users') content = <AdminUsers me={user} movies={movies} onUser={onUser} />
+  else if (current === 'views') content = <AdminViews movies={movies} />
   else if (current === 'payments') content = <AdminPayments />
   else content = <AdminStats movies={movies} shorts={shorts} />
 
