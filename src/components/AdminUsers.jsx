@@ -25,7 +25,6 @@ const GRANTS = [
 
 export default function AdminUsers({ me, movies, onUser }) {
   const [users, setUsers] = useState(listUsers)
-  const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [open, setOpen] = useState(null)
   const [pin, setPin] = useState('')
@@ -60,9 +59,8 @@ export default function AdminUsers({ me, movies, onUser }) {
     setMessage(null)
   }
 
-  const q = query.trim().toLowerCase().replace(/\s/g, '')
   const test = FILTERS.find((f) => f[0] === filter)[2]
-  const visible = users.filter((u) => test(u) && (!q || `${u.name}${u.phone}`.toLowerCase().replace(/\s/g, '').includes(q)))
+  const visible = users.filter((u) => test(u))
 
   const detail = (u) => {
     const self = u.phone === me.phone
@@ -244,7 +242,6 @@ export default function AdminUsers({ me, movies, onUser }) {
         {grantMsg && <p className={`toast ${grantMsg.ok ? 'ok' : 'bad'}`}>{grantMsg.text}</p>}
       </section>
       <div className="admin-toolbar">
-        <input className="admin-search" type="search" placeholder="Нэр эсвэл утасны дугаар" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="amounts">
           {FILTERS.map(([id, label]) => (
             <button key={id} className={`chip ${filter === id ? 'active' : ''}`} onClick={() => setFilter(id)}>{label}</button>
