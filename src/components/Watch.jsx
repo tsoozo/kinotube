@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
-import { formatTime, recommended, subtitlesOf, timeAgo } from '../data.js'
+import { formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
   PLANS, RENTAL, buyPlan, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, pushHistory, rentMovie,
   rentalEndsAt, saveProgress, setReturnTo, takeReturnTo, toggleLater, watchedRatio,
@@ -19,6 +19,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   const [captions, setCaptions] = useState(true)
   const [flash, setFlash] = useState('')
   const [payError, setPayError] = useState('')
+  const [bgFailed, setBgFailed] = useState(false)
   const videoRef = useRef(null)
   const lastSave = useRef(0)
   const flashTimer = useRef(0)
@@ -33,6 +34,7 @@ export default function Watch({ movie, movies, user, onUser }) {
     setResumed(0)
     setShape('tall')
     setPayError('')
+    setBgFailed(false)
   }, [movie.id])
 
   // Хурд, хадмалыг тоглуулагчид тохируулна.
@@ -136,10 +138,19 @@ export default function Watch({ movie, movies, user, onUser }) {
     }
   }
 
+  // Түгжээтэй үед ард нь киноны зургийг бүдгэрүүлж тавина. Зураггүй бол өнгөт fallback.
+  const h = hue(movie.id)
+  const backdrop = (
+    <div className="locked-bg" aria-hidden="true" style={{ background: `linear-gradient(135deg, hsl(${h} 45% 22%), hsl(${(h + 40) % 360} 55% 38%))` }}>
+      {movie.thumbnail && !bgFailed && <img src={movie.thumbnail} alt="" onError={() => setBgFailed(true)} />}
+    </div>
+  )
+
   let player
   if (!user) {
     player = (
       <div className="player-error player-locked">
+        {backdrop}
         <LockIcon />
         <p className="player-lead">Кино үзэхийн тулд нэвтэрнэ үү</p>
         <p className="player-sub">Энэ кино {formatMoney(RENTAL.price)} · бүх кино сард {formatMoney(month.price)}</p>
@@ -149,6 +160,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   } else if (!canWatch) {
     player = (
       <div className="player-error player-locked">
+        {backdrop}
         <LockIcon />
         <p className="player-lead">
           {user.subscription ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : 'Үзэх эрхээ сонгоно уу'}
@@ -159,8 +171,8 @@ export default function Watch({ movie, movies, user, onUser }) {
             <b>{formatMoney(RENTAL.price)}</b>
             <small>{RENTAL.days} хоног үзнэ</small>
           </button>
-          <button className="pay-option" onClick={() => pay(() => buyPlan(user, month.id))}>
-            <span>Бүх кино</span>
+          <button className="pay-option featured" onClick={() => pay(() => buyPlan(user, month.id))}>
+            <span>Бүх кино <em className="pay-badge">Ашигтай</em></span>
             <b>{formatMoney(month.price)}</b>
             <small>1 сар хязгааргүй</small>
           </button>

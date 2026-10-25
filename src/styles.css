@@ -564,6 +564,11 @@ body::before {
 .player-lead { margin: 0; font-size: 17px; font-weight: 500; }
 .player-sub { margin: 0 0 8px; font-size: 14px; opacity: 0.75; }
 .player-locked svg { width: 32px; height: 32px; opacity: 0.8; }
+.player-locked { position: relative; overflow: hidden; }
+.player-locked > :not(.locked-bg) { position: relative; z-index: 1; }
+.locked-bg { position: absolute; inset: 0; z-index: 0; }
+.locked-bg img { width: 100%; height: 100%; object-fit: cover; display: block; filter: blur(24px); transform: scale(1.2); }
+.locked-bg::after { content: ''; position: absolute; inset: 0; background: var(--media-shade); }
 
 /* Төлбөрийн сонголт: нэг кино эсвэл сарын эрх */
 .pay-options { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 10px; margin: 8px 0 4px; }
@@ -575,6 +580,12 @@ body::before {
 .pay-option span { font-size: 13px; opacity: 0.8; }
 .pay-option b { font-size: 18px; font-variant-numeric: tabular-nums; }
 .pay-option small { font-size: 12px; opacity: 0.75; }
+.pay-option.featured { border: 2px solid var(--on-media); padding: 11px; }
+.pay-option.featured span { opacity: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pay-badge {
+  font-style: normal; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 10px;
+  border: 1px solid var(--on-media);
+}
 .pay-link { color: var(--on-media); text-decoration: underline; font-weight: 500; }
 .rent-note { margin: -4px 0 8px; font-size: 13px; }
 .plan-note { margin: 10px 0 0; font-size: 13px; }
