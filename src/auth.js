@@ -64,8 +64,21 @@ function seed() {
   return ensureAdmin({ [DEMO.phone]: demo })
 }
 
+// Туршилтын данс үргэлж эрхтэй байна: дууссан бол 1 сараар сунгана.
+function ensureDemo(list) {
+  const demo = list[DEMO.phone]
+  if (!demo || isActive(demo)) return list
+  const next = {
+    ...list,
+    [DEMO.phone]: { ...demo, subscription: { plan: '1m', label: '1 сарын эрх', endsAt: addMonths(new Date(), 1).toISOString() } },
+  }
+  write(USERS_KEY, next)
+  return next
+}
+
 // Өмнө нь үүссэн хөтөч дээр ч админ данс байхгүй бол нэмнэ.
 function ensureAdmin(list) {
+  list = ensureDemo(list)
   if (list[ADMIN_DEMO.phone]) return list
   const admin = {
     phone: ADMIN_DEMO.phone,
