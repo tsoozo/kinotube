@@ -644,12 +644,17 @@ body::before {
 /* Админ */
 .admin { max-width: 1100px; margin: 0 auto; padding-top: 16px; display: flex; flex-direction: column; gap: 16px; }
 .admin-title { margin: 0; font-size: 28px; font-weight: 700; }
-.admin-tabs { overflow-x: auto; scrollbar-width: none; }
+.admin-tabs { flex-wrap: wrap; }
 .admin-tabs a {
   padding: 12px 16px; font-weight: 500; color: var(--muted); white-space: nowrap;
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
 .admin-tabs a.active { color: var(--fg); border-bottom-color: var(--fg); }
+/* Утсан дээр таб гүйлгэхгүй: 3 баганаар хоёр мөрөнд хөдөлгөөнгүй байна */
+@media (max-width: 600px) {
+  .admin-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .admin-tabs a { padding: 10px 4px; text-align: center; font-size: 14px; }
+}
 .admin-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-toolbar .amounts { margin: 0; }
