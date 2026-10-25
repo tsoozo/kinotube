@@ -9,13 +9,16 @@ import Shorts from './components/Shorts.jsx'
 import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
+import Checkout from './components/Checkout.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
 import { canWatchMovie, currentUser, getHistory, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
 
-// Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #pay-<rent|month>-<id>, #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
+  const pay = hash.match(/^pay-(rent|month)-(.+)$/)
+  if (pay) return { page: 'pay', kind: pay[1], id: pay[2] }
   if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
   if (['history', 'later', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
@@ -69,7 +72,7 @@ export default function App() {
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
   useEffect(() => {
-    if ((route.page === 'profile' || route.page === 'admin') && !user) location.hash = 'login'
+    if (['profile', 'admin', 'pay'].includes(route.page) && !user) location.hash = 'login'
   }, [route, user])
 
   const genres = useMemo(() => allGenres(movies), [movies])
@@ -144,12 +147,13 @@ export default function App() {
   const page = route.page
   const isWatch = page === 'watch'
   const isAuth = ['login', 'register', 'forgot'].includes(page)
-  const current = isWatch ? movies.find((m) => m.id === route.id) : null
+  const current = isWatch || page === 'pay' ? movies.find((m) => m.id === route.id) : null
 
   let content
   if (error) content = <p className="notice">{error}</p>
   else if (isAuth) content = <Login mode={page} onDone={onLogin} onNavigate={go} />
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
+  else if (page === 'pay') content = user && current && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
   else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
@@ -173,7 +177,7 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${isWatch || isAuth || page === 'profile' || page === 'admin' ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
+    <div className={`app ${isWatch || isAuth || ['profile', 'admin', 'pay'].includes(page) ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
       <Header
         query={query}
         user={user}

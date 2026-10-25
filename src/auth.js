@@ -204,13 +204,13 @@ export function addMonths(date, months) {
 }
 
 // Эрх идэвхтэй байвал дуусах хугацаан дээр нь нэмж сунгана.
-export function buyPlan(user, planId) {
+export function buyPlan(user, planId, paid = false) {
   const plan = PLANS.find((p) => p.id === planId)
-  if (user.balance < plan.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
+  if (!paid && user.balance < plan.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
   const base = isActive(user) ? new Date(user.subscription.endsAt) : new Date()
   const u = {
     ...user,
-    balance: user.balance - plan.price,
+    balance: paid ? user.balance : user.balance - plan.price,
     subscription: { plan: plan.id, label: plan.label, endsAt: addMonths(base, plan.months).toISOString() },
     transactions: [{ at: new Date().toISOString(), type: 'plan', amount: -plan.price, note: plan.label }, ...user.transactions],
   }
@@ -219,15 +219,16 @@ export function buyPlan(user, planId) {
 }
 
 // Нэг киног 3 хоног үзэх эрх. Идэвхтэй бол дуусах хугацаан дээр нь нэмнэ.
-export function rentMovie(user, movie) {
-  if (user.balance < RENTAL.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
+// paid: гаднаас (QPay гэх мэт) төлсөн бол данснаас хасахгүй.
+export function rentMovie(user, movie, paid = false) {
+  if (!paid && user.balance < RENTAL.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
   const old = rentalEndsAt(user, movie.id)
   const end = old ? new Date(old) : new Date()
   end.setDate(end.getDate() + RENTAL.days)
   const rentals = (user.rentals || []).filter((r) => r.id !== movie.id && new Date(r.endsAt) > new Date())
   const u = {
     ...user,
-    balance: user.balance - RENTAL.price,
+    balance: paid ? user.balance : user.balance - RENTAL.price,
     rentals: [{ id: movie.id, title: movie.title, endsAt: end.toISOString() }, ...rentals],
     transactions: [
       { at: new Date().toISOString(), type: 'rent', amount: -RENTAL.price, note: `${movie.title} (${RENTAL.days} хоног)` },

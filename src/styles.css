@@ -600,6 +600,37 @@ body::before {
 }
 .pay-option.premium span, .pay-option.premium small { opacity: 1; font-weight: 500; }
 .player-locked .pay-crown { position: absolute; top: 12px; right: 12px; width: 22px; height: 22px; opacity: 1; }
+.pay-option { text-decoration: none; }
+
+/* Төлбөр төлөх хуудас */
+.checkout { max-width: 480px; margin: 0 auto; padding: 16px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+.checkout h1 { margin: 0; font-size: 24px; }
+.checkout h2 { margin: 6px 0 0; font-size: 16px; }
+.checkout-back { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+.checkout-back svg { width: 20px; height: 20px; }
+.checkout-summary {
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 18px; border-radius: 16px;
+  background: var(--surface);
+}
+.checkout-summary span { color: var(--muted); font-weight: 500; }
+.checkout-summary b { font-size: 28px; font-variant-numeric: tabular-nums; }
+.checkout-summary.premium { background: linear-gradient(135deg, var(--premium-from), var(--premium-to)); color: var(--premium-fg); }
+.checkout-summary.premium span { color: inherit; }
+.checkout-summary .pay-crown { position: absolute; top: 16px; right: 16px; }
+.checkout-methods { display: flex; flex-direction: column; gap: 8px; }
+.checkout-method {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border);
+  border-radius: 12px; background: transparent; text-align: left; font-weight: 500;
+}
+.checkout-method span { flex: 1; }
+.checkout-method.active { border: 2px solid var(--fg); padding: 13px 15px; }
+.checkout-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); }
+.checkout-method.active .checkout-radio { border: 6px solid var(--fg); }
+.checkout-pay { height: 48px; border-radius: 24px; font-size: 16px; justify-content: center; }
+.checkout-pay:disabled { opacity: 0.6; cursor: progress; }
+.checkout-done { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 48px 0; }
+.checkout-done svg { width: 64px; height: 64px; color: var(--ok); }
+.checkout-done p { margin: 0 0 8px; }
 .pay-link { color: var(--on-media); text-decoration: underline; font-weight: 500; }
 .rent-note { margin: -4px 0 8px; font-size: 13px; }
 .plan-note { margin: 10px 0 0; font-size: 13px; }

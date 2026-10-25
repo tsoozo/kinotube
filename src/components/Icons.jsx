@@ -8,10 +8,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  CircleCheck,
   CirclePlay,
   CircleUserRound,
   Clapperboard,
   Clock,
+  CreditCard,
   Crown,
   Download,
   Gauge,
@@ -25,10 +27,12 @@ import {
   Play,
   Pencil,
   Plus,
+  QrCode,
   RotateCcw,
   RotateCw,
   Search,
   ShieldCheck,
+  Smartphone,
   SquarePlay,
   Volume2,
   VolumeX,
@@ -77,3 +81,7 @@ export const CaptionsOffIcon = icon(CaptionsOff)
 export const SpeedIcon = icon(Gauge)
 export const LockIcon = icon(Lock)
 export const CrownIcon = icon(Crown)
+export const SuccessIcon = icon(CircleCheck)
+export const CardIcon = icon(CreditCard)
+export const QrIcon = icon(QrCode)
+export const PhoneIcon = icon(Smartphone)
