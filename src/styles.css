@@ -650,10 +650,10 @@ body::before {
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
 .admin-tabs a.active { color: var(--fg); border-bottom-color: var(--fg); }
-/* Утсан дээр таб гүйлгэхгүй: 3 баганаар хоёр мөрөнд хөдөлгөөнгүй байна */
+/* Утсан дээр таб гүйлгэхгүй: бүгд нэг мөрөнд багтана */
 @media (max-width: 600px) {
-  .admin-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
-  .admin-tabs a { padding: 10px 4px; text-align: center; font-size: 14px; }
+  .admin-tabs { flex-wrap: nowrap; justify-content: space-between; gap: 0; overflow: hidden; touch-action: pan-y; }
+  .admin-tabs a { padding: 10px 2px; font-size: clamp(11px, 3.4vw, 14px); }
 }
 .admin-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
