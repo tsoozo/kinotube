@@ -715,3 +715,21 @@ body::before {
   .admin-search { max-width: none; }
   .admin-detail { padding: 4px 10px 14px; }
 }
+
+/* Компьютер: мөрийн сум, тоглуулагчийн өндөр, Shorts-ийн товч */
+.shelf { position: relative; }
+.shelf-arrow {
+  position: absolute; top: 40%; transform: translateY(-50%); z-index: 2; display: none;
+  background: var(--bg); box-shadow: 0 2px 8px var(--media-shade);
+}
+.shelf-arrow:hover { background: var(--surface); }
+.shelf-arrow.prev { left: -12px; }
+.shelf-arrow.next { right: -12px; }
+.movie-shelf .shelf-arrow { top: 30%; }
+@media (hover: hover) and (min-width: 800px) { .shelf-arrow { display: grid; } }
+@media (min-width: 1001px) {
+  /* Тоглуулагч дэлгэцийн өндөрт багтаж, гарчиг нь доороос харагдана (YouTube шиг). */
+  .watch { justify-content: center; }
+  .watch-primary { max-width: max(640px, calc((100dvh - var(--header-h) - var(--nav-h) - 170px) * 16 / 9)); }
+  .shorts-nav { right: auto; left: min(calc(100% - 56px), calc(50% + (100dvh - var(--header-h) - var(--nav-h) - 24px) * 9 / 32 + 24px)); }
+}

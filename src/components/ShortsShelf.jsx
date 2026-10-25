@@ -1,4 +1,5 @@
 import ShortPoster from './ShortPoster.jsx'
+import ShelfRow from './ShelfRow.jsx'
 import { ShortsIcon } from './Icons.jsx'
 
 // Нүүр хуудсан дээрх Shorts мөр.
@@ -7,7 +8,7 @@ export default function ShortsShelf({ shorts }) {
   return (
     <section className="shorts-shelf">
       <h2 className="section-title shelf-title"><ShortsIcon /> Shorts</h2>
-      <div className="shelf-row">
+      <ShelfRow>
         {shorts.map((s) => (
           <a key={s.id} className="short-card" href={`#shorts-${encodeURIComponent(s.id)}`}>
             <div className="short-card-thumb">
@@ -17,7 +18,7 @@ export default function ShortsShelf({ shorts }) {
             <h3 className="card-title">{s.title}</h3>
           </a>
         ))}
-      </div>
+      </ShelfRow>
     </section>
   )
 }

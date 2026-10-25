@@ -5,6 +5,8 @@ import {
   Captions,
   CaptionsOff,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   CirclePlay,
   CircleUserRound,
@@ -49,6 +51,8 @@ export const BackIcon = icon(ArrowLeft)
 export const ShortsIcon = icon(SquarePlay)
 export const UpIcon = icon(ChevronUp)
 export const DownIcon = icon(ChevronDown)
+export const PrevIcon = icon(ChevronLeft)
+export const NextIcon = icon(ChevronRight)
 export const SoundIcon = icon(Volume2)
 export const MuteIcon = icon(VolumeX)
 export const TrashIcon = icon(Trash2)
