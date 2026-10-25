@@ -750,7 +750,7 @@ body::before {
 .admin-form textarea { height: auto; padding: 10px 14px; resize: vertical; line-height: 22px; }
 .admin-search:focus, .admin-form select:focus, .admin-form textarea:focus { outline: none; border-color: var(--link); }
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.admin-actions button, .admin-actions a, .profile-actions a { gap: 6px; }
+.admin-actions button, .admin-actions a, .profile-actions a, .profile-actions button { gap: 6px; }
 .admin-edited { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .admin-edited .link-btn { display: inline-flex; align-items: center; gap: 4px; }
 .admin-form { display: flex; flex-direction: column; gap: 14px; }
@@ -794,11 +794,6 @@ body::before {
 .btn-danger:hover { opacity: 0.88; }
 .logout-confirm p { margin: 0 0 6px; }
 .logout-confirm div { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.logout-row {
-  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 48px;
-  border: 1px solid var(--border); border-radius: 12px; background: none; color: var(--bad); font: inherit; font-weight: 500;
-}
-.logout-row:hover { background: var(--bad-bg); }
 .btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
 @media (max-width: 600px) {
   .admin-row .thumb { width: 112px; }

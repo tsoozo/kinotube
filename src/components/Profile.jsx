@@ -51,8 +51,21 @@ export default function Profile({ user, movies, onUser, onLogout }) {
         <div className="profile-actions">
           {isAdmin(user) && <a className="btn-secondary" href="#admin"><AdminIcon width="20" height="20" /> Админ</a>}
           <button className="btn-secondary" onClick={() => setPinForm(pinForm ? null : { old: '', next: '' })}>Код солих</button>
+          <button className="btn-secondary danger" onClick={() => setLeaving(true)}><LogoutIcon width="20" height="20" /> Гарах</button>
         </div>
       </section>
+
+      {/* Гарах товч дээд хэсэгт, гүйлгэхгүйгээр харагдана */}
+      {leaving && (
+        <div className="panel logout-confirm" role="alertdialog" aria-labelledby="logout-q">
+          <p id="logout-q"><b>Бүртгэлээсээ гарах уу?</b></p>
+          <p className="muted">Дахин орохдоо утасны дугаар, 4 оронтой кодоо оруулна.</p>
+          <div>
+            <button className="btn-danger" onClick={onLogout} autoFocus>Гарах</button>
+            <button className="btn-secondary" onClick={() => setLeaving(false)}>Болих</button>
+          </div>
+        </div>
+      )}
 
       {pinForm && (
         <form
@@ -172,23 +185,6 @@ export default function Profile({ user, movies, onUser, onLogout }) {
             </tbody>
           </table>
         </div>
-      )}
-
-      {/* Гарах товч хуудасны хамгийн доор */}
-      {leaving ? (
-        <div className="panel logout-confirm" role="alertdialog" aria-labelledby="logout-q">
-          <p id="logout-q"><b>Бүртгэлээсээ гарах уу?</b></p>
-          <p className="muted">Дахин орохдоо утасны дугаар, 4 оронтой кодоо оруулна.</p>
-          <div>
-            <button className="btn-danger" onClick={onLogout} autoFocus>Гарах</button>
-            <button className="btn-secondary" onClick={() => setLeaving(false)}>Болих</button>
-          </div>
-        </div>
-      ) : (
-        <button className="logout-row" onClick={() => setLeaving(true)}>
-          <LogoutIcon />
-          <span>Гарах</span>
-        </button>
       )}
     </div>
   )
