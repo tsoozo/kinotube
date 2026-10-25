@@ -3,8 +3,8 @@ import PinInput from './PinInput.jsx'
 import Thumbnail from './Thumbnail.jsx'
 import { AdminIcon, LogoutIcon } from './Icons.jsx'
 import {
-  PLANS, TOPUP_AMOUNTS, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
-  formatPhone, isActive, isAdmin, isValidPin, topUp, updateName, watchedRatio,
+  PLANS, RENTAL, TOPUP_AMOUNTS, activeRentals, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
+  formatPhone, isActive, isAdmin, isValidPin, peekReturnTo, topUp, updateName, watchedRatio,
 } from '../auth.js'
 
 export default function Profile({ user, movies, onUser, onLogout }) {
@@ -26,6 +26,9 @@ export default function Profile({ user, movies, onUser, onLogout }) {
 
   const active = isActive(user)
   const left = daysLeft(user)
+  const rentals = activeRentals(user)
+  // Кино үзэх гэж байгаад данс цэнэглэхээр ирсэн бол буцах холбоос.
+  const back = movies.find((m) => m.id === peekReturnTo())
   const history = (user.history || [])
     .map((h) => ({ ...h, movie: movies.find((m) => m.id === h.id) }))
     .filter((h) => h.movie)
@@ -68,6 +71,11 @@ export default function Profile({ user, movies, onUser, onLogout }) {
       )}
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
+      {back && !active && (
+        <a className="toast ok back-link" href={`#watch-${encodeURIComponent(back.id)}`}>
+          «{back.title}» руу буцаж эрхээ сонгох
+        </a>
+      )}
 
       <div className="profile-cards">
         <section className={`panel plan-panel ${active ? 'active' : 'expired'}`}>
@@ -81,19 +89,30 @@ export default function Profile({ user, movies, onUser, onLogout }) {
           ) : (
             <>
               <p className="plan-status"><span className="pill bad">Эрхгүй</span></p>
-              <p className="big">Кино үзэхийн тулд эрх авна уу</p>
+              <p className="big">{rentals.length ? 'Зөвхөн сонгосон кино' : 'Кино үзэхийн тулд эрх авна уу'}</p>
               {user.subscription && <p className="muted">Сүүлийн эрх {formatDate(user.subscription.endsAt)}-нд дууссан</p>}
             </>
           )}
           <div className="plans">
             {PLANS.map((p) => (
               <button key={p.id} className="plan" onClick={() => act(() => buyPlan(user, p.id), `${p.label} авлаа`)}>
-                <span>{p.label}</span>
+                <span>{p.label} · бүх кино</span>
                 <b>{formatMoney(p.price)}</b>
                 <small>{active ? 'Сунгах' : 'Авах'}</small>
               </button>
             ))}
           </div>
+          <p className="muted plan-note">Нэг киног {RENTAL.days} хоног {formatMoney(RENTAL.price)}-өөр тухайн киноны хуудаснаас авна.</p>
+          {rentals.length > 0 && (
+            <ul className="rentals">
+              {rentals.map((r) => (
+                <li key={r.id}>
+                  <a href={`#watch-${encodeURIComponent(r.id)}`}>{r.title}</a>
+                  <span className="muted">{formatDateTime(r.endsAt)} хүртэл</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="panel">

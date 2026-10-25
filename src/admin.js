@@ -124,7 +124,7 @@ export function adminDeleteUser(phone) {
 
 // ---------- Гүйлгээ ба статистик ----------
 
-export const TX_TYPES = { topup: 'Цэнэглэлт', plan: 'Эрх авсан', admin: 'Админ' }
+export const TX_TYPES = { topup: 'Цэнэглэлт', plan: 'Сарын эрх', rent: 'Нэг кино', admin: 'Админ' }
 
 export function allTransactions() {
   return allUsers()
@@ -171,8 +171,10 @@ export function stats(movies, shorts) {
     blocked: users.filter((u) => u.blocked).length,
     topupMonth: sum(thisMonth, 'topup'),
     planMonth: sum(thisMonth, 'plan'),
+    rentMonth: sum(thisMonth, 'rent'),
     topupAll: sum(tx, 'topup'),
     planAll: sum(tx, 'plan'),
+    rentAll: sum(tx, 'rent'),
     balances: users.reduce((s, u) => s + (u.balance || 0), 0),
     movies: movies.length,
     shorts: shorts.length,

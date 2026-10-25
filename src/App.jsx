@@ -10,7 +10,7 @@ import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
-import { currentUser, getHistory, isActive, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
+import { canWatchMovie, currentUser, getHistory, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
 
 // Хаяг: #watch-<id>, #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
 function readRoute() {
@@ -110,13 +110,13 @@ export default function App() {
   // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол Shorts руу.
   const onLogin = (u) => {
     setUser(u)
-    const id = isActive(u) ? takeReturnTo() : peekReturnTo()
+    const id = canWatchMovie(u, peekReturnTo()) ? takeReturnTo() : peekReturnTo()
     go(id ? `#watch-${encodeURIComponent(id)}` : isAdmin(u) ? '#admin' : '#shorts')
   }
 
   // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.
   useEffect(() => {
-    if (route.page !== 'profile' || !isActive(user)) return
+    if (route.page !== 'profile' || !canWatchMovie(user, peekReturnTo())) return
     const id = takeReturnTo()
     if (id) location.hash = `watch-${encodeURIComponent(id)}`
   }, [route, user])

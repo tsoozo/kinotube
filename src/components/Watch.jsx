@@ -4,8 +4,8 @@ import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
 import { formatTime, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
-  formatDate, formatMoney, getProgress, isActive, isLater, minPlanPrice, pushHistory, saveProgress, setReturnTo,
-  toggleLater, watchedRatio,
+  PLANS, RENTAL, buyPlan, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, pushHistory, rentMovie,
+  rentalEndsAt, saveProgress, setReturnTo, takeReturnTo, toggleLater, watchedRatio,
 } from '../auth.js'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
@@ -18,10 +18,12 @@ export default function Watch({ movie, movies, user, onUser }) {
   const [speed, setSpeed] = useState(1)
   const [captions, setCaptions] = useState(true)
   const [flash, setFlash] = useState('')
+  const [payError, setPayError] = useState('')
   const videoRef = useRef(null)
   const lastSave = useRef(0)
   const flashTimer = useRef(0)
-  const canWatch = isActive(user)
+  const canWatch = canWatchMovie(user, movie.id)
+  const rentEnds = rentalEndsAt(user, movie.id)
   const subs = subtitlesOf(movie)
   const saved = isLater(user, movie.id)
 
@@ -30,6 +32,7 @@ export default function Watch({ movie, movies, user, onUser }) {
     setExpanded(false)
     setResumed(0)
     setShape('tall')
+    setPayError('')
   }, [movie.id])
 
   // Хурд, хадмалыг тоглуулагчид тохируулна.
@@ -119,14 +122,27 @@ export default function Watch({ movie, movies, user, onUser }) {
 
   const list = recommended(movies, movie)
 
+  const month = PLANS[0]
+
+  // Дансаас төлнө. Үлдэгдэл хүрэхгүй бол цэнэглээд энэ кино руу буцна.
+  const pay = (fn) => {
+    try {
+      onUser(fn())
+      setPayError('')
+      takeReturnTo()
+    } catch (e) {
+      setReturnTo(movie.id)
+      setPayError(e.message)
+    }
+  }
+
   let player
-  const price = formatMoney(minPlanPrice())
   if (!user) {
     player = (
       <div className="player-error player-locked">
         <LockIcon />
         <p className="player-lead">Кино үзэхийн тулд нэвтэрнэ үү</p>
-        <p className="player-sub">Бүх кино сард {price}-өөс</p>
+        <p className="player-sub">Энэ кино {formatMoney(RENTAL.price)} · бүх кино сард {formatMoney(month.price)}</p>
         <a className="btn-primary" href="#login" onClick={() => setReturnTo(movie.id)}>Нэвтрэх</a>
       </div>
     )
@@ -135,12 +151,27 @@ export default function Watch({ movie, movies, user, onUser }) {
       <div className="player-error player-locked">
         <LockIcon />
         <p className="player-lead">
-          {user.subscription ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : 'Энэ киног үзэхийн тулд эрх авна уу'}
+          {user.subscription ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : 'Үзэх эрхээ сонгоно уу'}
         </p>
-        <p className="player-sub">Бүх кино хязгааргүй · сард {price}-өөс</p>
-        <a className="btn-primary" href="#profile" onClick={() => setReturnTo(movie.id)}>
-          {user.subscription ? 'Эрх сунгах' : 'Эрх авах'}
-        </a>
+        <div className="pay-options">
+          <button className="pay-option" onClick={() => pay(() => rentMovie(user, movie))}>
+            <span>Зөвхөн энэ кино</span>
+            <b>{formatMoney(RENTAL.price)}</b>
+            <small>{RENTAL.days} хоног үзнэ</small>
+          </button>
+          <button className="pay-option" onClick={() => pay(() => buyPlan(user, month.id))}>
+            <span>Бүх кино</span>
+            <b>{formatMoney(month.price)}</b>
+            <small>1 сар хязгааргүй</small>
+          </button>
+        </div>
+        {payError ? (
+          <p className="player-sub">
+            {payError} <a className="pay-link" href="#profile">Данс цэнэглэх</a>
+          </p>
+        ) : (
+          <p className="player-sub">Дансны үлдэгдэл {formatMoney(user.balance)}</p>
+        )}
       </div>
     )
   } else if (videoError) {
@@ -195,6 +226,7 @@ export default function Watch({ movie, movies, user, onUser }) {
           </p>
         )}
         <h1 className="watch-title">{movie.title}</h1>
+        {rentEnds && <p className="muted rent-note">Энэ киног {formatDateTime(rentEnds)} хүртэл үзэх эрхтэй</p>}
         <div className="watch-actions">
           <button
             className={`action-btn ${saved ? 'active' : ''}`}

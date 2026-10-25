@@ -18,7 +18,8 @@ export default function AdminStats({ movies, shorts }) {
         {tile('Хэрэглэгч', s.users, `Сүүлийн 30 хоногт +${s.newUsers}`)}
         {tile('Идэвхтэй эрх', s.active, s.users ? `${Math.round((s.active / s.users) * 100)}% нь` : '')}
         {tile('Энэ сарын цэнэглэлт', formatMoney(s.topupMonth), `Нийт ${formatMoney(s.topupAll)}`)}
-        {tile('Энэ сарын эрхийн орлого', formatMoney(s.planMonth), `Нийт ${formatMoney(s.planAll)}`)}
+        {tile('Энэ сарын орлого', formatMoney(s.planMonth + s.rentMonth), `Сарын эрх ${formatMoney(s.planMonth)} · Нэг кино ${formatMoney(s.rentMonth)}`)}
+        {tile('Нийт орлого', formatMoney(s.planAll + s.rentAll), `Сарын эрх ${formatMoney(s.planAll)} · Нэг кино ${formatMoney(s.rentAll)}`)}
         {tile('Дансны үлдэгдэл', formatMoney(s.balances), 'Бүх хэрэглэгчийн')}
         {tile('Кино / Shorts', `${s.movies} / ${s.shorts}`, '')}
       </div>

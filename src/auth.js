@@ -27,11 +27,12 @@ export function write(key, value) {
   }
 }
 
+// Сарын эрх: бүх кино. Нэг кино: тухайн киног 3 хоног үзнэ.
 export const PLANS = [
-  { id: '1m', label: '1 сарын эрх', months: 1, price: 9900 },
-  { id: '3m', label: '3 сарын эрх', months: 3, price: 24900 },
-  { id: '12m', label: '1 жилийн эрх', months: 12, price: 89000 },
+  { id: '1m', label: '1 сарын эрх', months: 1, price: 15900 },
 ]
+
+export const RENTAL = { days: 3, price: 4900 }
 
 export const TOPUP_AMOUNTS = [5000, 10000, 20000, 50000]
 
@@ -204,6 +205,37 @@ export function buyPlan(user, planId) {
   return u
 }
 
+// Нэг киног 3 хоног үзэх эрх. Идэвхтэй бол дуусах хугацаан дээр нь нэмнэ.
+export function rentMovie(user, movie) {
+  if (user.balance < RENTAL.price) throw new Error('Дансны үлдэгдэл хүрэлцэхгүй байна. Эхлээд данс цэнэглэнэ үү.')
+  const old = rentalEndsAt(user, movie.id)
+  const end = old ? new Date(old) : new Date()
+  end.setDate(end.getDate() + RENTAL.days)
+  const rentals = (user.rentals || []).filter((r) => r.id !== movie.id && new Date(r.endsAt) > new Date())
+  const u = {
+    ...user,
+    balance: user.balance - RENTAL.price,
+    rentals: [{ id: movie.id, title: movie.title, endsAt: end.toISOString() }, ...rentals],
+    transactions: [
+      { at: new Date().toISOString(), type: 'rent', amount: -RENTAL.price, note: `${movie.title} (${RENTAL.days} хоног)` },
+      ...user.transactions,
+    ],
+  }
+  saveUser(u)
+  return u
+}
+
+// Тухайн киноны түрээсийн дуусах хугацаа, идэвхгүй бол null.
+export function rentalEndsAt(user, id) {
+  const r = (user?.rentals || []).find((x) => x.id === id)
+  return r && new Date(r.endsAt) > new Date() ? r.endsAt : null
+}
+
+export const activeRentals = (user) => (user?.rentals || []).filter((r) => new Date(r.endsAt) > new Date())
+
+// Сарын эрх эсвэл тухайн киноны түрээс байвал үзэж болно.
+export const canWatchMovie = (user, id) => isActive(user) || Boolean(rentalEndsAt(user, id))
+
 export function isActive(user) {
   return Boolean(user?.subscription && new Date(user.subscription.endsAt) > new Date())
 }
@@ -283,9 +315,6 @@ export function toggleLater(user, id) {
   saveUser(u)
   return u
 }
-
-// Хамгийн хямд эрхийн үнэ ("9,900₮-өөс").
-export const minPlanPrice = () => Math.min(...PLANS.map((p) => p.price))
 
 export function formatDate(iso) {
   const d = new Date(iso)

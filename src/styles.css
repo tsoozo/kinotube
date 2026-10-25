@@ -403,7 +403,7 @@ body::before {
 .pill.bad { background: var(--bad-bg); color: var(--bad); }
 .big { margin: 0 0 4px; font-size: 22px; font-weight: 700; line-height: 28px; }
 .balance { font-size: 32px; line-height: 40px; font-variant-numeric: tabular-nums; margin-bottom: 12px; }
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 16px; }
 .plan {
   display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border);
   border-radius: 12px; background: transparent; text-align: left;
@@ -564,6 +564,24 @@ body::before {
 .player-lead { margin: 0; font-size: 17px; font-weight: 500; }
 .player-sub { margin: 0 0 8px; font-size: 14px; opacity: 0.75; }
 .player-locked svg { width: 32px; height: 32px; opacity: 0.8; }
+
+/* Төлбөрийн сонголт: нэг кино эсвэл сарын эрх */
+.pay-options { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 10px; margin: 8px 0 4px; }
+.pay-option {
+  display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--progress-track);
+  border-radius: 12px; background: var(--media-shade); color: var(--on-media); text-align: left;
+}
+.pay-option:hover { border-color: var(--on-media); }
+.pay-option span { font-size: 13px; opacity: 0.8; }
+.pay-option b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.pay-option small { font-size: 12px; opacity: 0.75; }
+.pay-link { color: var(--on-media); text-decoration: underline; font-weight: 500; }
+.rent-note { margin: -4px 0 8px; font-size: 13px; }
+.plan-note { margin: 10px 0 0; font-size: 13px; }
+.rentals { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rentals li { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.rentals a { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.back-link { display: block; font-weight: 500; }
 
 /* Дараа үзэх */
 .later-page { max-width: 1400px; margin: 0 auto; padding-top: 16px; }
