@@ -4,7 +4,9 @@ import {
   adminAdjustBalance, adminCancelPlan, adminDeleteUser, adminGrant, adminSetBlocked, adminSetPin, adminSetRole,
   listUsers, randomPin,
 } from '../admin.js'
-import { daysLeft, formatDate, formatDateTime, formatMoney, formatPhone, isActive, isAdmin } from '../auth.js'
+import {
+  daysLeft, findUser, formatDate, formatDateTime, formatMoney, formatPhone, isActive, isAdmin, isValidPhone, normalizePhone,
+} from '../auth.js'
 
 const FILTERS = [
   ['all', 'Бүгд', () => true],
@@ -30,6 +32,8 @@ export default function AdminUsers({ me, movies, onUser }) {
   const [amount, setAmount] = useState('')
   const [note, setNote] = useState('')
   const [message, setMessage] = useState(null)
+  const [grantPhone, setGrantPhone] = useState('')
+  const [grantMsg, setGrantMsg] = useState(null)
 
   // Үйлдэл хийгээд жагсаалтыг шинэчилнэ. Өөрийгөө өөрчилсөн бол апп-ын төлвийг ч шинэчилнэ.
   const act = (fn, ok) => {
@@ -156,8 +160,51 @@ export default function AdminUsers({ me, movies, onUser }) {
     )
   }
 
+  // Нэвтрэх нэрээр (утасны дугаар) шууд эрх олгоно.
+  // Нэвтрэх нэрээр (утасны дугаар) шууд эрх олгоно эсвэл цуцална.
+  const byPhone = (cancel, label, period) => {
+    const phone = normalizePhone(grantPhone)
+    try {
+      if (!isValidPhone(phone)) throw new Error('Утасны дугаараа 8 оронтойгоор оруулна уу.')
+      const found = findUser(phone)
+      if (!found) throw new Error(`${formatPhone(phone)} дугаартай хэрэглэгч олдсонгүй.`)
+      const who = `${found.name} (${formatPhone(phone)})`
+      if (cancel && !isActive(found)) throw new Error(`${who} эрхгүй байна.`)
+      if (cancel && !confirm(`${who}-ийн эрхийг цуцлах уу?`)) return
+      const u = cancel ? adminCancelPlan(phone) : adminGrant(phone, period)
+      setUsers(listUsers())
+      if (u.phone === me.phone) onUser(u)
+      setGrantMsg({
+        ok: true,
+        text: cancel ? `${who}: эрх цуцлагдлаа.` : `${who}: ${label} эрх олголоо. ${formatDate(u.subscription.endsAt)} хүртэл.`,
+      })
+      setGrantPhone('')
+    } catch (e) {
+      setGrantMsg({ ok: false, text: e.message })
+    }
+  }
+
   return (
     <div className="admin-body">
+      <section className="panel quick-grant">
+        <h2>Эрх олгох, цуцлах</h2>
+        <p className="muted">Хэрэглэгчийн нэвтрэх дугаарыг оруулаад хугацаагаа сонгоно.</p>
+        <input
+          className="admin-search"
+          inputMode="numeric"
+          placeholder="Утасны дугаар"
+          aria-label="Утасны дугаар"
+          value={grantPhone}
+          onChange={(e) => { setGrantPhone(e.target.value.replace(/[^\d\s]/g, '').slice(0, 9)); setGrantMsg(null) }}
+        />
+        <div className="amounts">
+          {GRANTS.map(([label, period]) => (
+            <button key={label} className="chip" onClick={() => byPhone(false, label, period)}>+{label}</button>
+          ))}
+          <button className="chip danger" onClick={() => byPhone(true)}>Цуцлах</button>
+        </div>
+        {grantMsg && <p className={`toast ${grantMsg.ok ? 'ok' : 'bad'}`}>{grantMsg.text}</p>}
+      </section>
       <div className="admin-toolbar">
         <input className="admin-search" type="search" placeholder="Нэр эсвэл утасны дугаар" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div className="amounts">

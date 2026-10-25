@@ -699,6 +699,10 @@ body::before {
   .admin-tabs a { padding: 10px 2px; font-size: clamp(11px, 3.4vw, 14px); }
 }
 .admin-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.quick-grant { display: flex; flex-direction: column; gap: 10px; }
+.quick-grant h2, .quick-grant p { margin: 0; }
+.quick-grant .amounts { margin: 0; }
+.quick-grant .admin-search { flex: none; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-toolbar .amounts { margin: 0; }
 .admin-search, .admin-form select, .admin-form textarea {
