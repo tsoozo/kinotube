@@ -1,7 +1,7 @@
 // Админ хэсгийн өгөгдлийн давхарга. Одоо localStorage дээр (mock) ажиллана.
 // Supabase-д шилжихдээ зөвхөн энэ файлын функцуудыг API дуудлагаар солино.
 import {
-  addMonths, allUsers, findUser, isActive, isAdmin, isValidPin, read, removeUser, saveUser, write,
+  addMonths, allUsers, findUser, formatDate, isActive, isAdmin, isValidPin, read, removeUser, saveUser, write,
 } from './auth.js'
 import { CATALOG_KEYS, SHORTS_MAX_SECONDS, toSeconds } from './data.js'
 
@@ -92,6 +92,17 @@ export function adminGrant(phone, { days = 0, months = 0 }) {
       transactions: [adminTx(0, `Админ: ${label} олгов`), ...u.transactions],
     }
   })
+}
+
+// Эрхийн дуусах өдрийг шууд тохируулна (тухайн өдрийн 23:59 хүртэл).
+export function adminSetEnd(phone, date) {
+  const end = new Date(`${date}T23:59:00`)
+  if (isNaN(end) || end <= new Date()) throw new Error('Өнөөдрөөс хойшхи огноо сонгоно уу.')
+  return update(phone, (u) => ({
+    ...u,
+    subscription: { plan: 'admin', label: 'Админ олгосон эрх', endsAt: end.toISOString() },
+    transactions: [adminTx(0, `Админ: эрх ${formatDate(end.toISOString())} хүртэл тохируулав`), ...u.transactions],
+  }))
 }
 
 export function adminCancelPlan(phone) {

@@ -734,6 +734,11 @@ body::before {
 .quick-grant h2, .quick-grant p { margin: 0; }
 .quick-grant .amounts { margin: 0; }
 .quick-grant .admin-search { flex: none; }
+.grant-user { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface); }
+.grant-user .pill { align-self: flex-start; margin-top: 2px; }
+.grant-custom { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.grant-custom > .muted { flex-basis: 100%; font-size: 13px; }
+.grant-custom .admin-search { flex: 1 1 90px; max-width: 160px; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .admin-toolbar .amounts { margin: 0; }
 .admin-search, .admin-form select, .admin-form textarea {

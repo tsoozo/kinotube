@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PinInput from './PinInput.jsx'
 import {
-  adminAdjustBalance, adminCancelPlan, adminDeleteUser, adminGrant, adminSetBlocked, adminSetPin, adminSetRole,
+  adminAdjustBalance, adminCancelPlan, adminDeleteUser, adminGrant, adminSetBlocked, adminSetEnd, adminSetPin, adminSetRole,
   listUsers, randomPin,
 } from '../admin.js'
 import {
@@ -34,6 +34,9 @@ export default function AdminUsers({ me, movies, onUser }) {
   const [message, setMessage] = useState(null)
   const [grantPhone, setGrantPhone] = useState('')
   const [grantMsg, setGrantMsg] = useState(null)
+  const [customN, setCustomN] = useState('')
+  const [customUnit, setCustomUnit] = useState('days')
+  const [endDate, setEndDate] = useState('')
 
   // Үйлдэл хийгээд жагсаалтыг шинэчилнэ. Өөрийгөө өөрчилсөн бол апп-ын төлвийг ч шинэчилнэ.
   const act = (fn, ok) => {
@@ -160,35 +163,37 @@ export default function AdminUsers({ me, movies, onUser }) {
     )
   }
 
-  // Нэвтрэх нэрээр (утасны дугаар) шууд эрх олгоно.
-  // Нэвтрэх нэрээр (утасны дугаар) шууд эрх олгоно эсвэл цуцална.
-  const byPhone = (cancel, label, period) => {
-    const phone = normalizePhone(grantPhone)
+  // Нэвтрэх нэрээр (утасны дугаар) хайж, эрх олгох / сунгах / цуцлах.
+  const grantDigits = normalizePhone(grantPhone)
+  const target = isValidPhone(grantDigits) ? findUser(grantDigits) : null
+  const who = target && `${target.name} (${formatPhone(target.phone)})`
+
+  const onTarget = (fn, text) => {
     try {
-      if (!isValidPhone(phone)) throw new Error('Утасны дугаараа 8 оронтойгоор оруулна уу.')
-      const found = findUser(phone)
-      if (!found) throw new Error(`${formatPhone(phone)} дугаартай хэрэглэгч олдсонгүй.`)
-      const who = `${found.name} (${formatPhone(phone)})`
-      if (cancel && !isActive(found)) throw new Error(`${who} эрхгүй байна.`)
-      if (cancel && !confirm(`${who}-ийн эрхийг цуцлах уу?`)) return
-      const u = cancel ? adminCancelPlan(phone) : adminGrant(phone, period)
+      const u = fn(target.phone)
       setUsers(listUsers())
       if (u.phone === me.phone) onUser(u)
-      setGrantMsg({
-        ok: true,
-        text: cancel ? `${who}: эрх цуцлагдлаа.` : `${who}: ${label} эрх олголоо. ${formatDate(u.subscription.endsAt)} хүртэл.`,
-      })
-      setGrantPhone('')
+      setGrantMsg({ ok: true, text: `${who}: ${text(u)}` })
+      setCustomN('')
+      setEndDate('')
     } catch (e) {
       setGrantMsg({ ok: false, text: e.message })
     }
   }
+  const until = (u) => `${formatDate(u.subscription.endsAt)} хүртэл.`
+  const grant = (label, period) => onTarget((p) => adminGrant(p, period), (u) => `${label} эрх олголоо. ${until(u)}`)
+  const grantCustom = () => {
+    const n = Number(customN)
+    if (!Number.isInteger(n) || n < 1) return setGrantMsg({ ok: false, text: 'Хугацааг 1-ээс их бүхэл тоогоор оруулна уу.' })
+    grant(`${n} ${customUnit === 'days' ? 'хоног' : 'сар'}`, customUnit === 'days' ? { days: n } : { months: n })
+  }
+  const cancelTarget = () => confirm(`${who}-ийн эрхийг цуцлах уу?`) && onTarget(adminCancelPlan, () => 'эрх цуцлагдлаа.')
 
   return (
     <div className="admin-body">
       <section className="panel quick-grant">
         <h2>Эрх олгох, цуцлах</h2>
-        <p className="muted">Хэрэглэгчийн нэвтрэх дугаарыг оруулаад хугацаагаа сонгоно.</p>
+        <p className="muted">Хэрэглэгчийн нэвтрэх дугаарыг оруулна.</p>
         <input
           className="admin-search"
           inputMode="numeric"
@@ -197,12 +202,45 @@ export default function AdminUsers({ me, movies, onUser }) {
           value={grantPhone}
           onChange={(e) => { setGrantPhone(e.target.value.replace(/[^\d\s]/g, '').slice(0, 9)); setGrantMsg(null) }}
         />
-        <div className="amounts">
-          {GRANTS.map(([label, period]) => (
-            <button key={label} className="chip" onClick={() => byPhone(false, label, period)}>+{label}</button>
-          ))}
-          <button className="chip danger" onClick={() => byPhone(true)}>Цуцлах</button>
-        </div>
+        {grantDigits.length === 8 && !target && (
+          <p className="toast bad">{isValidPhone(grantDigits) ? `${formatPhone(grantDigits)} дугаартай хэрэглэгч олдсонгүй.` : 'Утасны дугаар буруу байна.'}</p>
+        )}
+        {target && (
+          <>
+            <div className="grant-user">
+              <span className="profile-avatar small">{target.name.slice(0, 1)}</span>
+              <span className="admin-user-text">
+                <b>{target.name} {target.blocked && <span className="pill bad">Хаагдсан</span>}</b>
+                <span className="muted">{formatPhone(target.phone)}</span>
+                {isActive(target) ? (
+                  <span className="pill ok">{formatDate(target.subscription.endsAt)} хүртэл · {daysLeft(target)} хоног</span>
+                ) : (
+                  <span className="pill bad">Эрхгүй</span>
+                )}
+              </span>
+            </div>
+            <div className="amounts">
+              {GRANTS.map(([label, period]) => (
+                <button key={label} className="chip" onClick={() => grant(label, period)}>+{label}</button>
+              ))}
+              {isActive(target) && <button className="chip danger" onClick={cancelTarget}>Цуцлах</button>}
+            </div>
+            <form className="grant-custom" onSubmit={(e) => { e.preventDefault(); grantCustom() }}>
+              <span className="muted">Өөрөө тохируулах</span>
+              <input className="admin-search" inputMode="numeric" placeholder="Тоо" aria-label="Хугацаа" value={customN} onChange={(e) => setCustomN(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+              <select className="admin-search" aria-label="Нэгж" value={customUnit} onChange={(e) => setCustomUnit(e.target.value)}>
+                <option value="days">хоног</option>
+                <option value="months">сар</option>
+              </select>
+              <button className="btn-small" type="submit">Сунгах</button>
+            </form>
+            <form className="grant-custom" onSubmit={(e) => { e.preventDefault(); onTarget((p) => adminSetEnd(p, endDate), (u) => `эрх ${until(u)}`) }}>
+              <span className="muted">Дуусах өдөр</span>
+              <input className="admin-search" type="date" aria-label="Дуусах өдөр" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+              <button className="btn-small" type="submit">Тохируулах</button>
+            </form>
+          </>
+        )}
         {grantMsg && <p className={`toast ${grantMsg.ok ? 'ok' : 'bad'}`}>{grantMsg.text}</p>}
       </section>
       <div className="admin-toolbar">
