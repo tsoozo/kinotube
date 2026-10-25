@@ -12,6 +12,7 @@ import {
   CircleUserRound,
   Clapperboard,
   Clock,
+  Crown,
   Download,
   Gauge,
   History,
@@ -75,3 +76,4 @@ export const CaptionsIcon = icon(Captions)
 export const CaptionsOffIcon = icon(CaptionsOff)
 export const SpeedIcon = icon(Gauge)
 export const LockIcon = icon(Lock)
+export const CrownIcon = icon(Crown)

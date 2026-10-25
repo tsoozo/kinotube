@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
-import { CaptionsIcon, CaptionsOffIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
+import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
 import { formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
   PLANS, RENTAL, buyPlan, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, pushHistory, rentMovie,
@@ -171,8 +171,9 @@ export default function Watch({ movie, movies, user, onUser }) {
             <b>{formatMoney(RENTAL.price)}</b>
             <small>{RENTAL.days} хоног үзнэ</small>
           </button>
-          <button className="pay-option featured" onClick={() => pay(() => buyPlan(user, month.id))}>
-            <span>Бүх кино <em className="pay-badge">Ашигтай</em></span>
+          <button className="pay-option premium" onClick={() => pay(() => buyPlan(user, month.id))}>
+            <CrownIcon className="pay-crown" />
+            <span>Бүх кино</span>
             <b>{formatMoney(month.price)}</b>
             <small>1 сар хязгааргүй</small>
           </button>

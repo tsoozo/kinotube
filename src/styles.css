@@ -20,6 +20,10 @@
   --on-media: #ffffff;
   --media-shade: rgba(0, 0, 0, 0.55);
   --progress-track: rgba(255, 255, 255, 0.35);
+  --glass: rgba(255, 255, 255, 0.1);
+  --premium-from: #f7d774;
+  --premium-to: #e9a23b;
+  --premium-fg: #2a1a00;
   --font: 'Roboto', 'Noto Sans', Arial, sans-serif;
   --font-brand: 'Poppins', 'Roboto', Arial, sans-serif;
   --font-display: 'Roboto Condensed', 'Roboto', Arial, sans-serif;
@@ -51,6 +55,10 @@
     --ok-bg: #1f3326;
     --bad: #f28b82;
     --bad-bg: #3c2523;
+    --glass: rgba(255, 255, 255, 0.1);
+    --premium-from: #f7d774;
+    --premium-to: #e9a23b;
+    --premium-fg: #2a1a00;
     color-scheme: dark;
   }
 }
@@ -69,6 +77,10 @@
   --ok-bg: #1f3326;
   --bad: #f28b82;
   --bad-bg: #3c2523;
+  --glass: rgba(255, 255, 255, 0.1);
+  --premium-from: #f7d774;
+  --premium-to: #e9a23b;
+  --premium-fg: #2a1a00;
   color-scheme: dark;
 }
 
@@ -570,22 +582,24 @@ body::before {
 .locked-bg img { width: 100%; height: 100%; object-fit: cover; display: block; filter: blur(24px); transform: scale(1.2); }
 .locked-bg::after { content: ''; position: absolute; inset: 0; background: var(--media-shade); }
 
-/* Төлбөрийн сонголт: нэг кино эсвэл сарын эрх */
-.pay-options { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 10px; margin: 8px 0 4px; }
+/* Төлбөрийн сонголт: нэг кино эсвэл сарын эрх (алтан) */
+.player-locked .player-lead { font-size: 20px; font-weight: 700; }
+.pay-options { display: grid; grid-template-columns: repeat(2, minmax(0, 180px)); gap: 12px; margin: 12px 0 6px; }
 .pay-option {
-  display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--progress-track);
-  border-radius: 12px; background: var(--media-shade); color: var(--on-media); text-align: left;
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 0;
+  border-radius: 16px; background: var(--glass); color: var(--on-media); text-align: left;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: transform 0.15s;
 }
-.pay-option:hover { border-color: var(--on-media); }
-.pay-option span { font-size: 13px; opacity: 0.8; }
-.pay-option b { font-size: 18px; font-variant-numeric: tabular-nums; }
-.pay-option small { font-size: 12px; opacity: 0.75; }
-.pay-option.featured { border: 2px solid var(--on-media); padding: 11px; }
-.pay-option.featured span { opacity: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.pay-badge {
-  font-style: normal; font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 10px;
-  border: 1px solid var(--on-media);
+.pay-option:hover { transform: translateY(-2px); }
+.pay-option span { font-size: 13px; opacity: 0.85; }
+.pay-option b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.pay-option small { font-size: 12px; opacity: 0.8; }
+.pay-option.premium {
+  background: linear-gradient(135deg, var(--premium-from), var(--premium-to)); color: var(--premium-fg);
+  box-shadow: 0 6px 24px var(--media-shade);
 }
+.pay-option.premium span, .pay-option.premium small { opacity: 1; font-weight: 500; }
+.player-locked .pay-crown { position: absolute; top: 12px; right: 12px; width: 22px; height: 22px; opacity: 1; }
 .pay-link { color: var(--on-media); text-decoration: underline; font-weight: 500; }
 .rent-note { margin: -4px 0 8px; font-size: 13px; }
 .plan-note { margin: 10px 0 0; font-size: 13px; }
