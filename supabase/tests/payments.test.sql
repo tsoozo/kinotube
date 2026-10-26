@@ -4,11 +4,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(54);
+select plan(55);
 
 select is(
   (select count(*) from pg_tables where schemaname = 'public' and not rowsecurity)::int, 0,
   'RLS enabled on every public table');
+select ok(has_table_privilege('service_role', 'public.payment_requests', 'select, update'),
+  'server (service_role) can read and update payment requests');
 
 insert into auth.users (id, email, aud, role) values
   ('aaaaaaaa-0000-4000-8000-000000000001', 'viewer@test.mn',       'authenticated', 'authenticated'),

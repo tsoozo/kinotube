@@ -24,6 +24,10 @@ export async function onRequestPost({ request, env }) {
     step('Supabase service role', false, e.message)
   }
 
+  // Сервер хүснэгтийг шууд уншиж чадах уу (Telegram мессеж илгээхэд хэрэгтэй).
+  const { error: tableError } = await serviceClient(env).from('payment_requests').select('id').limit(1)
+  step('Supabase хүснэгт (service role)', !tableError, tableError ? tableError.message : 'Уншиж чадаж байна')
+
   const tg = telegram(env)
   if (!tg) return json({ steps })
   try {
@@ -52,12 +56,13 @@ export async function onRequestPost({ request, env }) {
   }
 
   // Мессеж нь очоогүй хүлээгдэж буй төлбөрүүд.
-  const { data: pending } = await serviceClient(env)
+  const { data: pending, error: pendingError } = await serviceClient(env)
     .from('payment_requests')
     .select('id')
     .eq('status', 'submitted')
     .is('telegram_message_id', null)
     .limit(20)
+  if (pendingError) step('Хүлээгдэж буй төлбөр', false, pendingError.message)
   let sent = 0
   for (const p of pending || []) {
     if (await notifyPaymentSubmitted(env, p.id).catch(() => false)) sent++
