@@ -4,8 +4,8 @@ import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
 import { formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
-  PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, pushHistory,
-  rentalEndsAt, saveProgress, setReturnTo, toggleLater, watchedRatio,
+  PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
+  recordView, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
 } from '../auth.js'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
@@ -19,7 +19,9 @@ export default function Watch({ movie, movies, user, onUser }) {
   const [captions, setCaptions] = useState(true)
   const [flash, setFlash] = useState('')
   const [bgFailed, setBgFailed] = useState(false)
+  const [src, setSrc] = useState(null)
   const videoRef = useRef(null)
+  const retried = useRef(false)
   const lastSave = useRef(0)
   const flashTimer = useRef(0)
   const canWatch = canWatchMovie(user, movie.id)
@@ -34,6 +36,32 @@ export default function Watch({ movie, movies, user, onUser }) {
     setShape('tall')
     setBgFailed(false)
   }, [movie.id])
+
+  // Видеоны хугацаатай линкийг серверээс авна (эрхийг сервер дахин шалгана).
+  const fetchSrc = () =>
+    videoUrl(movie)
+      .then(setSrc)
+      .catch((e) => {
+        // Эрх дууссан бол хэрэглэгчийн мэдээллийг шинэчилж, түгжээтэй дэлгэц гаргана.
+        if (e.status === 401 || e.status === 403) loadUser().then((u) => u && onUser(u))
+        setVideoError(true)
+      })
+
+  useEffect(() => {
+    setSrc(null)
+    retried.current = false
+    if (user && canWatch) fetchSrc()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movie.id, user?.id, canWatch])
+
+  // Линкийн хугацаа дууссан байж болзошгүй: нэг удаа шинээр авна.
+  const onVideoError = () => {
+    if (src && src !== movie.video && !retried.current) {
+      retried.current = true
+      save()
+      fetchSrc()
+    } else setVideoError(true)
+  }
 
   // Хурд, хадмалыг тоглуулагчид тохируулна.
   useEffect(() => {
@@ -89,7 +117,7 @@ export default function Watch({ movie, movies, user, onUser }) {
       if (v && user && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.phone, canWatch])
+  }, [movie.id, user?.id, canWatch])
 
   // Өмнө зогссон газраас нь үргэлжлүүлнэ.
   const onLoaded = () => {
@@ -116,9 +144,10 @@ export default function Watch({ movie, movies, user, onUser }) {
     if (canWatch) {
       const u = pushHistory(user, movie.id)
       if (u) onUser(u)
+      recordView(user, movie.id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.phone, canWatch])
+  }, [movie.id, user?.id, canWatch])
 
   const list = recommended(movies, movie)
 
@@ -174,19 +203,28 @@ export default function Watch({ movie, movies, user, onUser }) {
         {import.meta.env.DEV && <code>public/{movie.video}</code>}
       </div>
     )
+  } else if (!src) {
+    player = (
+      <div className="player-error" role="status">
+        <p className="player-sub">Ачаалж байна…</p>
+      </div>
+    )
   } else {
     player = (
       <Player
         key={movie.id}
         videoRef={videoRef}
         onShape={setShape}
-        src={movie.video}
+        src={src}
         poster={movie.thumbnail}
         onLoadedMetadata={onLoaded}
         onTimeUpdate={onTime}
         onPause={save}
-        onEnded={save}
-        onError={() => setVideoError(true)}
+        onEnded={() => {
+          save()
+          recordView(user, movie.id, true)
+        }}
+        onError={onVideoError}
       >
         {subs.map((t, i) => (
           <track key={t.src} kind="subtitles" src={t.src} srcLang={t.lang} label={t.label} default={i === 0} />

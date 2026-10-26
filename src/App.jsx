@@ -11,17 +11,21 @@ import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
 import { allGenres, loadMovies, loadShorts, matches } from './data.js'
-import { canWatchMovie, currentUser, getHistory, isAdmin, logout, peekReturnTo, takeReturnTo, watchedRatio } from './auth.js'
+import {
+  canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
+} from './auth.js'
 
-// Хаяг: #watch-<id>, #pay-<rent|month>-<id>, #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, #register, #forgot, бусад үед нүүр.
+// Хаяг: #watch-<id>, #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
+// Хуучин #register, #forgot нь #login руу очно.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
-  const pay = hash.match(/^pay-(rent|month)-(.+)$/)
-  if (pay) return { page: 'pay', kind: pay[1], id: pay[2] }
+  const pay = hash.match(/^pay-(rent|month)(?:-(.+))?$/)
+  if (pay) return { page: 'pay', kind: pay[1], id: pay[2] || '' }
   if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
-  if (['history', 'later', 'profile', 'login', 'register', 'forgot'].includes(hash)) return { page: hash }
+  if (['history', 'later', 'profile', 'login'].includes(hash)) return { page: hash }
+  if (hash === 'register' || hash === 'forgot') return { page: 'login' }
   return { page: 'home' }
 }
 
@@ -34,6 +38,12 @@ export default function App() {
   const [genre, setGenre] = useState('Бүгд')
   const [user, setUser] = useState(currentUser)
   const [headerHidden, setHeaderHidden] = useState(false)
+
+  // Эрх, нэрийг серверээс шинэчилнэ. Өөр tab-д нэвтэрч/гарсан ч мэдэгдэнэ.
+  useEffect(() => {
+    loadUser().then(setUser).catch(() => {})
+    return onAuthChange(setUser)
+  }, [])
 
   useEffect(() => {
     loadMovies().then(setMovies).catch((e) => setError(e.message))
@@ -137,8 +147,8 @@ export default function App() {
   }
 
   // Эхлээд нүүр рүү шилжинэ, эс бөгөөс профайлын хамгаалалт нэвтрэх хуудас руу аваачна.
-  const onLogout = () => {
-    logout()
+  const onLogout = async () => {
+    await logout()
     location.hash = ''
     setRoute({ page: 'home' })
     setUser(null)
@@ -146,14 +156,14 @@ export default function App() {
 
   const page = route.page
   const isWatch = page === 'watch'
-  const isAuth = ['login', 'register', 'forgot'].includes(page)
+  const isAuth = page === 'login'
   const current = isWatch || page === 'pay' ? movies.find((m) => m.id === route.id) : null
 
   let content
   if (error) content = <p className="notice">{error}</p>
-  else if (isAuth) content = <Login mode={page} onDone={onLogin} onNavigate={go} />
+  else if (isAuth) content = <Login onDone={onLogin} />
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
-  else if (page === 'pay') content = user && current && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
+  else if (page === 'pay') content = user && (current || (route.kind === 'month' && !route.id)) && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
   else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>

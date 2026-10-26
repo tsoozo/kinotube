@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 
-// 4 оронтой кодын нүднүүд. Тоо бичихэд дараагийн нүд рүү шилжинэ.
-export default function PinInput({ id, value, onChange, length = 4, autoFocus }) {
+// Кодын нүднүүд (имэйлээр ирэх 6 оронтой код). Тоо бичихэд дараагийн нүд рүү шилжинэ.
+export default function PinInput({ id, value, onChange, length = 4, autoFocus, visible }) {
   const refs = useRef([])
   const digits = Array.from({ length }, (_, i) => value[i] || '')
 
@@ -37,7 +37,7 @@ export default function PinInput({ id, value, onChange, length = 4, autoFocus })
           key={i}
           id={`${id}-${i}`}
           ref={(el) => (refs.current[i] = el)}
-          type="password"
+          type={visible ? 'text' : 'password'}
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={length}

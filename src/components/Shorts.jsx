@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ShortPoster from './ShortPoster.jsx'
 import { DownIcon, FilmIcon, MuteIcon, PlayIcon, SoundIcon, UpIcon } from './Icons.jsx'
+import { videoUrl } from '../auth.js'
 
 function ShortItem({ short, index, movie, active, muted, onMute }) {
   const ref = useRef(null)
@@ -9,18 +10,29 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
   const [progress, setProgress] = useState(0)
   const [ended, setEnded] = useState(false)
   const [vertical, setVertical] = useState(false)
+  const [src, setSrc] = useState(null)
+
+  // Видеоны линкийг тухайн бичлэг дээр ирэхэд л авна.
+  useEffect(() => {
+    if (!active || src || failed) return
+    let live = true
+    videoUrl(short, 'short').then((url) => live && setSrc(url)).catch(() => live && setFailed(true))
+    return () => {
+      live = false
+    }
+  }, [active, src, failed, short])
 
   // Идэвхтэй болоход эхнээс нь тоглуулна, бусад үед зогсооно.
   useEffect(() => {
     const v = ref.current
-    if (!v) return
+    if (!v || !src) return
     if (active) {
       v.currentTime = 0
       setPaused(false)
       setEnded(false)
       v.play().catch(() => setPaused(true))
     } else v.pause()
-  }, [active])
+  }, [active, src])
 
   const toggle = () => {
     const v = ref.current
@@ -45,7 +57,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
           <>
             <video
               ref={ref}
-              src={short.video}
+              src={src || undefined}
               poster={short.thumbnail}
               muted={muted}
               loop={!movie}
