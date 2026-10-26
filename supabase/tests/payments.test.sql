@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(53);
+select plan(54);
 
 select is(
   (select count(*) from pg_tables where schemaname = 'public' and not rowsecurity)::int, 0,
@@ -133,6 +133,8 @@ select is((public.admin_set_end('aaaaaaaa-0000-4000-8000-000000000002', now() + 
           now() + interval '2 days', 'admin sets the end date');
 select is((public.admin_cancel('aaaaaaaa-0000-4000-8000-000000000002') ->> 'subscription_until'), null, 'admin cancels');
 select is((select count(*) from public.admin_list_payments('submitted'))::int, 0, 'no pending payments left');
+-- PostgREST stable функцийг read-only ажиллуулдаг: бичдэг функц volatile байх ёстой.
+select is((select provolatile::text from pg_proc where oid = 'public.admin_list_payments(text)'::regprocedure), 'v', 'admin_list_payments is volatile (it expires requests)');
 select ok((public.admin_stats() ->> 'all_month')::int = 31800 and (public.admin_stats() ->> 'all_rent')::int = 4900, 'stats sum approved payments');
 select throws_ok($$ select public.admin_set_blocked('aaaaaaaa-0000-4000-8000-000000000003', true) $$, '42501', 'forbidden', 'admin cannot block themselves');
 select is((public.admin_set_blocked('aaaaaaaa-0000-4000-8000-000000000001', true) ->> 'blocked'), 'true', 'admin blocks a user');
