@@ -172,7 +172,7 @@ export default function App() {
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
   else if (page === 'pay') content = user && (current || (route.kind === 'month' && !route.id)) && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
-  else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
+  else if (page === 'shorts') content = <Shorts shorts={query.trim() ? visibleShorts : shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
   else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={movies} shorts={shorts || []} onCatalog={onCatalog} onUser={setUser} />
   else if (page === 'history') content = <History movies={movies} user={user} onUser={setUser} />
@@ -203,7 +203,7 @@ export default function App() {
         onNavigate={go}
       />
       <main className="main">{content}</main>
-      <BottomNav page={page} user={user} onHome={goHome} onNavigate={go} />
+      <BottomNav page={page} user={user} onHome={goHome} onNavigate={(hash) => { setQuery(''); go(hash) }} />
     </div>
   )
 }
