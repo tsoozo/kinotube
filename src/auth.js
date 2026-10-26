@@ -66,7 +66,7 @@ export function need() {
 }
 
 // Нэвтэрсэн хэрэглэгчийн token-тэй /api/... дуудлага.
-async function api(path, options = {}) {
+export async function api(path, options = {}) {
   const { data } = await need().auth.getSession()
   const headers = { ...options.headers }
   if (data.session) headers.authorization = `Bearer ${data.session.access_token}`

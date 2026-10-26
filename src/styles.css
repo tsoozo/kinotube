@@ -785,6 +785,7 @@ body::before {
 .admin-row-actions { display: flex; flex-shrink: 0; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 12px; }
 a.stat { color: inherit; text-decoration: none; }
+.tg-check { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 8px; overflow-wrap: anywhere; }
 .stat { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 16px; background: var(--surface); min-width: 0; }
 .stat span, .stat small { color: var(--muted); font-size: 13px; }
 .stat b { font-size: 26px; line-height: 32px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }

@@ -1,6 +1,6 @@
 // Админ хэсгийн өгөгдлийн давхарга. Хэрэглэгч, төлбөр, статистик Supabase-ийн admin_* функцуудаар
 // (сервер админ эсэхийг шалгана). Кино, Shorts-ийн жагсаалтыг энэ хөтөч дээр засаад json татаж авна.
-import { fail, need, read, write } from './auth.js'
+import { api, fail, need, read, write } from './auth.js'
 import { CATALOG_KEYS, SHORTS_MAX_SECONDS, toSeconds } from './data.js'
 
 // ---------- Кино ба Shorts ----------
@@ -111,6 +111,9 @@ export const listPaymentRequests = (status = 'all') => rpc('admin_list_payments'
 // Telegram-аас гадна вэбээс батлах / татгалзах.
 export const approvePayment = (id) => rpc('approve_payment', { p_request_id: id })
 export const rejectPayment = (id, reason) => rpc('reject_payment', { p_request_id: id, p_reason: reason?.trim() || null })
+
+// Telegram-ийн тохиргоог шалгаж тест мессеж илгээнэ (functions/api/admin/telegram-check.js).
+export const checkTelegram = async () => (await api('/api/admin/telegram-check', { method: 'POST' })).steps
 
 // ---------- Үзэлт ба статистик ----------
 

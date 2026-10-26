@@ -42,13 +42,15 @@ export function telegram(env) {
 // Админы мессежид харагдах мэдээлэл.
 export async function loadRequestInfo(env, requestId) {
   const db = serviceClient(env)
-  const { data: r } = await db
+  const { data: r, error } = await db
     .from('payment_requests')
     .select('id, user_id, ref_code, amount_mnt, status, movie_title, submitted_at, created_at, decided_at, telegram_chat_id, telegram_message_id, products(title)')
     .eq('id', requestId)
     .maybeSingle()
+  if (error) console.error('loadRequestInfo', requestId, error.message)
   if (!r) return null
-  const { data: u } = await db.auth.admin.getUserById(r.user_id)
+  const { data: u, error: userError } = await db.auth.admin.getUserById(r.user_id)
+  if (userError) console.error('getUserById', userError.message)
   return {
     ...r,
     input: {
@@ -70,7 +72,10 @@ export async function notifyPaymentSubmitted(env, requestId) {
     return false
   }
   const info = await loadRequestInfo(env, requestId)
-  if (!info || info.status !== 'submitted') return false
+  if (!info || info.status !== 'submitted') {
+    console.warn('payment request', requestId, 'not found or not submitted; Telegram message skipped')
+    return false
+  }
   const msg = await tg.sendMessage(env.TELEGRAM_ADMIN_CHAT_ID, paymentRequestMessage(info.input), paymentKeyboard(requestId))
   await serviceClient(env)
     .from('payment_requests')

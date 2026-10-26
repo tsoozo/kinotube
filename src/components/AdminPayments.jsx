@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { approvePayment, listPaymentRequests, rejectPayment } from '../admin.js'
+import { approvePayment, checkTelegram, listPaymentRequests, rejectPayment } from '../admin.js'
 import { PAYMENT_STATUS_TEXT, formatDateTime, formatMoney } from '../auth.js'
 
 const FILTERS = [['submitted', 'Шалгах'], ['approved', 'Батлагдсан'], ['rejected', 'Татгалзсан'], ['all', 'Бүгд']]
@@ -10,6 +10,7 @@ export default function AdminPayments() {
   const [list, setList] = useState(null)
   const [message, setMessage] = useState(null)
   const [busy, setBusy] = useState('')
+  const [check, setCheck] = useState(null)
 
   const reload = () =>
     listPaymentRequests(status).then(setList).catch((e) => {
@@ -45,6 +46,16 @@ export default function AdminPayments() {
     }
   }
 
+  const runCheck = async () => {
+    setCheck('loading')
+    try {
+      setCheck(await checkTelegram())
+      reload()
+    } catch (e) {
+      setCheck([{ name: 'Шалгалт', ok: false, detail: e.message }])
+    }
+  }
+
   const total = (list || []).filter((p) => p.status === 'approved').reduce((s, p) => s + p.amount_mnt, 0)
 
   return (
@@ -55,7 +66,20 @@ export default function AdminPayments() {
             <button key={id} className={`chip ${status === id ? 'active' : ''}`} onClick={() => setStatus(id)}>{label}</button>
           ))}
         </div>
+        <button className="btn-secondary" disabled={check === 'loading'} onClick={runCheck}>
+          {check === 'loading' ? 'Шалгаж байна…' : 'Telegram шалгах'}
+        </button>
       </div>
+      {Array.isArray(check) && (
+        <ul className="panel tg-check">
+          {check.map((s) => (
+            <li key={s.name}>
+              <span className={`pill ${s.ok ? 'ok' : 'bad'}`}>{s.ok ? 'OK' : 'Алдаа'}</span> <b>{s.name}</b>
+              {s.detail && <span className="muted"> · {s.detail}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
       {list === null ? (
         <p className="notice">Ачаалж байна…</p>
