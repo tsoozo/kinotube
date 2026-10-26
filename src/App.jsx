@@ -10,7 +10,7 @@ import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
-import { allGenres, loadMovies, loadShorts, matches } from './data.js'
+import { allGenres, loadMovies, loadShorts, matches, matchesShort } from './data.js'
 import {
   canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
 } from './auth.js'
@@ -91,6 +91,13 @@ export default function App() {
     () => movies.filter((m) => matches(m, query) && (genre === 'Бүгд' || (m.genres || []).includes(genre))),
     [movies, query, genre],
   )
+
+  // Хайлт эсвэл жанр сонгосон үед зөвхөн тохирох Shorts.
+  const visibleShorts = useMemo(() => {
+    if (!shorts) return []
+    if (!query.trim() && genre === 'Бүгд') return shorts
+    return shorts.filter((s) => matchesShort(s, movies, query, genre))
+  }, [shorts, movies, query, genre])
 
   // Нүүрний карт дээрх улаан зурвас.
   const progress = useMemo(() => {
@@ -181,7 +188,7 @@ export default function App() {
         onClearSearch={() => setQuery('')}
         progressOf={(id) => progress[id]}
         loading={movies.length === 0}
-        shorts={page === 'home' && genre === 'Бүгд' && !query.trim() ? shorts || [] : []}
+        shorts={page === 'home' && (genre === 'Бүгд' || query.trim()) ? visibleShorts : []}
         continueItems={page === 'home' && genre === 'Бүгд' && !query.trim() ? continueItems : []}
       />
     )
