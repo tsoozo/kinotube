@@ -1,0 +1,3 @@
+# Supabase CLI ба GitHub холболт (Deploy to production) энэ хавтсыг ашиглана.
+# Өгөгдлийн сангийн өөрчлөлт: supabase/migrations/. Тест: supabase/tests/ (npx supabase test db).
+project_id = "kinotube"

@@ -1,10 +1,9 @@
-import { useState } from 'react'
-import PinInput from './PinInput.jsx'
+import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import { AdminIcon, LogoutIcon } from './Icons.jsx'
 import {
-  PLANS, RENTAL, TOPUP_AMOUNTS, activeRentals, buyPlan, changePin, daysLeft, formatDate, formatDateTime, formatMoney,
-  formatPhone, isActive, isAdmin, isValidPin, peekReturnTo, topUp, updateName, watchedRatio,
+  PAYMENT_STATUS_TEXT, PLANS, RENTAL, activeRentals, daysLeft, effectiveStatus, formatDate, formatDateTime, formatMoney,
+  getHistory, isActive, isAdmin, listPayments, peekReturnTo, updateName, watchedRatio,
 } from '../auth.js'
 
 export default function Profile({ user, movies, onUser, onLogout }) {
@@ -12,45 +11,55 @@ export default function Profile({ user, movies, onUser, onLogout }) {
   const [message, setMessage] = useState(null)
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(user.name)
-  const [pinForm, setPinForm] = useState(null)
   const [leaving, setLeaving] = useState(false)
+  const [payments, setPayments] = useState(null)
 
-  const act = (fn, ok) => {
-    try {
-      onUser(fn())
-      setMessage({ ok: true, text: ok })
-    } catch (e) {
+  useEffect(() => {
+    if (tab !== 'payments') return
+    listPayments().then(setPayments).catch((e) => {
+      setPayments([])
       setMessage({ ok: false, text: e.message })
+    })
+  }, [tab])
+
+  const saveName = async (e) => {
+    e.preventDefault()
+    try {
+      onUser(await updateName(user, name))
+      setMessage({ ok: true, text: 'Нэр хадгалагдлаа' })
+      setEditing(false)
+    } catch (err) {
+      setMessage({ ok: false, text: err.message })
     }
   }
 
   const active = isActive(user)
   const left = daysLeft(user)
   const rentals = activeRentals(user)
-  // Кино үзэх гэж байгаад данс цэнэглэхээр ирсэн бол буцах холбоос.
+  // Кино үзэх гэж байгаад эрх авахаар ирсэн бол буцах холбоос.
   const back = movies.find((m) => m.id === peekReturnTo())
-  const history = (user.history || [])
+  const history = getHistory(user)
     .map((h) => ({ ...h, movie: movies.find((m) => m.id === h.id) }))
     .filter((h) => h.movie)
+  const month = PLANS[0]
 
   return (
     <div className="profile">
       <section className="profile-head">
-        <span className="profile-avatar">{user.name.slice(0, 1)}</span>
+        <span className="profile-avatar">{user.name.slice(0, 1).toUpperCase()}</span>
         <div className="profile-id">
           {editing ? (
-            <form className="inline-form" onSubmit={(e) => { e.preventDefault(); act(() => updateName(user, name), 'Нэр хадгалагдлаа'); setEditing(false) }}>
-              <input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <form className="inline-form" onSubmit={saveName}>
+              <input id="profile-name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} autoFocus />
               <button className="btn-small" type="submit">Хадгалах</button>
             </form>
           ) : (
             <h1>{user.name} <button className="link-btn" onClick={() => setEditing(true)}>Засах</button></h1>
           )}
-          <p className="muted">{formatPhone(user.phone)} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
+          <p className="muted">{user.email} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
         </div>
         <div className="profile-actions">
           {isAdmin(user) && <a className="btn-secondary" href="#admin"><AdminIcon width="20" height="20" /> Админ</a>}
-          <button className="btn-secondary" onClick={() => setPinForm(pinForm ? null : { old: '', next: '' })}>Код солих</button>
           <button className="btn-secondary danger" onClick={() => setLeaving(true)}><LogoutIcon width="20" height="20" /> Гарах</button>
         </div>
       </section>
@@ -59,28 +68,12 @@ export default function Profile({ user, movies, onUser, onLogout }) {
       {leaving && (
         <div className="panel logout-confirm" role="alertdialog" aria-labelledby="logout-q">
           <p id="logout-q"><b>Бүртгэлээсээ гарах уу?</b></p>
-          <p className="muted">Дахин орохдоо утасны дугаар, 4 оронтой кодоо оруулна.</p>
+          <p className="muted">Дахин орохдоо имэйл рүү ирэх кодоор нэвтэрнэ.</p>
           <div>
             <button className="btn-danger" onClick={onLogout} autoFocus>Гарах</button>
             <button className="btn-secondary" onClick={() => setLeaving(false)}>Болих</button>
           </div>
         </div>
-      )}
-
-      {pinForm && (
-        <form
-          className="panel pin-change"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (!isValidPin(pinForm.next)) return setMessage({ ok: false, text: 'Шинэ код 4 оронтой тоо байх ёстой.' })
-            act(() => changePin(user, pinForm.old, pinForm.next), 'Код солигдлоо')
-            setPinForm(null)
-          }}
-        >
-          <div className="field"><span>Одоогийн код</span><PinInput id="old-pin" value={pinForm.old} onChange={(v) => setPinForm({ ...pinForm, old: v })} /></div>
-          <div className="field"><span>Шинэ код</span><PinInput id="next-pin" value={pinForm.next} onChange={(v) => setPinForm({ ...pinForm, next: v })} /></div>
-          <button className="btn-primary" type="submit">Солих</button>
-        </form>
       )}
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
@@ -107,46 +100,29 @@ export default function Profile({ user, movies, onUser, onLogout }) {
             </>
           )}
           <div className="plans">
-            {PLANS.map((p) => (
-              <button key={p.id} className="plan" onClick={() => act(() => buyPlan(user, p.id), `${p.label} авлаа`)}>
-                <span>{p.label} · бүх кино</span>
-                <b>{formatMoney(p.price)}</b>
-                <small>{active ? 'Сунгах' : 'Авах'}</small>
-              </button>
-            ))}
+            <a className="plan" href="#pay-month">
+              <span>{month.label} · бүх кино</span>
+              <b>{formatMoney(month.price)}</b>
+              <small>{active ? 'Сунгах' : 'Авах'}</small>
+            </a>
           </div>
           <p className="muted plan-note">Нэг киног {RENTAL.days} хоног {formatMoney(RENTAL.price)}-өөр тухайн киноны хуудаснаас авна.</p>
           {rentals.length > 0 && (
             <ul className="rentals">
               {rentals.map((r) => (
                 <li key={r.id}>
-                  <a href={`#watch-${encodeURIComponent(r.id)}`}>{r.title}</a>
+                  <a href={`#watch-${encodeURIComponent(r.id)}`}>{r.title || r.id}</a>
                   <span className="muted">{formatDateTime(r.endsAt)} хүртэл</span>
                 </li>
               ))}
             </ul>
           )}
         </section>
-
-        <section className="panel">
-          <h2>Данс</h2>
-          <p className="muted">Үлдэгдэл</p>
-          <p className="big balance">{formatMoney(user.balance)}</p>
-          <p className="muted">Цэнэглэх дүн</p>
-          <div className="amounts">
-            {TOPUP_AMOUNTS.map((a) => (
-              <button key={a} className="chip" onClick={() => act(() => topUp(user, a), `${formatMoney(a)} цэнэглэлээ`)}>
-                +{formatMoney(a)}
-              </button>
-            ))}
-          </div>
-          <p className="demo-note">Туршилтын горим: жинхэнэ төлбөр авахгүй, үлдэгдэл шууд нэмэгдэнэ.</p>
-        </section>
       </div>
 
       <div className="tabs">
         <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>Үзсэн түүх</button>
-        <button className={tab === 'payments' ? 'active' : ''} onClick={() => setTab('payments')}>Гүйлгээний түүх</button>
+        <button className={tab === 'payments' ? 'active' : ''} onClick={() => setTab('payments')}>Төлбөрийн түүх</button>
       </div>
 
       {tab === 'history' ? (
@@ -168,20 +144,33 @@ export default function Profile({ user, movies, onUser, onLogout }) {
             ))}
           </ul>
         )
-      ) : user.transactions.length === 0 ? (
-        <p className="notice">Гүйлгээ алга.</p>
+      ) : payments === null ? (
+        <p className="notice">Ачаалж байна…</p>
+      ) : payments.length === 0 ? (
+        <p className="notice">Төлбөр алга.</p>
       ) : (
         <div className="table-wrap">
           <table className="tx">
-            <thead><tr><th>Огноо</th><th>Утга</th><th className="num">Дүн</th></tr></thead>
+            <thead><tr><th>Огноо</th><th>Утга</th><th>Төлөв</th><th className="num">Дүн</th></tr></thead>
             <tbody>
-              {user.transactions.map((t, i) => (
-                <tr key={i}>
-                  <td>{formatDateTime(t.at)}</td>
-                  <td>{t.note}</td>
-                  <td className={`num ${t.amount > 0 ? 'plus' : ''}`}>{t.amount > 0 ? '+' : '−'}{formatMoney(Math.abs(t.amount))}</td>
-                </tr>
-              ))}
+              {payments.map((p) => {
+                const st = effectiveStatus(p)
+                const open = st === 'created' || st === 'submitted'
+                const href = p.product === 'rent' ? `#pay-rent-${encodeURIComponent(p.movie_id)}` : '#pay-month'
+                return (
+                  <tr key={p.id}>
+                    <td>{formatDateTime(p.created_at)}</td>
+                    <td>
+                      {p.products?.title}{p.movie_title ? ` · ${p.movie_title}` : ''} <span className="muted">{p.ref_code}</span>
+                    </td>
+                    <td>
+                      {open ? <a href={href}>{PAYMENT_STATUS_TEXT[st]}</a> : PAYMENT_STATUS_TEXT[st]}
+                      {st === 'rejected' && p.reject_reason && <span className="muted"> · {p.reject_reason}</span>}
+                    </td>
+                    <td className="num">{formatMoney(p.amount_mnt)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

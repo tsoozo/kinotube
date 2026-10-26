@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { viewRanking } from '../admin.js'
 import { formatDate } from '../auth.js'
 
@@ -6,7 +6,15 @@ import { formatDate } from '../auth.js'
 export default function AdminViews({ movies }) {
   const [order, setOrder] = useState('most')
   const [query, setQuery] = useState('')
-  const ranking = useMemo(() => viewRanking(movies), [movies])
+  const [ranking, setRanking] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    viewRanking(movies).then(setRanking).catch((e) => setError(e.message))
+  }, [movies])
+
+  if (error) return <p className="notice">{error}</p>
+  if (!ranking) return <p className="notice">Ачаалж байна…</p>
 
   const q = query.trim().toLowerCase()
   const sorted = order === 'most' ? ranking : [...ranking].reverse()
@@ -44,7 +52,7 @@ export default function AdminViews({ movies }) {
           </table>
         </div>
       )}
-      <p className="demo-note">Үзэлт = киног үзэж эхэлсэн хэрэглэгчийн тоо. Shorts-ийн үзэлт одоогоор бүртгэгддэггүй. Туршилтын горим: зөвхөн энэ хөтөч дээрх бүртгэлээс тоолно.</p>
+      <p className="muted small">Үзэлт = киног үзэж эхэлсэн хэрэглэгчийн тоо (хүн бүр нэг удаа). Shorts-ийн үзэлт бүртгэгддэггүй.</p>
     </div>
   )
 }

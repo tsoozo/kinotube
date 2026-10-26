@@ -1,8 +1,6 @@
-// Админ хэсгийн өгөгдлийн давхарга. Одоо localStorage дээр (mock) ажиллана.
-// Supabase-д шилжихдээ зөвхөн энэ файлын функцуудыг API дуудлагаар солино.
-import {
-  addMonths, allUsers, findUser, formatDate, isActive, isAdmin, isValidPin, read, removeUser, saveUser, write,
-} from './auth.js'
+// Админ хэсгийн өгөгдлийн давхарга. Хэрэглэгч, төлбөр, статистик Supabase-ийн admin_* функцуудаар
+// (сервер админ эсэхийг шалгана). Кино, Shorts-ийн жагсаалтыг энэ хөтөч дээр засаад json татаж авна.
+import { fail, need, read, write } from './auth.js'
 import { CATALOG_KEYS, SHORTS_MAX_SECONDS, toSeconds } from './data.js'
 
 // ---------- Кино ба Shorts ----------
@@ -60,137 +58,88 @@ export function downloadJson(name, data) {
 
 // ---------- Хэрэглэгч ----------
 
-export const listUsers = () => allUsers().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-
-function update(phone, fn) {
-  const u = findUser(phone)
-  if (!u) throw new Error('Хэрэглэгч олдсонгүй.')
-  const next = fn(u)
-  saveUser(next)
-  return next
+// Серверийн user_json → апп доторх хэлбэр (auth.js-ийн isActive, daysLeft ажиллана).
+function toUser(x) {
+  const until = x.subscription_until || x.last_subscription_end
+  return {
+    id: x.id,
+    email: x.email,
+    name: x.name || x.email,
+    createdAt: x.created_at,
+    role: x.is_admin ? 'admin' : undefined,
+    blocked: x.blocked,
+    subscription: until ? { label: 'Эрх', endsAt: until } : null,
+    rentals: x.rentals || 0,
+    views: x.views || 0,
+    paid: x.paid_mnt || 0,
+  }
 }
 
-const adminTx = (amount, note) => ({ at: new Date().toISOString(), type: 'admin', amount, note })
-
-export function adminSetPin(phone, pin) {
-  if (!isValidPin(pin)) throw new Error('Код 4 оронтой тоо байх ёстой.')
-  return update(phone, (u) => ({ ...u, pin }))
+async function rpc(name, args) {
+  const { data, error } = await need().rpc(name, args)
+  if (error) throw fail(error)
+  return data
 }
 
-export const randomPin = () => String(Math.floor(Math.random() * 10000)).padStart(4, '0')
+export const listUsers = async (filter = 'all', query = '') =>
+  (await rpc('admin_list_users', { p_filter: filter, p_query: query.trim() || null })).map(toUser)
+
+export async function findUserByEmail(email) {
+  const x = await rpc('admin_find_user', { p_email: email.trim() })
+  return x ? toUser(x) : null
+}
 
 // Үнэгүй эрх олгоно. Идэвхтэй бол дуусах хугацаан дээр нь нэмнэ.
-export function adminGrant(phone, { days = 0, months = 0 }) {
-  return update(phone, (u) => {
-    const base = isActive(u) ? new Date(u.subscription.endsAt) : new Date()
-    const end = addMonths(base, months)
-    end.setDate(end.getDate() + days)
-    const label = months ? `${months} сарын эрх` : `${days} хоногийн эрх`
-    return {
-      ...u,
-      subscription: { plan: 'admin', label: `${label} (админ)`, endsAt: end.toISOString() },
-      transactions: [adminTx(0, `Админ: ${label} олгов`), ...u.transactions],
-    }
-  })
-}
+export const adminGrant = async (id, { days = 0, months = 0 }) =>
+  toUser(await rpc('admin_grant', { p_user: id, p_days: days, p_months: months }))
 
 // Эрхийн дуусах өдрийг шууд тохируулна (тухайн өдрийн 23:59 хүртэл).
-export function adminSetEnd(phone, date) {
+export async function adminSetEnd(id, date) {
   const end = new Date(`${date}T23:59:00`)
   if (isNaN(end) || end <= new Date()) throw new Error('Өнөөдрөөс хойшхи огноо сонгоно уу.')
-  return update(phone, (u) => ({
-    ...u,
-    subscription: { plan: 'admin', label: 'Админ олгосон эрх', endsAt: end.toISOString() },
-    transactions: [adminTx(0, `Админ: эрх ${formatDate(end.toISOString())} хүртэл тохируулав`), ...u.transactions],
-  }))
+  return toUser(await rpc('admin_set_end', { p_user: id, p_end: end.toISOString() }))
 }
 
-export function adminCancelPlan(phone) {
-  return update(phone, (u) => ({
-    ...u,
-    subscription: u.subscription && { ...u.subscription, endsAt: new Date().toISOString() },
-    transactions: [adminTx(0, 'Админ: эрх цуцлав'), ...u.transactions],
-  }))
-}
+export const adminCancelPlan = async (id) => toUser(await rpc('admin_cancel', { p_user: id }))
+export const adminSetBlocked = async (id, blocked) => toUser(await rpc('admin_set_blocked', { p_user: id, p_blocked: blocked }))
+export const adminSetRole = async (id, admin) => toUser(await rpc('admin_set_role', { p_user: id, p_admin: admin }))
 
-export function adminAdjustBalance(phone, amount, note) {
-  if (!Number.isInteger(amount) || amount === 0) throw new Error('Дүнг бүхэл тоогоор оруулна уу (хасах бол -5000 гэх мэт).')
-  return update(phone, (u) => {
-    if (u.balance + amount < 0) throw new Error('Үлдэгдэл хасах дүнд хүрэхгүй байна.')
-    return {
-      ...u,
-      balance: u.balance + amount,
-      transactions: [adminTx(amount, `Админ: ${note.trim() || 'данс засвар'}`), ...u.transactions],
-    }
-  })
-}
+// ---------- Төлбөр ----------
 
-export const adminSetBlocked = (phone, blocked) => update(phone, (u) => ({ ...u, blocked }))
+export const listPaymentRequests = (status = 'all') => rpc('admin_list_payments', { p_status: status })
 
-export const adminSetRole = (phone, admin) => update(phone, (u) => ({ ...u, role: admin ? 'admin' : undefined }))
+// Telegram-аас гадна вэбээс батлах / татгалзах.
+export const approvePayment = (id) => rpc('approve_payment', { p_request_id: id })
+export const rejectPayment = (id, reason) => rpc('reject_payment', { p_request_id: id, p_reason: reason?.trim() || null })
 
-export function adminDeleteUser(phone) {
-  removeUser(phone)
-}
+// ---------- Үзэлт ба статистик ----------
 
-// ---------- Гүйлгээ ба статистик ----------
-
-export const TX_TYPES = { topup: 'Цэнэглэлт', plan: 'Сарын эрх', rent: 'Нэг кино', admin: 'Админ' }
-
-export function allTransactions() {
-  return allUsers()
-    .flatMap((u) => (u.transactions || []).map((t) => ({ ...t, phone: u.phone, name: u.name })))
-    .sort((a, b) => b.at.localeCompare(a.at))
-}
-
-// Кино бүрийг хэдэн хэрэглэгч үзсэн, хэд нь дуусгасан. Үзээгүй кино 0-тэй орно.
-// Ихээс бага руу эрэмбэлсэн.
-export function viewRanking(movies) {
-  const views = {}
-  allUsers().forEach((u) =>
-    (u.history || []).forEach((h) => {
-      const v = (views[h.id] ||= { count: 0, done: 0, last: null })
-      v.count++
-      if (h.done) v.done++
-      if (h.at && (!v.last || h.at > v.last)) v.last = h.at
-    })
-  )
+// Кино бүрийг хэдэн хэрэглэгч үзсэн, хэд нь дуусгасан. Үзээгүй кино 0-тэй орно. Ихээс бага руу.
+export async function viewRanking(movies) {
+  const views = Object.fromEntries((await rpc('admin_views')).map((v) => [v.movie_id, v]))
   return movies
-    .map((movie) => ({ movie, count: 0, done: 0, last: null, ...views[movie.id] }))
+    .map((movie) => ({ movie, count: views[movie.id]?.count || 0, done: views[movie.id]?.done || 0, last: views[movie.id]?.last || null }))
     .sort((a, b) => b.count - a.count || b.done - a.done || a.movie.title.localeCompare(b.movie.title))
 }
 
-export function stats(movies, shorts) {
-  const users = allUsers()
-  const tx = allTransactions()
-  const monthStart = new Date()
-  monthStart.setDate(1)
-  monthStart.setHours(0, 0, 0, 0)
-  const thisMonth = tx.filter((t) => new Date(t.at) >= monthStart)
-  const sum = (list, type) => list.filter((t) => t.type === type).reduce((s, t) => s + Math.abs(t.amount), 0)
-
-  const ranking = viewRanking(movies)
-  const top = ranking.filter((x) => x.count > 0).slice(0, 5)
-  const least = ranking.slice(-5).reverse()
-
-  const monthAgo = Date.now() - 30 * 86400000
+export async function stats(movies, shorts) {
+  const [s, ranking] = await Promise.all([rpc('admin_stats'), viewRanking(movies)])
   return {
-    users: users.length,
-    newUsers: users.filter((u) => new Date(u.createdAt).getTime() > monthAgo).length,
-    active: users.filter(isActive).length,
-    admins: users.filter(isAdmin).length,
-    blocked: users.filter((u) => u.blocked).length,
-    topupMonth: sum(thisMonth, 'topup'),
-    planMonth: sum(thisMonth, 'plan'),
-    rentMonth: sum(thisMonth, 'rent'),
-    topupAll: sum(tx, 'topup'),
-    planAll: sum(tx, 'plan'),
-    rentAll: sum(tx, 'rent'),
-    balances: users.reduce((s, u) => s + (u.balance || 0), 0),
+    users: s.users,
+    newUsers: s.new_users,
+    active: s.active,
+    renting: s.renting,
+    admins: s.admins,
+    blocked: s.blocked,
+    pending: s.pending,
+    planMonth: s.month_month,
+    rentMonth: s.month_rent,
+    planAll: s.all_month,
+    rentAll: s.all_rent,
     movies: movies.length,
     shorts: shorts.length,
-    top,
-    least,
-    recent: users.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
+    top: ranking.filter((x) => x.count > 0).slice(0, 5),
+    least: ranking.slice(-5).reverse(),
+    recent: (s.recent || []).map(toUser),
   }
 }

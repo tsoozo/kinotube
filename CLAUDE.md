@@ -6,34 +6,41 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 - **KinoTube**: YouTube загвартай кино үзэх сайт. Брэнд нэр латинаар "KinoTube".
 - Стек: React 19 + Vite 6, цэвэр JavaScript (`.jsx`), TypeScript ашиглахгүй.
-- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#pay-<rent|month>-<id>`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`, `#register`, `#forgot`). Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
-- Сервер байхгүй: хэрэглэгч, данс, эрх бүгд `src/auth.js` дотор localStorage-д (mock). SMS, төлбөр жинхэнэ биш.
-- Кино өгөгдөл: `public/movies.json`. Видео `public/videos/`, зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
-- Байршуулалт: Vercel, `main` салбар руу push хийхэд автоматаар https://kinotube.vercel.app дээр гарна. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
+- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#pay-rent-<id>`, `#pay-month[-<id>]`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`). Хуучин `#register`, `#forgot` нь `#login` руу очно. Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
+- Хэрэглэгч, эрх, төлбөр: Supabase (имэйл кодоор нэвтрэх, `supabase/migrations/`). Эрх олгох, үнэ, админ шалгалт бүгд серверт (RLS, SQL функц); клиентийн шалгалт зөвхөн UI-д. Төлбөр: банкны шилжүүлэг → Telegram ботоор админ батална. Үзсэн түүх, "Дараа үзэх" localStorage-д, хэрэглэгч бүрт тусдаа.
+- Сервер: Cloudflare Pages Functions (`functions/api/`), хуваалцсан код `server/`. Нууц түлхүүрүүд (service role, бот token, R2) зөвхөн Cloudflare-ийн Secret-д, клиент код болон git-д хэзээ ч орохгүй.
+- Кино өгөгдөл: `public/movies.json`. Видео Cloudflare R2-д (`movies/<id>.mp4`, `shorts/<id>.mp4`), сайт `/api/video/<id>`-ээс хугацаатай линк авч тоглуулна. Зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
+- Байршуулалт: Cloudflare Pages, `main` салбар руу push хийхэд автоматаар https://kinotube.pages.dev дээр гарна (`functions/` хамт). Supabase migration `main`-д ороход GitHub интеграцаар хэрэгжинэ. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
 
 ## Команд
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:5173 (зөвхөн сайт, .env-д VITE_SUPABASE_*)
 npm run build    # dist/ — өөрчлөлт бүрийн дараа заавал ажиллуулж шалгана
 npm run preview  # build-ийг шалгах
+npm test         # R2 линкийн тест
+npx wrangler pages dev dist   # сайт + functions/ (.dev.vars-аас)
 ```
 
-Тест, linter одоогоор байхгүй. Build амжилттай болж, хөтөч дээр харж шалгасан байх ёстой.
+Өгөгдлийн сангийн тест: `supabase/tests/` (pgTAP, `npx supabase test db`). Migration өөрчилбөл тест нэмнэ. Linter байхгүй. Build амжилттай болж, хөтөч дээр харж шалгасан байх ёстой.
 
 ## Бүтэц
 
 ```
 src/App.jsx            hash route, төлөв, хуудас сонголт
 src/data.js            movies.json унших, хайлт, жанр, санал болгох
-src/auth.js            нэвтрэх, бүртгэл, данс, эрх (localStorage mock)
-src/admin.js           админы өгөгдлийн үйлдэл (кино/Shorts засвар, хэрэглэгч, гүйлгээ, статистик)
+src/auth.js            Supabase client, нэвтрэх, эрх, төлбөр, видео линк, данс `BANK`, үзсэн түүх (localStorage)
+src/admin.js           админы үйлдэл (admin_* RPC: хэрэглэгч, төлбөр, статистик; кино/Shorts json засвар)
 src/components/        нэг файлд нэг компонент (PascalCase.jsx)
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
 public/movies.json     киноны жагсаалт
 public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
+functions/api/         Cloudflare Pages Functions: төлбөр илгээх, Telegram webhook, видео линк
+server/                functions-ийн хуваалцсан код (Supabase, Telegram, R2 гарын үсэг)
+supabase/migrations/   хүснэгт, RLS, төлбөр ба админы функцууд, үнэ (products)
+scripts/               Telegram webhook тохируулах, видео бэлтгэх (ffmpeg)
 ```
 
 ## Код бичих дүрэм
