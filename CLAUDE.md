@@ -10,7 +10,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 - Хэрэглэгч, эрх, төлбөр: Supabase (имэйл кодоор нэвтрэх, `supabase/migrations/`). Эрх олгох, үнэ, админ шалгалт бүгд серверт (RLS, SQL функц); клиентийн шалгалт зөвхөн UI-д. Төлбөр: банкны шилжүүлэг → Telegram ботоор админ батална. Үзсэн түүх, "Дараа үзэх" localStorage-д, хэрэглэгч бүрт тусдаа.
 - Сервер: Cloudflare Pages Functions (`functions/api/`), хуваалцсан код `server/`. Нууц түлхүүрүүд (service role, бот token, R2) зөвхөн Cloudflare-ийн Secret-д, клиент код болон git-д хэзээ ч орохгүй.
 - Кино өгөгдөл: `public/movies.json`. Видео Cloudflare R2-д (`movies/<id>.mp4`, `shorts/<id>.mp4`), сайт `/api/video/<id>`-ээс хугацаатай линк авч тоглуулна. Зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
-- Байршуулалт: Cloudflare Pages, `main` салбар руу push хийхэд автоматаар https://kinotube.pages.dev дээр гарна (`functions/` хамт). Supabase migration `main`-д ороход GitHub интеграцаар хэрэгжинэ. GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
+- Байршуулалт: Cloudflare Pages, `main` салбар руу push хийхэд автоматаар https://kinotube.pages.dev дээр гарна (`functions/` хамт). Supabase migration `main`-д ороход GitHub интеграцаар хэрэгжинэ. Vercel ашиглахгүй (`vercel.json`-оор git deploy унтраасан). GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
 
 ## Команд
 

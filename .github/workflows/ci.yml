@@ -1,5 +1,5 @@
 # main руу push хийх болон PR бүрт сайтыг build хийж шалгана.
-# Deploy-г Vercel өөрөө хийнэ: main руу push → https://kinotube.vercel.app
+# Deploy-г Cloudflare Pages өөрөө хийнэ: main руу push → https://kinotube.pages.dev
 name: Build
 
 on:
