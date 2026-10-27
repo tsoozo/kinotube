@@ -19,6 +19,8 @@ export const BANK = {
 // Харуулах үнэ. Жинхэнэ дүнг сервер products хүснэгтээс авна.
 export const PLANS = [{ id: 'month', label: '1 сарын эрх', months: 1, price: 15900 }]
 export const RENTAL = { days: 3, price: 4900 }
+// Нэг киноны үнэ: админ тохируулсан бол тэр, үгүй бол үндсэн үнэ.
+export const rentPrice = (movie) => movie?.price || RENTAL.price
 
 const USER_KEY = 'kino-user'
 const GUEST_HISTORY_KEY = 'kino-history'

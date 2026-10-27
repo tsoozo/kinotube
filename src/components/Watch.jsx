@@ -5,7 +5,7 @@ import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon
 import { categoryLabel, formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
-  recordView, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
+  recordView, rentPrice, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
 } from '../auth.js'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
@@ -169,7 +169,7 @@ export default function Watch({ movie, movies, user, onUser }) {
         {backdrop}
         <LockIcon />
         <p className="player-lead">Кино үзэхийн тулд нэвтэрнэ үү</p>
-        <p className="player-sub">Энэ кино {formatMoney(RENTAL.price)} · бүх кино сард {formatMoney(month.price)}</p>
+        <p className="player-sub">Энэ кино {formatMoney(rentPrice(movie))} · бүх кино сард {formatMoney(month.price)}</p>
         <a className="btn-primary" href="#login" onClick={() => setReturnTo(movie.id)}>Нэвтрэх</a>
       </div>
     )
@@ -184,7 +184,7 @@ export default function Watch({ movie, movies, user, onUser }) {
         <div className="pay-options">
           <a className="pay-option" href={`#pay-rent-${encodeURIComponent(movie.id)}`}>
             <span>Зөвхөн энэ кино</span>
-            <b>{formatMoney(RENTAL.price)}</b>
+            <b>{formatMoney(rentPrice(movie))}</b>
             <small>{RENTAL.days} хоног үзнэ</small>
           </a>
           <a className="pay-option premium" href={`#pay-month-${encodeURIComponent(movie.id)}`}>

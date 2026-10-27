@@ -65,7 +65,7 @@ scripts/               Telegram webhook тохируулах, видео бэл�
 
 ## Өгөгдөл
 
-- `catalog` мөр: `id` (латин, зураас, өөрчлөгдөхгүй), `kind` (movie/short), `title`, `year`, `genres[]`, `categories[]` (old/ai/mongolian/chinese/korean, зөвхөн кино), `duration` ("Ц:ММ:СС"), `description`, `thumbnail` (R2 түлхүүр), `subtitles`, `movie_id` (Shorts), `added`, `published`, `video_ready`/`video_size` (зөвхөн сервер). Админ `admin_save_catalog`-оор хадгална.
+- `catalog` мөр: `id` (латин, зураас, өөрчлөгдөхгүй), `kind` (movie/short), `title`, `year`, `genres[]`, `categories[]` (old/ai/mongolian/chinese/korean, зөвхөн кино), `price_mnt` (нэг киноны үнэ, хоосон бол products-ийн rent үнэ), `duration` ("Ц:ММ:СС"), `description`, `thumbnail` (R2 түлхүүр), `subtitles`, `movie_id` (Shorts), `added`, `published`, `video_ready`/`video_size` (зөвхөн сервер). Админ `admin_save_catalog`-оор хадгална.
 - Нүүрний чип: эхэнд тогтсон ангилал (`CATEGORIES`, `src/data.js`; шинэ ангилал нэмбэл migration-ий check-д ч нэмнэ), дараа нь жанр `genres`-ээс автоматаар үүснэ, жанрын жагсаалт гараар бичихгүй. Хажуу цэс байхгүй: үндсэн цэс нь доод талын тогтмол bottom nav (`BottomNav.jsx`: Нүүр, Shorts, Түүх, Профайл), бүх дэлгэцийн хэмжээнд (zoye, 2026-10-21).
 - localStorage түлхүүрүүд `kino-` угтвартай. `auth.js`-ийн `read`/`write`-ээр дамжуулна (try/catch хамгаалалттай).
 

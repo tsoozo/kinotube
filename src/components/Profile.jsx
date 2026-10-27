@@ -106,7 +106,7 @@ export default function Profile({ user, movies, onUser, onLogout }) {
               <small>{active ? 'Сунгах' : 'Авах'}</small>
             </a>
           </div>
-          <p className="muted plan-note">Нэг киног {RENTAL.days} хоног {formatMoney(RENTAL.price)}-өөр тухайн киноны хуудаснаас авна.</p>
+          <p className="muted plan-note">Нэг киног {RENTAL.days} хоногоор тухайн киноны хуудаснаас авна (үнэ кино бүрт өөр).</p>
           {rentals.length > 0 && (
             <ul className="rentals">
               {rentals.map((r) => (

@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(20);
+select plan(24);
 
 insert into auth.users (id, email, aud, role) values
   ('bbbbbbbb-0000-4000-8000-000000000001', 'viewer@test.mn',       'authenticated', 'authenticated'),
@@ -49,6 +49,15 @@ select throws_ok($$ select public.admin_save_catalog('{"id":"draft-film","kind":
                  '23514', null, 'unknown category rejected');
 select is((public.admin_save_catalog('{"id":"draft-short","kind":"short","title":"x","categories":["ai"]}')).categories,
           '{}'::text[], 'shorts have no categories');
+-- Үнэ: зөвхөн кинонд, хоосон бол null (үндсэн үнэ).
+select is((public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"Ноорог 2","price_mnt":9900,"published":false}')).price_mnt,
+          9900, 'movie price saved');
+select is((public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"Ноорог 2","price_mnt":null,"published":false}')).price_mnt,
+          null, 'empty price falls back to default');
+select throws_ok($$ select public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"x","price_mnt":5}') $$,
+                 '23514', null, 'too low price rejected');
+select is((public.admin_save_catalog('{"id":"draft-short","kind":"short","title":"x","price_mnt":9900}')).price_mnt,
+          null, 'shorts have no price');
 select is((select categories from public.catalog where id = 'metropolis'), array['old'], 'sample movies are old films');
 select ok((select video_ready from public.catalog where id = 'draft-film') = false, 'save never marks video ready');
 select is((select count(*) from public.catalog where id = 'draft-film')::int, 1, 'admin sees drafts');

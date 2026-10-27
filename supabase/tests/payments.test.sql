@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(55);
+select plan(56);
 
 select is(
   (select count(*) from pg_tables where schemaname = 'public' and not rowsecurity)::int, 0,
@@ -72,7 +72,15 @@ select matches((select ref_code from pm), '^KT-[0-9]{4,}$', 'reference code KT-1
 select is((select id from public.create_payment_request('month')), (select id from pm), 'same open request is reused');
 select throws_ok($$ select public.create_payment_request('rent') $$, '22023', 'movie_required', 'rent needs a movie');
 select throws_ok($$ select public.create_payment_request('gold') $$, 'P0002', 'product_not_found', 'unknown product');
-select lives_ok($$ select public.create_payment_request('rent', 'nosferatu', 'Носферату') $$, 'third open request allowed');
+-- Админ тохируулсан киноны үнэ (catalog.price_mnt) products-ийн үнийг давна.
+select pg_temp.as_postgres();
+update public.catalog set price_mnt = 9900 where id = 'nosferatu';
+select pg_temp.as_user('aaaaaaaa-0000-4000-8000-000000000001');
+select is((select amount_mnt from public.create_payment_request('rent', 'nosferatu', 'Носферату')), 9900, 'rent uses the movie price (third open request allowed)');
+select pg_temp.as_postgres();
+update public.catalog set price_mnt = 12900 where id = 'nosferatu';
+select pg_temp.as_user('aaaaaaaa-0000-4000-8000-000000000001');
+select is((select amount_mnt from public.create_payment_request('rent', 'nosferatu', 'Носферату')), 12900, 'unsent request follows a new price');
 select throws_ok($$ select public.create_payment_request('rent', 'the-general', 'Генерал') $$, 'P0001', 'too_many_open', 'max 3 open requests');
 select throws_ok($$ select public.approve_payment((select id from pm)) $$, '42501', 'forbidden', 'user cannot approve');
 

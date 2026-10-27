@@ -4,11 +4,12 @@ import { EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
 import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration } from '../admin.js'
 import { CATEGORIES, categoryLabel, matches } from '../data.js'
 import { enqueue, isActive, subscribe } from '../uploads.js'
+import { RENTAL, formatMoney } from '../auth.js'
 
-const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], duration: '', description: '', movie: '', added: '', published: true }
+const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], price: '', duration: '', description: '', movie: '', added: '', published: true }
 
 const toForm = (m) => ({
-  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], movie: m.movie || '', published: m.published !== false,
+  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], price: m.price ? String(m.price) : '', movie: m.movie || '', published: m.published !== false,
 })
 
 const sizeText = (b) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(2)} GB` : `${Math.max(1, Math.round(b / 1024 ** 2))} MB`)
@@ -138,6 +139,7 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
             })}
             {!isShorts && field('year', 'Он', { inputMode: 'numeric', placeholder: '1926' })}
             {field('duration', isShorts ? 'Урт (≤ 20:00)' : 'Урт', { placeholder: isShorts ? '3:40' : '1:18:00' })}
+            {!isShorts && field('price', `Үнэ, ₮ (хоосон бол ${formatMoney(RENTAL.price)})`, { inputMode: 'numeric', placeholder: String(RENTAL.price) })}
             {!isShorts && field('genres', 'Төрөл (таслалаар)', { placeholder: 'Инээдмийн, Адал явдалт' })}
             {isShorts && (
               <label className="field">
@@ -199,7 +201,7 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
               <p className="muted">
                 {isShorts
                   ? `${m.movie ? `→ ${movies.find((x) => x.id === m.movie)?.title || m.movie}` : 'Холбоогүй'}`
-                  : [m.year && `${m.year} он`, (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', ')].filter(Boolean).join(' · ')}
+                  : [m.year && `${m.year} он`, m.price && formatMoney(m.price), (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', ')].filter(Boolean).join(' · ')}
               </p>
               <p className="admin-pills">
                 {m.published === false ? <span className="pill">Ноорог</span> : <span className="pill ok">Нийтлэгдсэн</span>}

@@ -43,7 +43,10 @@ export function cleanItem(kind, form, list, originalId) {
   const year = form.year ? Number(form.year) : null
   if (year !== null && (!Number.isInteger(year) || year < 1880 || year > 2100)) throw new Error('Оныг зөв оруулна уу.')
   const genres = form.genres.split(',').map((g) => g.trim()).filter(Boolean)
-  return { ...item, year, genres, categories: form.categories || [] }
+  const priceText = String(form.price || '').replace(/[\s,₮]/g, '')
+  const price = priceText ? Number(priceText) : null
+  if (price !== null && (!Number.isInteger(price) || price < 100 || price > 1000000)) throw new Error('Үнийг 100–1,000,000₮ хооронд бүхэл тоогоор оруулна уу.')
+  return { ...item, year, genres, categories: form.categories || [], price_mnt: price }
 }
 
 export async function saveCatalogItem(item) {

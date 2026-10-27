@@ -8,6 +8,7 @@ function fromRow(r) {
     year: r.year,
     genres: r.genres || [],
     categories: r.categories || [],
+    price: r.price_mnt || undefined,
     duration: r.duration || '',
     description: r.description || '',
     thumbnail: r.thumbnail ? `img/${r.thumbnail}` : '',

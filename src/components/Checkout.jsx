@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BackIcon, CrownIcon, SuccessIcon } from './Icons.jsx'
 import {
   BANK, PLANS, RENTAL, canWatchMovie, createPayment, effectiveStatus, findOpenPayment, formatDateTime, formatMoney,
-  loadUser, rentalEndsAt, submitPayment, takeReturnTo, watchPayment,
+  loadUser, rentPrice, rentalEndsAt, submitPayment, takeReturnTo, watchPayment,
 } from '../auth.js'
 
 async function copyText(text) {
@@ -65,7 +65,7 @@ export default function Checkout({ kind, movie, user, onUser }) {
   const [busy, setBusy] = useState(false)
   const timer = useRef(0)
   const backHash = movie ? `#watch-${encodeURIComponent(movie.id)}` : '#profile'
-  const price = rent ? RENTAL.price : PLANS[0].price
+  const price = rent ? rentPrice(movie) : PLANS[0].price
 
   // Аль хэдийн эрхтэй бол төлөх шаардлагагүй (сарын эрхийг профайлаас сунгаж болно).
   useEffect(() => {
