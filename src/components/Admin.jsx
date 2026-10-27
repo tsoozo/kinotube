@@ -1,5 +1,6 @@
 import AdminCatalog from './AdminCatalog.jsx'
 import AdminPayments from './AdminPayments.jsx'
+import AdminUploads from './AdminUploads.jsx'
 import AdminStats from './AdminStats.jsx'
 import AdminUsers from './AdminUsers.jsx'
 import AdminViews from './AdminViews.jsx'
@@ -37,6 +38,7 @@ export default function Admin({ tab, user, movies, shorts, onCatalog, onUser }) 
           </a>
         ))}
       </nav>
+      <AdminUploads />
       {content}
     </div>
   )

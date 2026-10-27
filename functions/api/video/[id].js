@@ -1,7 +1,7 @@
 // GET /api/video/<id>[?kind=short] — R2 дээрх видеоны хугацаатай линк.
 // Кино: нэвтэрсэн, эрхтэй (сарын эрх эсвэл тухайн киноны түрээс) хэрэглэгчид л. Shorts: хүн бүрт.
 import { SLUG_RE, json, serviceClient, userFromRequest } from '../../../server/core.js'
-import { r2Url } from '../../../server/r2.js'
+import { r2Configured, r2Url } from '../../../server/r2.js'
 
 const MOVIE_TTL = 6 * 3600
 const SHORT_TTL = 2 * 3600
@@ -9,7 +9,7 @@ const SHORT_TTL = 2 * 3600
 export async function onRequestGet({ request, env, params }) {
   const id = String(params.id ?? '')
   if (!SLUG_RE.test(id) || id.length > 100) return json({ error: 'Олдсонгүй.' }, 404)
-  if (!env.R2_BUCKET || !env.R2_ACCESS_KEY_ID) return json({ error: 'Видео сервер тохируулаагүй байна.' }, 503)
+  if (!r2Configured(env)) return json({ error: 'Видео сервер тохируулаагүй байна.' }, 503)
 
   const short = new URL(request.url).searchParams.get('kind') === 'short'
   if (short) return json({ url: await r2Url(env, `shorts/${id}.mp4`, SHORT_TTL), expires: SHORT_TTL })

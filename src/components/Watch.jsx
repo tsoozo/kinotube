@@ -50,7 +50,8 @@ export default function Watch({ movie, movies, user, onUser }) {
   useEffect(() => {
     setSrc(null)
     retried.current = false
-    if (user && canWatch) fetchSrc()
+    // Видео R2-д хараахан хуулагдаагүй бол шууд "удахгүй нэмэгдэнэ".
+    if (user && canWatch) movie.videoReady === false ? setVideoError(true) : fetchSrc()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movie.id, user?.id, canWatch])
 

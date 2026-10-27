@@ -9,7 +9,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 - Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#pay-rent-<id>`, `#pay-month[-<id>]`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`). Хуучин `#register`, `#forgot` нь `#login` руу очно. Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
 - Хэрэглэгч, эрх, төлбөр: Supabase (имэйл кодоор нэвтрэх, `supabase/migrations/`). Эрх олгох, үнэ, админ шалгалт бүгд серверт (RLS, SQL функц); клиентийн шалгалт зөвхөн UI-д. Төлбөр: банкны шилжүүлэг → Telegram ботоор админ батална. Үзсэн түүх, "Дараа үзэх" localStorage-д, хэрэглэгч бүрт тусдаа.
 - Сервер: Cloudflare Pages Functions (`functions/api/`), хуваалцсан код `server/`. Нууц түлхүүрүүд (service role, бот token, R2) зөвхөн Cloudflare-ийн Secret-д, клиент код болон git-д хэзээ ч орохгүй.
-- Кино өгөгдөл: `public/movies.json`. Видео Cloudflare R2-д (`movies/<id>.mp4`, `shorts/<id>.mp4`), сайт `/api/video/<id>`-ээс хугацаатай линк авч тоглуулна. Зураг `public/thumbnails/` (git-д ороогүй, зураг байхгүй бол өнгөт fallback).
+- Кино өгөгдөл: Supabase `catalog` хүснэгт (кино, Shorts), админ сайтаас тус бүрээр нэмнэ (JSON засахгүй). Видео, зураг Cloudflare R2-д (`movies/<id>.mp4`, `shorts/<id>.mp4`, `thumbnails/...`), админ хөтчөөс шууд хуулна (`src/uploads.js`, `functions/api/admin/upload.js`), дуусахад Telegram группт мэдэгдэнэ. Сайт видеог `/api/video/<id>`, зургийг `/img/<key>`-ээс авна. `public/movies.json`, `shorts.json` нь зөвхөн Supabase-гүй локал хөгжүүлэлтэд. Зураг байхгүй бол өнгөт fallback.
 - Байршуулалт: Cloudflare Pages, `main` салбар руу push хийхэд автоматаар https://kinotube.pages.dev дээр гарна (`functions/` хамт). Supabase migration `main`-д ороход GitHub интеграцаар хэрэгжинэ. Vercel ашиглахгүй (`vercel.json`-оор git deploy унтраасан). GitHub Actions (`.github/workflows/ci.yml`) push болон PR бүрт `npm ci && npm run build` ажиллуулж шалгана.
 
 ## Команд
@@ -29,14 +29,15 @@ npx wrangler pages dev dist   # сайт + functions/ (.dev.vars-аас)
 
 ```
 src/App.jsx            hash route, төлөв, хуудас сонголт
-src/data.js            movies.json унших, хайлт, жанр, санал болгох
+src/data.js            кино жагсаалт унших (Supabase catalog), хайлт, жанр, санал болгох
+src/uploads.js         видео хуулах арын дараалал (R2 multipart)
 src/auth.js            Supabase client, нэвтрэх, эрх, төлбөр, видео линк, данс `BANK`, үзсэн түүх (localStorage)
 src/admin.js           админы үйлдэл (admin_* RPC: хэрэглэгч, төлбөр, статистик; кино/Shorts json засвар)
 src/components/        нэг файлд нэг компонент (PascalCase.jsx)
 src/components/Icons.jsx   бүх айкон эндээс
 src/styles.css         бүх CSS нэг файлд
-public/movies.json     киноны жагсаалт
-public/shorts.json     Shorts (босоо, ≤20 мин) жагсаалт
+public/movies.json     жишээ жагсаалт (Supabase-гүй үед)
+public/shorts.json     жишээ Shorts (босоо, ≤20 мин)
 functions/api/         Cloudflare Pages Functions: төлбөр илгээх, Telegram webhook, видео линк
 server/                functions-ийн хуваалцсан код (Supabase, Telegram, R2 гарын үсэг)
 supabase/migrations/   хүснэгт, RLS, төлбөр ба админы функцууд, үнэ (products)
@@ -64,7 +65,7 @@ scripts/               Telegram webhook тохируулах, видео бэл�
 
 ## Өгөгдөл
 
-- `movies.json` мөр бүр: `id` (латин, зураас), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `video`, `thumbnail`, `added` ("YYYY-MM-DD"), `subtitles` (заавал биш, `.vtt` зам эсвэл `[{src, lang, label}]`).
+- `catalog` мөр: `id` (латин, зураас, өөрчлөгдөхгүй), `kind` (movie/short), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `thumbnail` (R2 түлхүүр), `subtitles`, `movie_id` (Shorts), `added`, `published`, `video_ready`/`video_size` (зөвхөн сервер). Админ `admin_save_catalog`-оор хадгална.
 - Нүүрний жанрын чип `genres`-ээс автоматаар үүснэ, гараар жагсаалт бичихгүй. Хажуу цэс байхгүй: үндсэн цэс нь доод талын тогтмол bottom nav (`BottomNav.jsx`: Нүүр, Shorts, Түүх, Профайл), бүх дэлгэцийн хэмжээнд (zoye, 2026-10-21).
 - localStorage түлхүүрүүд `kino-` угтвартай. `auth.js`-ийн `read`/`write`-ээр дамжуулна (try/catch хамгаалалттай).
 

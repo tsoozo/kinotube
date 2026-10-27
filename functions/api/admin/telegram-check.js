@@ -1,14 +1,12 @@
 // POST /api/admin/telegram-check — админ: Telegram-ийн тохиргоог алхам алхмаар шалгаж, тест мессеж илгээнэ.
 // Амжилттай бол мессеж нь очоогүй "Шалгаж байна" төлбөрүүдийг дахин илгээнэ. Нууц утгыг хэзээ ч буцаахгүй.
-import { json, notifyPaymentSubmitted, serviceClient, telegram, userFromRequest } from '../../../server/core.js'
+import { json, notifyPaymentSubmitted, requireAdmin, serviceClient, telegram } from '../../../server/core.js'
 
 const VARS = ['SUPABASE_SERVICE_ROLE_KEY', 'TELEGRAM_BOT_TOKEN', 'TELEGRAM_ADMIN_CHAT_ID', 'ADMIN_TELEGRAM_IDS', 'TELEGRAM_WEBHOOK_SECRET']
 
 export async function onRequestPost({ request, env }) {
-  const user = await userFromRequest(request, env)
-  if (!user) return json({ error: 'Нэвтэрнэ үү.' }, 401)
-  const { data: me } = await user.client.rpc('me')
-  if (!me?.is_admin) return json({ error: 'Эрхгүй.' }, 403)
+  const { user, error } = await requireAdmin(request, env)
+  if (error) return error
 
   const steps = []
   const step = (name, ok, detail = '') => steps.push({ name, ok, detail })
