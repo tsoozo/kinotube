@@ -67,10 +67,19 @@ export function allGenres(movies) {
 export function matches(movie, query) {
   const q = query.trim().toLowerCase()
   if (!q) return true
-  return [movie.title, movie.description, String(movie.year), ...(movie.genres || [])]
+  return [movie.title, movie.description, movie.year, ...(movie.genres || [])]
+    .filter(Boolean)
     .join(' ')
     .toLowerCase()
     .includes(q)
+}
+
+// Shorts-ийг өөрийн нэр, тайлбар болон холбоотой киноны нэр, он, жанраар хайна.
+export function matchesShort(short, movies, query, genre = 'Бүгд') {
+  const movie = movies.find((m) => m.id === short.movie)
+  if (genre !== 'Бүгд' && !(movie?.genres || []).includes(genre)) return false
+  const text = [short.description, movie?.title].filter(Boolean).join(' ')
+  return matches({ title: short.title, description: text, year: movie?.year, genres: movie?.genres }, query)
 }
 
 // Нэг жанртай киног эхэнд, дараа нь бусдыг нь.
