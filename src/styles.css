@@ -553,6 +553,13 @@ a.tag:hover { background: var(--surface-hover); }
 
 /* Нүүр: "Үргэлжлүүлэн үзэх" мөр */
 .movie-shelf { margin: 0 0 32px; min-width: 0; }
+.shelf-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 16px; }
+.shelf-head .section-title { margin: 0; min-width: 0; }
+.see-all {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 8px 0 12px;
+  border-radius: 16px; color: var(--link); font-weight: 500; font-size: 14px;
+}
+.see-all:hover { background: var(--surface); }
 .shelf-card { flex: 0 0 300px; min-width: 0; }
 @media (max-width: 600px) { .shelf-card { flex-basis: 260px; } }
 

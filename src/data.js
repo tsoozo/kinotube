@@ -61,8 +61,8 @@ export const isPublic = (item) => item.published !== false
 
 // Киноны ангилал (нүүрний чип, админ). Түлхүүр нь серверийн catalog.categories-тэй ижил.
 export const CATEGORIES = [
-  { id: 'old', label: 'Хуучны кино' },
   { id: 'ai', label: 'AI кино' },
+  { id: 'old', label: 'Хуучны кино' },
   { id: 'mongolian', label: 'Монгол кино' },
   { id: 'chinese', label: 'Хятад кино' },
   { id: 'korean', label: 'Солонгос кино' },

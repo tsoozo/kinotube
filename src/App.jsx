@@ -204,6 +204,7 @@ export default function App() {
         loading={movies.length === 0}
         shorts={page === 'home' && (genre === 'Бүгд' || query.trim()) ? visibleShorts : []}
         continueItems={page === 'home' && genre === 'Бүгд' && !category && !query.trim() ? continueItems : []}
+        categoryRows={page === 'home' && genre === 'Бүгд' && !category && !query.trim()}
       />
     )
 

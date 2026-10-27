@@ -3,9 +3,10 @@ import MovieCard from './MovieCard.jsx'
 import ShortsShelf from './ShortsShelf.jsx'
 import ContinueShelf from './ContinueShelf.jsx'
 import SkeletonGrid from './SkeletonGrid.jsx'
-import { CATEGORIES, categoryLabel } from '../data.js'
+import CategoryShelf from './CategoryShelf.jsx'
+import { CATEGORIES, categoryLabel, inCategory } from '../data.js'
 
-export default function Home({ movies, genres, genre, onGenre, category, onCategory, query, onClearSearch, loading, progressOf, shorts = [], continueItems = [] }) {
+export default function Home({ movies, genres, genre, onGenre, category, onCategory, query, onClearSearch, loading, progressOf, shorts = [], continueItems = [], categoryRows = false }) {
   // Сонгосон ангиллын чипийг харагдах хэсэгт гүйлгэнэ (утсан дээр).
   const chipsRef = useRef(null)
   useEffect(() => {
@@ -52,6 +53,11 @@ export default function Home({ movies, genres, genre, onGenre, category, onCateg
           {/* Shorts хамгийн эхэнд харагдана. */}
           <ContinueShelf items={continueItems} />
           <ShortsShelf shorts={shorts} />
+          {/* Ангилал бүрийн мөр (AI кино эхэнд), доор нь бүх кино. */}
+          {categoryRows && CATEGORIES.map((c) => (
+            <CategoryShelf key={c.id} category={c} movies={movies.filter((m) => inCategory(m, c.id))} progressOf={progressOf} />
+          ))}
+          {categoryRows && movies.length > 0 && <h2 className="section-title">Бүх кино</h2>}
           {movies.length > 0 && (
             <div className="grid">
               {movies.map((m) => (
