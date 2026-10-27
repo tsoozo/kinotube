@@ -9,7 +9,6 @@ const SKIP = 10
 // Кино тоглуулагч: зогсоох, гүйлгэх, ±10 секунд, бүтэн дэлгэц. Хоёр товшилтоор зүүн/баруун тал руу 10 секунд.
 export default function Player({ videoRef, src, poster, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError, children }) {
   const boxRef = useRef(null)
-  const hideTimer = useRef(0)
   const tapTimer = useRef(0)
   const lastTap = useRef(0)
   const [playing, setPlaying] = useState(false)
@@ -20,17 +19,21 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
   const [full, setFull] = useState(false)
   const [vertical, setVertical] = useState(false)
   const [flash, setFlash] = useState(null)
+  const [pokeAt, setPokeAt] = useState(0)
 
   const video = () => videoRef.current
 
-  // Удирдлагыг харуулаад, тоглож байвал 3 секундын дараа нууна.
+  // Удирдлагыг харуулна. Тоглож байвал 3 секундын дараа доорх effect нууна.
   const poke = () => {
     setShown(true)
-    clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => {
-      if (video() && !video().paused) setShown(false)
-    }, 3000)
+    setPokeAt(Date.now())
   }
+
+  useEffect(() => {
+    if (!playing || !shown) return
+    const t = setTimeout(() => setShown(false), 3000)
+    return () => clearTimeout(t)
+  }, [playing, shown, pokeAt])
 
   const toggle = () => {
     const v = video()
@@ -90,7 +93,6 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
     return () => {
       document.removeEventListener('fullscreenchange', onChange)
       document.removeEventListener('webkitfullscreenchange', onChange)
-      clearTimeout(hideTimer.current)
       clearTimeout(tapTimer.current)
     }
   }, [])
@@ -112,7 +114,7 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // Нэг товшилт: хулганаар бол зогсоох/тоглуулах, хуруугаар бол удирдлага харуулах/нуух.
+  // Нэг товшилт: хулганаар бол зогсоох/тоглуулах, хуруугаар бол удирдлага харуулах/нуух (зогссон үед тоглуулна).
   // Хоёр товшилт: зүүн хагас -10 сек, баруун хагас +10 сек.
   const onSurface = (e) => {
     const now = Date.now()
@@ -127,8 +129,9 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
     lastTap.current = now
     const touch = e.pointerType !== 'mouse'
     tapTimer.current = setTimeout(() => {
-      if (!touch) toggle()
-      else if (shown && playing) setShown(false)
+      const v = video()
+      if (!touch || !v || v.paused) toggle()
+      else if (shown) setShown(false)
       else poke()
     }, touch ? 300 : 200)
   }

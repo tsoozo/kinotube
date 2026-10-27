@@ -261,10 +261,14 @@ a.tag:hover { background: var(--surface-hover); }
 /* Кино тоглуулагчийн удирдлага */
 .vp { position: relative; width: 100%; height: 100%; background: var(--media-bg); color: var(--on-media); user-select: none; }
 .vp video { width: 100%; height: 100%; object-fit: contain; display: block; }
+/* Safari max-height-тай aspect-ratio дээр 100% өндрийг буруу тооцож доод мөрийг тасалдаг тул хүрээгээр нь тогтооно. */
+.player > .vp { position: absolute; inset: 0; height: auto; }
 .vp-surface { position: absolute; inset: 0; touch-action: manipulation; }
 .vp:not(.show) { cursor: none; }
 .vp-center, .vp-bar { transition: opacity 0.2s ease; }
 .vp:not(.show) .vp-center, .vp:not(.show) .vp-bar { opacity: 0; pointer-events: none; }
+/* Нуугдсан товч товшилтыг булаахгүй: товшилт гадаргууд очиж удирдлагыг гаргана. */
+.vp:not(.show) .vp-btn { pointer-events: none; }
 .vp-center {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 40px;
   pointer-events: none; background: var(--media-shade);
