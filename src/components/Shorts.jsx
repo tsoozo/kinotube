@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import ShortPoster from './ShortPoster.jsx'
-import { DownIcon, FilmIcon, MuteIcon, PlayIcon, SoundIcon, UpIcon } from './Icons.jsx'
+import { CloseIcon, DownIcon, FilmIcon, FullscreenExitIcon, FullscreenIcon, MuteIcon, PlayIcon, SoundIcon, UpIcon } from './Icons.jsx'
 import { videoUrl } from '../auth.js'
 
-function ShortItem({ short, index, movie, active, muted, onMute }) {
+function ShortItem({ short, index, movie, active, muted, onMute, full, onFull }) {
   const ref = useRef(null)
   const [failed, setFailed] = useState(short.videoReady === false || (short.videoReady === undefined && !short.video))
   const [paused, setPaused] = useState(false)
@@ -66,7 +66,7 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
               onClick={toggle}
               onError={() => setFailed(true)}
               // Reel маягийн босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
-              onLoadedMetadata={(e) => setVertical(e.target.videoHeight / e.target.videoWidth >= 1.6)}
+              onLoadedMetadata={(e) => setVertical(e.target.videoHeight / e.target.videoWidth >= 1.5)}
               onEnded={() => setEnded(true)}
               onTimeUpdate={(e) => setProgress(e.target.currentTime / (e.target.duration || 1))}
             />
@@ -88,10 +88,18 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
             </a>
           )}
         </div>
-        {!failed && (
-          <button className="short-action" onClick={onMute} aria-label={muted ? 'Дуу нээх' : 'Дуу хаах'}>
-            {muted ? <MuteIcon /> : <SoundIcon />}
+        <div className="short-actions">
+          <button className="short-action" onClick={onFull} aria-label={full ? 'Жижигрүүлэх' : 'Дэлгэц дүүрэн'}>
+            {full ? <FullscreenExitIcon /> : <FullscreenIcon />}
           </button>
+          {!failed && (
+            <button className="short-action" onClick={onMute} aria-label={muted ? 'Дуу нээх' : 'Дуу хаах'}>
+              {muted ? <MuteIcon /> : <SoundIcon />}
+            </button>
+          )}
+        </div>
+        {full && (
+          <button className="short-close" onClick={onFull} aria-label="Хаах"><CloseIcon /></button>
         )}
       </div>
     </article>
@@ -99,10 +107,54 @@ function ShortItem({ short, index, movie, active, muted, onMute }) {
 }
 
 export default function Shorts({ shorts, movies, startId, loading }) {
+  const rootRef = useRef(null)
   const feedRef = useRef(null)
   const [active, setActive] = useState(0)
   // Хөтөч дуутай autoplay-г хориглодог тул дуугүй эхэлнэ.
   const [muted, setMuted] = useState(true)
+  // Дэлгэц дүүрэн горим: CSS-ээр бүх дэлгэцийг эзэлнэ, боломжтой хөтөчид Fullscreen API-г ч ашиглана (iPhone-д CSS л).
+  const [full, setFull] = useState(false)
+
+  const toggleFull = () => {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement
+    if (full) {
+      setFull(false)
+      if (fsEl) (document.exitFullscreen || document.webkitExitFullscreen).call(document)?.catch?.(() => {})
+      return
+    }
+    setFull(true)
+    const el = rootRef.current
+    const req = el && (el.requestFullscreen || el.webkitRequestFullscreen)
+    if (req) req.call(el)?.catch?.(() => {})
+  }
+
+  // Esc эсвэл хөтчийн товчоор Fullscreen-ээс гарвал горимыг ч хаана.
+  useEffect(() => {
+    const onChange = () => {
+      if (!(document.fullscreenElement || document.webkitFullscreenElement)) setFull(false)
+    }
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange)
+    }
+  }, [])
+
+  // Хуудаснаас гарахад Fullscreen-ийг хаана.
+  useEffect(() => () => {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      ;(document.exitFullscreen || document.webkitExitFullscreen).call(document)?.catch?.(() => {})
+    }
+  }, [])
+
+  // Горим солиход хэмжээ өөрчлөгдөх тул одоогийн бичлэг дээрээ үлдэнэ.
+  useEffect(() => {
+    document.documentElement.classList.toggle('shorts-full', full)
+    goTo(active, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full])
+  useEffect(() => () => document.documentElement.classList.remove('shorts-full'), [])
 
   const goTo = (i, smooth = true) => {
     feedRef.current?.children[i]?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' })
@@ -139,18 +191,21 @@ export default function Shorts({ shorts, movies, startId, loading }) {
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.closest?.('input, textarea')) return
+      if (e.key === 'Escape' && full) { setFull(false); return }
+      if (e.key === 'f' || e.key === 'F') { toggleFull(); return }
       if (e.key === 'ArrowDown') { e.preventDefault(); goTo(Math.min(active + 1, shorts.length - 1)) }
       if (e.key === 'ArrowUp') { e.preventDefault(); goTo(Math.max(active - 1, 0)) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, shorts.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, shorts.length, full])
 
   if (loading) return <p className="notice">Ачаалж байна…</p>
   if (!shorts.length) return <p className="notice">Shorts алга.</p>
 
   return (
-    <div className="shorts">
+    <div className={`shorts ${full ? 'is-full' : ''}`} ref={rootRef}>
       <div className="shorts-feed" ref={feedRef}>
         {shorts.map((s, i) => (
           <ShortItem
@@ -161,6 +216,8 @@ export default function Shorts({ shorts, movies, startId, loading }) {
             active={i === active}
             muted={muted}
             onMute={() => setMuted((v) => !v)}
+            full={full}
+            onFull={toggleFull}
           />
         ))}
       </div>

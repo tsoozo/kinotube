@@ -519,9 +519,29 @@ a.tag:hover { background: var(--surface-hover); }
   background: var(--accent); color: var(--on-media); font-size: 15px; font-weight: 500;
 }
 .short-continue svg { width: 22px; height: 22px; }
-.short-action {
-  position: absolute; right: 12px; bottom: 24px; width: 44px; height: 44px; border: 0; border-radius: 50%;
+.short-actions { position: absolute; right: 12px; bottom: 24px; display: flex; flex-direction: column; gap: 12px; }
+.short-action, .short-close {
+  width: 44px; height: 44px; border: 0; border-radius: 50%; cursor: pointer;
   background: var(--media-shade); color: var(--on-media); display: grid; place-items: center;
+}
+.short-close { position: absolute; top: calc(12px + var(--safe-top)); right: 12px; }
+/* Дэлгэц дүүрэн: толгой, доод цэсийг давж бүх дэлгэцийг эзэлнэ, босоо бичлэг ирмэг хүртэл дүүрнэ. */
+.shorts.is-full { position: fixed; inset: 0; z-index: 40; margin: 0; background: var(--media-bg); }
+.shorts.is-full .shorts-feed { height: 100dvh; }
+.shorts.is-full .short { padding: 0; }
+.shorts.is-full .short-frame { width: 100%; height: 100%; aspect-ratio: auto; max-width: none; border-radius: 0; }
+.shorts.is-full .short-frame video { object-fit: contain; }
+.shorts.is-full .short-frame.is-vertical video { object-fit: cover; }
+.shorts.is-full .short-duration { top: calc(12px + var(--safe-top)); }
+.shorts.is-full .short-info { padding-bottom: calc(18px + var(--safe-bottom)); }
+.shorts.is-full .short-actions { bottom: calc(24px + var(--safe-bottom)); }
+.shorts.is-full .shorts-nav { left: auto; right: 24px; }
+.shorts.is-full .shorts-nav .icon-btn { background: var(--media-shade); color: var(--on-media); }
+html.shorts-full, html.shorts-full body { overflow: hidden; }
+@media (min-width: 800px) {
+  /* Компьютерт босоо бичлэгийг таслахгүй, дэлгэцийн өндрөөр бүтэн харуулна. */
+  .shorts.is-full .short-frame { width: auto; aspect-ratio: 9 / 16; }
+  .shorts.is-full .short { justify-content: center; }
 }
 .shorts-nav {
   position: absolute; right: 0; top: 50%; transform: translateY(-50%);
