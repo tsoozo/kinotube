@@ -1,123 +1,179 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
-import { DownloadIcon, EditIcon, PlusIcon, ResetIcon, TrashIcon } from './Icons.jsx'
-import { cleanItem, downloadJson, isCatalogEdited, resetCatalog, saveCatalog } from '../admin.js'
+import { EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
+import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration } from '../admin.js'
 import { matches } from '../data.js'
+import { enqueue, isActive, subscribe } from '../uploads.js'
 
-const EMPTY = { id: '', title: '', year: '', genres: '', duration: '', description: '', video: '', thumbnail: '', movie: '', added: '' }
+const EMPTY = { id: '', title: '', year: '', genres: '', duration: '', description: '', movie: '', added: '', published: true }
 
-const toForm = (m) => ({ ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), movie: m.movie || '' })
+const toForm = (m) => ({
+  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), movie: m.movie || '', published: m.published !== false,
+})
 
-// Кино эсвэл Shorts-ийн жагсаалтыг нэмэх, засах, устгах.
+const sizeText = (b) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(2)} GB` : `${Math.max(1, Math.round(b / 1024 ** 2))} MB`)
+
+// Видеоны төлөв: хуулж байгаа бол явц, үгүй бол R2-д байгаа эсэх.
+function VideoPill({ item, job }) {
+  if (job && isActive(job)) {
+    const pct = job.total ? Math.floor((job.loaded / job.total) * 100) : 0
+    return <span className="pill">{job.status === 'queued' ? 'Дараалалд' : `Хуулж байна ${pct}%`}</span>
+  }
+  if (job?.status === 'error') return <span className="pill bad">Хуулалт тасарсан</span>
+  if (item.videoReady) return <span className="pill ok">Видео · {item.videoSize ? sizeText(item.videoSize) : 'бэлэн'}</span>
+  return <span className="pill bad">Видео алга</span>
+}
+
+// Кино эсвэл Shorts-ийг тус бүрээр нэмэх, засах, устгах. Видеог хадгалмагц арын дараалалд хуулна:
+// дараагийн киногоо шууд нэмж болно.
 export default function AdminCatalog({ kind, list, movies, onCatalog }) {
   const isShorts = kind === 'shorts'
-  const file = isShorts ? 'shorts.json' : 'movies.json'
-  const [edited, setEdited] = useState(() => isCatalogEdited(kind))
   const [form, setForm] = useState(null)
   const [message, setMessage] = useState(null)
   const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [jobs, setJobs] = useState([])
 
-  const commit = (next, text) => {
-    saveCatalog(kind, next)
-    setEdited(true)
-    onCatalog(kind, next)
-    setMessage({ ok: true, text })
+  useEffect(() => subscribe(setJobs), [])
+
+  // Хуулалт дуусмагц жагсаалтыг дахин уншина (видео бэлэн, нийтлэгдсэн эсэх).
+  const doneCount = jobs.filter((j) => j.status === 'done').length
+  useEffect(() => {
+    if (doneCount) onCatalog()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doneCount])
+
+  const open = (next) => {
+    setForm(next)
+    setMessage(null)
+    window.scrollTo(0, 0)
   }
 
-  const submit = (e) => {
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }))
+
+  const onTitle = (title) => set({ title, ...(form.originalId || form.idEdited ? {} : { id: slugify(title) }) })
+
+  const onVideo = async (file) => {
+    set({ videoFile: file || null })
+    if (!file) return
+    const duration = await videoDuration(file)
+    if (duration) setForm((f) => (f.videoFile === file ? { ...f, duration } : f))
+  }
+
+  const submit = async (e) => {
     e.preventDefault()
+    setMessage(null)
+    setBusy(true)
     try {
       const item = cleanItem(kind, form, list, form.originalId)
-      const next = form.originalId
-        ? list.map((m) => (m.id === form.originalId ? item : m))
-        : [item, ...list]
-      commit(next, form.originalId ? `"${item.title}" хадгалагдлаа` : `"${item.title}" нэмэгдлээ`)
+      const old = list.find((m) => m.id === form.originalId)
+      item.thumbnail = old?.thumbKey || null
+      if (form.thumbFile) item.thumbnail = await uploadThumbnail(item.kind, item.id, form.thumbFile)
+      // Шинэ видеотой бол хуулж дуусахад сервер нийтэлнэ; түүнээс өмнө хэрэглэгчдэд харагдахгүй.
+      const publishAfterUpload = Boolean(form.videoFile && item.published)
+      if (form.videoFile) item.published = false
+      await saveCatalogItem(item)
+      if (form.videoFile) enqueue({ id: item.id, kind: item.kind, title: item.title, file: form.videoFile, publish: publishAfterUpload })
+      onCatalog()
       setForm(null)
+      setMessage({
+        ok: true,
+        text: form.videoFile
+          ? `"${item.title}" хадгалагдлаа. Видео хуулагдаж байна, дуусахад Telegram группт мэдэгдэнэ. Дараагийн бичлэгээ нэмж болно.`
+          : `"${item.title}" хадгалагдлаа`,
+      })
+    } catch (err) {
+      setMessage({ ok: false, text: err.message })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async (m) => {
+    if (!confirm(`"${m.title}"-г видео, зурагтай нь бүр мөсөн устгах уу?`)) return
+    try {
+      await deleteCatalogItem(isShorts ? 'short' : 'movie', m.id)
+      onCatalog()
+      setMessage({ ok: true, text: `"${m.title}" устгагдлаа` })
     } catch (err) {
       setMessage({ ok: false, text: err.message })
     }
   }
 
-  const remove = (m) => {
-    if (!confirm(`"${m.title}"-г устгах уу?`)) return
-    commit(list.filter((x) => x.id !== m.id), `"${m.title}" устгагдлаа`)
-  }
-
-  const reset = () => {
-    if (!confirm(`Энэ хөтөч дээрх засварыг арилгаж, ${file} файлын жагсаалт руу буцах уу?`)) return
-    resetCatalog(kind)
-    setEdited(false)
-    setForm(null)
-    onCatalog(kind, null)
-    setMessage({ ok: true, text: `${file} файлын жагсаалт руу буцлаа` })
-  }
-
   const field = (key, label, props = {}) => (
     <label className="field">
       <span>{label}</span>
-      <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} {...props} />
+      <input value={form[key]} onChange={(e) => set({ [key]: e.target.value })} {...props} />
     </label>
   )
 
   const visible = list.filter((m) => matches(m, query))
+  const jobOf = (id) => jobs.find((j) => j.id === id)
 
   return (
     <div className="admin-body">
       <div className="admin-toolbar">
         <input className="admin-search" type="search" placeholder={isShorts ? 'Shorts хайх' : 'Кино хайх'} value={query} onChange={(e) => setQuery(e.target.value)} />
-        <div className="admin-actions">
-          <button className="btn-primary" onClick={() => { setForm({ ...EMPTY }); setMessage(null) }}>
-            <PlusIcon width="20" height="20" /> {isShorts ? 'Shorts нэмэх' : 'Кино нэмэх'}
-          </button>
-          <button className="btn-secondary" onClick={() => downloadJson(file, list)}>
-            <DownloadIcon width="20" height="20" /> {file}
-          </button>
-        </div>
+        <button className="btn-primary" onClick={() => open({ ...EMPTY })}>
+          <PlusIcon width="20" height="20" /> {isShorts ? 'Shorts нэмэх' : 'Кино нэмэх'}
+        </button>
       </div>
-
-      {edited && (
-        <div className="demo-note admin-edited">
-          <span>Энэ хөтөч дээр засварласан жагсаалт ашиглаж байна. Бүх хүнд харагдуулахын тулд <b>{file}</b>-г татаж аваад <code>public/</code>-д солино.</span>
-          <button className="link-btn" onClick={reset}><ResetIcon width="18" height="18" /> Файл руу буцах</button>
-        </div>
-      )}
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
 
       {form && (
         <form className="panel admin-form" onSubmit={submit}>
-          <h2>{form.originalId ? 'Засах' : isShorts ? 'Шинэ Shorts' : 'Шинэ кино'}</h2>
+          <h2>{form.originalId ? `Засах · ${form.originalId}` : isShorts ? 'Шинэ Shorts' : 'Шинэ кино'}</h2>
           <div className="form-grid">
-            {field('title', 'Нэр', { required: true, autoFocus: true })}
-            {field('id', 'ID (латин, зураас)', { required: true, placeholder: 'the-general', autoCapitalize: 'off', spellCheck: false })}
+            <label className="field">
+              <span>Нэр</span>
+              <input value={form.title} onChange={(e) => onTitle(e.target.value)} required autoFocus />
+            </label>
+            {!form.originalId && field('id', 'ID (хаягт харагдана)', {
+              required: true, placeholder: 'the-general', autoCapitalize: 'off', spellCheck: false,
+              onChange: (e) => set({ id: e.target.value, idEdited: true }),
+            })}
             {!isShorts && field('year', 'Он', { inputMode: 'numeric', placeholder: '1926' })}
             {field('duration', isShorts ? 'Урт (≤ 20:00)' : 'Урт', { placeholder: isShorts ? '3:40' : '1:18:00' })}
             {!isShorts && field('genres', 'Төрөл (таслалаар)', { placeholder: 'Инээдмийн, Адал явдалт' })}
             {isShorts && (
               <label className="field">
                 <span>Бүтэн кино</span>
-                <select value={form.movie} onChange={(e) => setForm({ ...form, movie: e.target.value })}>
+                <select value={form.movie} onChange={(e) => set({ movie: e.target.value })}>
                   <option value="">Холбоогүй</option>
                   {movies.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
                 </select>
               </label>
             )}
-            {field('video', 'Видео зам', { placeholder: isShorts ? 'shorts/<id>.mp4' : 'videos/<id>.mp4' })}
-            {field('thumbnail', 'Зургийн зам', { placeholder: isShorts ? 'shorts/<id>.jpg' : 'thumbnails/<id>.jpg' })}
             {field('added', 'Нэмсэн огноо', { type: 'date' })}
           </div>
           <label className="field">
             <span>Тайлбар</span>
-            <textarea rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <textarea rows="3" value={form.description} onChange={(e) => set({ description: e.target.value })} />
+          </label>
+          <div className="form-grid">
+            <label className="field">
+              <span>Видео (MP4){form.originalId && list.find((m) => m.id === form.originalId)?.videoReady ? ' · солих бол сонгоно' : ''}</span>
+              <input type="file" accept="video/mp4,video/webm" onChange={(e) => onVideo(e.target.files[0])} />
+              {form.videoFile && <small className="muted">{form.videoFile.name} · {sizeText(form.videoFile.size)}</small>}
+            </label>
+            <label className="field">
+              <span>Зураг {isShorts ? '(9:16)' : '(16:9)'}</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => set({ thumbFile: e.target.files[0] || null })} />
+            </label>
+          </div>
+          <label className="check">
+            <input type="checkbox" checked={form.published} onChange={(e) => set({ published: e.target.checked })} />
+            <span>Сайтад нийтлэх{form.videoFile ? ' (видео хуулж дуусмагц)' : ''}</span>
           </label>
           <div className="admin-actions">
-            <button className="btn-primary" type="submit">Хадгалах</button>
+            <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Хадгалж байна…' : 'Хадгалах'}</button>
             <button className="btn-secondary" type="button" onClick={() => setForm(null)}>Болих</button>
           </div>
         </form>
       )}
 
-      <p className="muted">{visible.length} бичлэг</p>
+      <p className="muted">{visible.length} бичлэг · {visible.filter((m) => m.published === false).length} ноорог</p>
       <ul className="list">
         {visible.map((m) => (
           <li key={m.id} className="admin-row">
@@ -127,15 +183,18 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
               <p className="muted">
                 {isShorts
                   ? `${m.movie ? `→ ${movies.find((x) => x.id === m.movie)?.title || m.movie}` : 'Холбоогүй'}`
-                  : `${m.year} он · ${(m.genres || []).join(', ')}`}
+                  : [m.year && `${m.year} он`, (m.genres || []).join(', ')].filter(Boolean).join(' · ')}
               </p>
-              <p className="muted">{m.id} · {m.added}</p>
+              <p className="admin-pills">
+                {m.published === false ? <span className="pill">Ноорог</span> : <span className="pill ok">Нийтлэгдсэн</span>}
+                <VideoPill item={m} job={jobOf(m.id)} />
+              </p>
             </div>
             <div className="admin-row-actions">
-              <button className="icon-btn" aria-label="Засах" title="Засах" onClick={() => { setForm({ ...toForm(m), originalId: m.id }); setMessage(null); window.scrollTo(0, 0) }}>
+              <button className="icon-btn" aria-label="Засах" title="Засах" onClick={() => open({ ...toForm(m), originalId: m.id })}>
                 <EditIcon width="20" height="20" />
               </button>
-              <button className="icon-btn" aria-label="Устгах" title="Устгах" onClick={() => remove(m)}>
+              <button className="icon-btn" aria-label="Устгах" title="Устгах" disabled={isActive(jobOf(m.id) || {})} onClick={() => remove(m)}>
                 <TrashIcon width="20" height="20" />
               </button>
             </div>

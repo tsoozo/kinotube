@@ -1,17 +1,61 @@
-import { read } from './auth.js'
+import { configured, supabase } from './auth.js'
 
-// Админ энэ хөтөч дээр засварласан жагсаалт (байвал json файлын оронд).
-export const CATALOG_KEYS = { movies: 'kino-catalog-movies', shorts: 'kino-catalog-shorts' }
+// Supabase-ийн catalog мөр → апп доторх хэлбэр. Зураг R2-д: img/<key> (functions/img).
+function fromRow(r) {
+  return {
+    id: r.id,
+    title: r.title,
+    year: r.year,
+    genres: r.genres || [],
+    duration: r.duration || '',
+    description: r.description || '',
+    thumbnail: r.thumbnail ? `img/${r.thumbnail}` : '',
+    thumbKey: r.thumbnail || '',
+    subtitles: r.subtitles || undefined,
+    movie: r.movie_id || undefined,
+    added: r.added,
+    published: r.published,
+    videoReady: r.video_ready,
+    videoSize: r.video_size,
+  }
+}
 
-// Киноны жагсаалтыг public/movies.json файлаас уншина.
-export async function loadMovies() {
-  if (window.__MOVIES__) return window.__MOVIES__
-  const local = read(CATALOG_KEYS.movies, null)
-  if (local) return local
-  const res = await fetch('movies.json')
-  if (!res.ok) throw new Error('movies.json файлыг уншиж чадсангүй')
+let catalog = null
+
+// Кино, Shorts-ийг нэг дор уншина (админд ноорог ч орно, RLS). refresh: дахин уншина.
+function loadCatalog(refresh = false) {
+  if (!catalog || refresh) {
+    catalog = supabase
+      .from('catalog')
+      .select('*')
+      .order('added', { ascending: false })
+      .order('title')
+      .then(({ data, error }) => {
+        if (error) {
+          catalog = null
+          throw new Error('Киноны жагсаалтыг уншиж чадсангүй. Дахин оролдоно уу.')
+        }
+        return data.map((r) => ({ ...fromRow(r), kind: r.kind }))
+      })
+  }
+  return catalog
+}
+
+// Сервер тохируулаагүй (локал хөгжүүлэлт) бол public/*.json-оос.
+async function loadJson(file) {
+  const res = await fetch(file)
+  if (!res.ok) throw new Error(`${file} файлыг уншиж чадсангүй`)
   return res.json()
 }
+
+export async function loadMovies(refresh = false) {
+  if (window.__MOVIES__) return window.__MOVIES__
+  if (!configured) return loadJson('movies.json')
+  return (await loadCatalog(refresh)).filter((m) => m.kind === 'movie')
+}
+
+// Хэрэглэгчдэд харагдах нь: нийтэлсэн (json-д published байхгүй).
+export const isPublic = (item) => item.published !== false
 
 export function allGenres(movies) {
   const set = new Set()
@@ -73,13 +117,8 @@ export function toSeconds(duration) {
 }
 
 // public/shorts.json-ийг уншаад 20 минутаас урт бичлэгийг хасна.
-export async function loadShorts() {
-  let list = read(CATALOG_KEYS.shorts, null)
-  if (!list) {
-    const res = await fetch('shorts.json')
-    if (!res.ok) throw new Error('shorts.json файлыг уншиж чадсангүй')
-    list = await res.json()
-  }
+export async function loadShorts(refresh = false) {
+  const list = configured ? (await loadCatalog(refresh)).filter((m) => m.kind === 'short') : await loadJson('shorts.json')
   return list.filter((s) => {
     const sec = toSeconds(s.duration)
     if (sec > 0 && sec <= SHORTS_MAX_SECONDS) return true

@@ -10,7 +10,8 @@ import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
-import { allGenres, loadMovies, loadShorts, matches } from './data.js'
+import UploadIndicator from './components/UploadIndicator.jsx'
+import { allGenres, isPublic, loadMovies, loadShorts, matches } from './data.js'
 import {
   canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
 } from './auth.js'
@@ -30,8 +31,11 @@ function readRoute() {
 }
 
 export default function App() {
-  const [movies, setMovies] = useState([])
-  const [shorts, setShorts] = useState(null)
+  // all*: админд ноорог ч орно; хэрэглэгчдэд зөвхөн нийтэлсэн нь.
+  const [allMovies, setMovies] = useState([])
+  const [allShorts, setShorts] = useState(null)
+  const movies = useMemo(() => allMovies.filter(isPublic), [allMovies])
+  const shorts = useMemo(() => allShorts && allShorts.filter(isPublic), [allShorts])
   const [error, setError] = useState('')
   const [route, setRoute] = useState(readRoute)
   const [query, setQuery] = useState('')
@@ -140,10 +144,10 @@ export default function App() {
     go('')
   }
 
-  // Админ жагсаалт засахад бүх хуудсанд шууд харагдана. null бол json файлаас дахин уншина.
-  const onCatalog = (kind, list) => {
-    if (kind === 'movies') (list ? Promise.resolve(list) : loadMovies()).then(setMovies)
-    else (list ? Promise.resolve(list) : loadShorts()).then(setShorts)
+  // Админ кино нэмж/засахад серверээс дахин уншина.
+  const onCatalog = () => {
+    loadMovies(true).then(setMovies).catch(() => {})
+    loadShorts().then(setShorts).catch(() => {})
   }
 
   // Эхлээд нүүр рүү шилжинэ, эс бөгөөс профайлын хамгаалалт нэвтрэх хуудас руу аваачна.
@@ -157,7 +161,7 @@ export default function App() {
   const page = route.page
   const isWatch = page === 'watch'
   const isAuth = page === 'login'
-  const current = isWatch || page === 'pay' ? movies.find((m) => m.id === route.id) : null
+  const current = isWatch || page === 'pay' ? allMovies.find((m) => m.id === route.id) : null
 
   let content
   if (error) content = <p className="notice">{error}</p>
@@ -167,7 +171,7 @@ export default function App() {
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
   else if (page === 'shorts') content = <Shorts shorts={shorts || []} movies={movies} startId={route.id} loading={!shorts} />
   else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
-  else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={movies} shorts={shorts || []} onCatalog={onCatalog} onUser={setUser} />
+  else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={allMovies} shorts={allShorts || []} onCatalog={onCatalog} onUser={setUser} />
   else if (page === 'history') content = <History movies={movies} user={user} onUser={setUser} />
   else if (page === 'later') content = <Later movies={movies} user={user} onUser={setUser} />
   else if (!isWatch)
@@ -196,6 +200,7 @@ export default function App() {
         onNavigate={go}
       />
       <main className="main">{content}</main>
+      {isAdmin(user) && page !== 'admin' && <UploadIndicator />}
       <BottomNav page={page} user={user} onHome={goHome} onNavigate={go} />
     </div>
   )

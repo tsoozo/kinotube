@@ -25,6 +25,22 @@ export async function userFromRequest(request, env) {
   return { id: data.claims.sub, client }
 }
 
+// Админ эсэхийг серверт шалгана: { user, me } эсвэл алдааны Response.
+export async function requireAdmin(request, env) {
+  const user = await userFromRequest(request, env)
+  if (!user) return { error: json({ error: 'Нэвтэрнэ үү.' }, 401) }
+  const { data: me } = await user.client.rpc('me')
+  if (!me?.is_admin) return { error: json({ error: 'Эрхгүй.' }, 403) }
+  return { user, me }
+}
+
+// Админы группт энгийн мессеж (тохируулаагүй бол алгасна).
+export async function notifyAdmins(env, text) {
+  const tg = telegram(env)
+  if (!tg || !env.TELEGRAM_ADMIN_CHAT_ID) return
+  await tg.sendMessage(env.TELEGRAM_ADMIN_CHAT_ID, text).catch((e) => console.error('telegram notify', e.message))
+}
+
 // Бүх instance-д нэгдсэн хязгаар (Postgres дээр). Алдаа гарвал зөвшөөрнө.
 export async function allow(env, key, max, windowSeconds) {
   const { data, error } = await serviceClient(env).rpc('check_rate_limit', { p_key: key, p_max: max, p_window_seconds: windowSeconds })

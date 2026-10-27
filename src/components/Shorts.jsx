@@ -5,7 +5,7 @@ import { videoUrl } from '../auth.js'
 
 function ShortItem({ short, index, movie, active, muted, onMute }) {
   const ref = useRef(null)
-  const [failed, setFailed] = useState(!short.video)
+  const [failed, setFailed] = useState(short.videoReady === false || (short.videoReady === undefined && !short.video))
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
   const [ended, setEnded] = useState(false)
