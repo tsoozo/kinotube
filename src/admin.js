@@ -43,7 +43,7 @@ export function cleanItem(kind, form, list, originalId) {
   const year = form.year ? Number(form.year) : null
   if (year !== null && (!Number.isInteger(year) || year < 1880 || year > 2100)) throw new Error('Оныг зөв оруулна уу.')
   const genres = form.genres.split(',').map((g) => g.trim()).filter(Boolean)
-  return { ...item, year, genres }
+  return { ...item, year, genres, categories: form.categories || [] }
 }
 
 export async function saveCatalogItem(item) {

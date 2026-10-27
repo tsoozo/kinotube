@@ -1,14 +1,33 @@
+import { useEffect, useRef } from 'react'
 import MovieCard from './MovieCard.jsx'
 import ShortsShelf from './ShortsShelf.jsx'
 import ContinueShelf from './ContinueShelf.jsx'
 import SkeletonGrid from './SkeletonGrid.jsx'
+import { CATEGORIES, categoryLabel } from '../data.js'
 
-export default function Home({ movies, genres, genre, onGenre, query, onClearSearch, loading, progressOf, shorts = [], continueItems = [] }) {
+export default function Home({ movies, genres, genre, onGenre, category, onCategory, query, onClearSearch, loading, progressOf, shorts = [], continueItems = [] }) {
+  // Сонгосон ангиллын чипийг харагдах хэсэгт гүйлгэнэ (утсан дээр).
+  const chipsRef = useRef(null)
+  useEffect(() => {
+    const row = chipsRef.current
+    const active = row?.querySelector('.chip.active')
+    if (active) row.scrollLeft = active.offsetLeft - row.offsetLeft - (row.clientWidth - active.offsetWidth) / 2
+  }, [category])
+
   return (
     <div className="home">
-      <div className="chips" role="tablist">
-        {['Бүгд', ...genres].map((g) => (
-          <button key={g} className={`chip ${g === genre ? 'active' : ''}`} onClick={() => onGenre(g)}>
+      <div className="chips" role="tablist" ref={chipsRef}>
+        <button className={`chip ${!category && genre === 'Бүгд' ? 'active' : ''}`} onClick={() => { onGenre('Бүгд'); onCategory('') }}>
+          Бүгд
+        </button>
+        {CATEGORIES.map((c) => (
+          <button key={c.id} className={`chip ${c.id === category ? 'active' : ''}`} onClick={() => onCategory(c.id)}>
+            {c.label}
+          </button>
+        ))}
+        {genres.length > 0 && <span className="chips-divider" />}
+        {genres.map((g) => (
+          <button key={g} className={`chip ${g === genre ? 'active' : ''}`} onClick={() => onGenre(g === genre ? 'Бүгд' : g)}>
             {g}
           </button>
         ))}
@@ -25,7 +44,7 @@ export default function Home({ movies, genres, genre, onGenre, query, onClearSea
         <SkeletonGrid />
       ) : movies.length === 0 && shorts.length === 0 ? (
         <p className="notice">
-          {query ? `"${query}" хайлтаар кино, Shorts олдсонгүй.` : 'Кино алга.'}
+          {query ? `"${query}" хайлтаар кино, Shorts олдсонгүй.` : category ? `${categoryLabel(category)} одоогоор алга. Удахгүй нэмэгдэнэ.` : 'Кино алга.'}
           {query && <> <button className="link-btn" onClick={onClearSearch}>Хайлтыг арилгах</button></>}
         </p>
       ) : (

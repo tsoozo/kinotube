@@ -6,7 +6,7 @@ KinoTube-ийг хөгжүүлэхдээ энэ файлыг дагана. Эн�
 
 - **KinoTube**: YouTube загвартай кино үзэх сайт. Брэнд нэр латинаар "KinoTube".
 - Стек: React 19 + Vite 6, цэвэр JavaScript (`.jsx`), TypeScript ашиглахгүй.
-- Router сан ашиглахгүй: hash хаяг (`#watch-<id>`, `#pay-rent-<id>`, `#pay-month[-<id>]`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`). Хуучин `#register`, `#forgot` нь `#login` руу очно. Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
+- Router сан ашиглахгүй: hash хаяг (`#cat-<ангилал>`, `#watch-<id>`, `#pay-rent-<id>`, `#pay-month[-<id>]`, `#shorts`, `#shorts-<id>`, `#history`, `#later`, `#profile`, `#admin`, `#admin-<таб>`, `#login`). Хуучин `#register`, `#forgot` нь `#login` руу очно. Шинэ хуудас нэмэхдээ `src/App.jsx`-ийн `readRoute()`-д нэмнэ.
 - Хэрэглэгч, эрх, төлбөр: Supabase (имэйл кодоор нэвтрэх, `supabase/migrations/`). Эрх олгох, үнэ, админ шалгалт бүгд серверт (RLS, SQL функц); клиентийн шалгалт зөвхөн UI-д. Төлбөр: банкны шилжүүлэг → Telegram ботоор админ батална. Үзсэн түүх, "Дараа үзэх" localStorage-д, хэрэглэгч бүрт тусдаа.
 - Сервер: Cloudflare Pages Functions (`functions/api/`), хуваалцсан код `server/`. Нууц түлхүүрүүд (service role, бот token, R2) зөвхөн Cloudflare-ийн Secret-д, клиент код болон git-д хэзээ ч орохгүй.
 - Кино өгөгдөл: Supabase `catalog` хүснэгт (кино, Shorts), админ сайтаас тус бүрээр нэмнэ (JSON засахгүй). Видео, зураг Cloudflare R2-д (`movies/<id>.mp4`, `shorts/<id>.mp4`, `thumbnails/...`), админ хөтчөөс шууд хуулна (`src/uploads.js`, `functions/api/admin/upload.js`), дуусахад Telegram группт мэдэгдэнэ. Сайт видеог `/api/video/<id>`, зургийг `/img/<key>`-ээс авна. `public/movies.json`, `shorts.json` нь зөвхөн Supabase-гүй локал хөгжүүлэлтэд. Зураг байхгүй бол өнгөт fallback.
@@ -65,8 +65,8 @@ scripts/               Telegram webhook тохируулах, видео бэл�
 
 ## Өгөгдөл
 
-- `catalog` мөр: `id` (латин, зураас, өөрчлөгдөхгүй), `kind` (movie/short), `title`, `year`, `genres[]`, `duration` ("Ц:ММ:СС"), `description`, `thumbnail` (R2 түлхүүр), `subtitles`, `movie_id` (Shorts), `added`, `published`, `video_ready`/`video_size` (зөвхөн сервер). Админ `admin_save_catalog`-оор хадгална.
-- Нүүрний жанрын чип `genres`-ээс автоматаар үүснэ, гараар жагсаалт бичихгүй. Хажуу цэс байхгүй: үндсэн цэс нь доод талын тогтмол bottom nav (`BottomNav.jsx`: Нүүр, Shorts, Түүх, Профайл), бүх дэлгэцийн хэмжээнд (zoye, 2026-10-21).
+- `catalog` мөр: `id` (латин, зураас, өөрчлөгдөхгүй), `kind` (movie/short), `title`, `year`, `genres[]`, `categories[]` (old/ai/mongolian/chinese/korean, зөвхөн кино), `duration` ("Ц:ММ:СС"), `description`, `thumbnail` (R2 түлхүүр), `subtitles`, `movie_id` (Shorts), `added`, `published`, `video_ready`/`video_size` (зөвхөн сервер). Админ `admin_save_catalog`-оор хадгална.
+- Нүүрний чип: эхэнд тогтсон ангилал (`CATEGORIES`, `src/data.js`; шинэ ангилал нэмбэл migration-ий check-д ч нэмнэ), дараа нь жанр `genres`-ээс автоматаар үүснэ, жанрын жагсаалт гараар бичихгүй. Хажуу цэс байхгүй: үндсэн цэс нь доод талын тогтмол bottom nav (`BottomNav.jsx`: Нүүр, Shorts, Түүх, Профайл), бүх дэлгэцийн хэмжээнд (zoye, 2026-10-21).
 - localStorage түлхүүрүүд `kino-` угтвартай. `auth.js`-ийн `read`/`write`-ээр дамжуулна (try/catch хамгаалалттай).
 
 ## Git

@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(16);
+select plan(20);
 
 insert into auth.users (id, email, aud, role) values
   ('bbbbbbbb-0000-4000-8000-000000000001', 'viewer@test.mn',       'authenticated', 'authenticated'),
@@ -42,6 +42,14 @@ select throws_ok($$ select public.admin_save_catalog('{"id":"draft-film","kind":
                  '22023', 'kind_mismatch', 'kind cannot change');
 select throws_ok($$ select public.admin_save_catalog('{"id":"Bad Id","kind":"movie","title":"x"}') $$,
                  '23514', null, 'invalid id rejected');
+-- Ангилал: зөвхөн тогтсон түлхүүрүүд, давхардалгүй; Shorts ангилалгүй.
+select is((public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"Ноорог 2","categories":["korean","old","korean"],"published":false}')).categories,
+          array['korean','old'], 'categories saved, deduped');
+select throws_ok($$ select public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"x","categories":["usa"]}') $$,
+                 '23514', null, 'unknown category rejected');
+select is((public.admin_save_catalog('{"id":"draft-short","kind":"short","title":"x","categories":["ai"]}')).categories,
+          '{}'::text[], 'shorts have no categories');
+select is((select categories from public.catalog where id = 'metropolis'), array['old'], 'sample movies are old films');
 select ok((select video_ready from public.catalog where id = 'draft-film') = false, 'save never marks video ready');
 select is((select count(*) from public.catalog where id = 'draft-film')::int, 1, 'admin sees drafts');
 

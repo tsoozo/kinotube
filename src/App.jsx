@@ -11,15 +11,16 @@ import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
 import UploadIndicator from './components/UploadIndicator.jsx'
-import { allGenres, isPublic, loadMovies, loadShorts, matches, matchesShort } from './data.js'
+import { CATEGORIES, allGenres, inCategory, isPublic, loadMovies, loadShorts, matches, matchesShort } from './data.js'
 import {
   canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
 } from './auth.js'
 
-// Хаяг: #watch-<id>, #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
+// Хаяг: #cat-<ангилал>, #watch-<id>, #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
 // Хуучин #register, #forgot нь #login руу очно.
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
+  if (hash.startsWith('cat-')) return { page: 'home', category: hash.slice(4) }
   if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
   const pay = hash.match(/^pay-(rent|month)(?:-(.+))?$/)
   if (pay) return { page: 'pay', kind: pay[1], id: pay[2] || '' }
@@ -89,19 +90,26 @@ export default function App() {
     if (['profile', 'admin', 'pay'].includes(route.page) && !user) location.hash = 'login'
   }, [route, user])
 
-  const genres = useMemo(() => allGenres(movies), [movies])
+  // Ангилал хаягаас (#cat-korean), жанр нь ангиллын дотор шүүнэ.
+  const category = CATEGORIES.some((c) => c.id === route.category) ? route.category : ''
+  const genres = useMemo(() => allGenres(movies.filter((m) => inCategory(m, category))), [movies, category])
 
   const visible = useMemo(
-    () => movies.filter((m) => matches(m, query) && (genre === 'Бүгд' || (m.genres || []).includes(genre))),
-    [movies, query, genre],
+    () => movies.filter((m) => inCategory(m, category) && matches(m, query) && (genre === 'Бүгд' || (m.genres || []).includes(genre))),
+    [movies, query, genre, category],
   )
 
-  // Хайлт эсвэл жанр сонгосон үед зөвхөн тохирох Shorts.
+  // Хайлт, ангилал эсвэл жанр сонгосон үед зөвхөн тохирох Shorts.
   const visibleShorts = useMemo(() => {
     if (!shorts) return []
-    if (!query.trim() && genre === 'Бүгд') return shorts
-    return shorts.filter((s) => matchesShort(s, movies, query, genre))
-  }, [shorts, movies, query, genre])
+    if (!query.trim() && genre === 'Бүгд' && !category) return shorts
+    return shorts.filter((s) => matchesShort(s, movies, query, genre, category))
+  }, [shorts, movies, query, genre, category])
+
+  // Ангилал солиход өмнөх жанр тэнд байхгүй байж болно.
+  useEffect(() => setGenre('Бүгд'), [category])
+
+  const onCategory = (id) => go(id && id !== category ? `#cat-${id}` : '')
 
   // Нүүрний карт дээрх улаан зурвас.
   const progress = useMemo(() => {
@@ -188,12 +196,14 @@ export default function App() {
         genres={genres}
         genre={genre}
         onGenre={setGenre}
+        category={category}
+        onCategory={onCategory}
         query={query}
         onClearSearch={() => setQuery('')}
         progressOf={(id) => progress[id]}
         loading={movies.length === 0}
         shorts={page === 'home' && (genre === 'Бүгд' || query.trim()) ? visibleShorts : []}
-        continueItems={page === 'home' && genre === 'Бүгд' && !query.trim() ? continueItems : []}
+        continueItems={page === 'home' && genre === 'Бүгд' && !category && !query.trim() ? continueItems : []}
       />
     )
 

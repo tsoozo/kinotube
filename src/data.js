@@ -7,6 +7,7 @@ function fromRow(r) {
     title: r.title,
     year: r.year,
     genres: r.genres || [],
+    categories: r.categories || [],
     duration: r.duration || '',
     description: r.description || '',
     thumbnail: r.thumbnail ? `img/${r.thumbnail}` : '',
@@ -58,6 +59,17 @@ export async function loadMovies(refresh = false) {
 // Хэрэглэгчдэд харагдах нь: нийтэлсэн (json-д published байхгүй).
 export const isPublic = (item) => item.published !== false
 
+// Киноны ангилал (нүүрний чип, админ). Түлхүүр нь серверийн catalog.categories-тэй ижил.
+export const CATEGORIES = [
+  { id: 'old', label: 'Хуучны кино' },
+  { id: 'ai', label: 'AI кино' },
+  { id: 'mongolian', label: 'Монгол кино' },
+  { id: 'chinese', label: 'Хятад кино' },
+  { id: 'korean', label: 'Солонгос кино' },
+]
+export const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label || id
+export const inCategory = (movie, category) => !category || (movie?.categories || []).includes(category)
+
 export function allGenres(movies) {
   const set = new Set()
   movies.forEach((m) => (m.genres || []).forEach((g) => set.add(g)))
@@ -67,7 +79,7 @@ export function allGenres(movies) {
 export function matches(movie, query) {
   const q = query.trim().toLowerCase()
   if (!q) return true
-  return [movie.title, movie.description, movie.year, ...(movie.genres || [])]
+  return [movie.title, movie.description, movie.year, ...(movie.genres || []), ...(movie.categories || []).map(categoryLabel)]
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
@@ -75,11 +87,12 @@ export function matches(movie, query) {
 }
 
 // Shorts-ийг өөрийн нэр, тайлбар болон холбоотой киноны нэр, он, жанраар хайна.
-export function matchesShort(short, movies, query, genre = 'Бүгд') {
+export function matchesShort(short, movies, query, genre = 'Бүгд', category = '') {
   const movie = movies.find((m) => m.id === short.movie)
   if (genre !== 'Бүгд' && !(movie?.genres || []).includes(genre)) return false
+  if (category && !inCategory(movie, category)) return false
   const text = [short.description, movie?.title].filter(Boolean).join(' ')
-  return matches({ title: short.title, description: text, year: movie?.year, genres: movie?.genres }, query)
+  return matches({ title: short.title, description: text, year: movie?.year, genres: movie?.genres, categories: movie?.categories }, query)
 }
 
 // Нэг жанртай киног эхэнд, дараа нь бусдыг нь.

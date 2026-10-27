@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
-import { formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
+import { categoryLabel, formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
   recordView, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
@@ -286,6 +286,9 @@ export default function Watch({ movie, movies, user, onUser }) {
           )}
         </div>
         <div className="watch-chips">
+          {(movie.categories || []).map((c) => (
+            <a key={c} className="tag" href={`#cat-${c}`}>{categoryLabel(c)}</a>
+          ))}
           {(movie.genres || []).map((g) => (
             <span key={g} className="tag">{g}</span>
           ))}

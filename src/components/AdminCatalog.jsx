@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import { EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
 import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration } from '../admin.js'
-import { matches } from '../data.js'
+import { CATEGORIES, categoryLabel, matches } from '../data.js'
 import { enqueue, isActive, subscribe } from '../uploads.js'
 
-const EMPTY = { id: '', title: '', year: '', genres: '', duration: '', description: '', movie: '', added: '', published: true }
+const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], duration: '', description: '', movie: '', added: '', published: true }
 
 const toForm = (m) => ({
-  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), movie: m.movie || '', published: m.published !== false,
+  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], movie: m.movie || '', published: m.published !== false,
 })
 
 const sizeText = (b) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(2)} GB` : `${Math.max(1, Math.round(b / 1024 ** 2))} MB`)
@@ -107,6 +107,9 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
     </label>
   )
 
+  const toggleCategory = (id) =>
+    set({ categories: form.categories.includes(id) ? form.categories.filter((c) => c !== id) : [...form.categories, id] })
+
   const visible = list.filter((m) => matches(m, query))
   const jobOf = (id) => jobs.find((j) => j.id === id)
 
@@ -147,6 +150,19 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
             )}
             {field('added', 'Нэмсэн огноо', { type: 'date' })}
           </div>
+          {!isShorts && (
+            <fieldset className="field category-picks">
+              <span>Ангилал</span>
+              <div>
+                {CATEGORIES.map((c) => (
+                  <label key={c.id} className="check">
+                    <input type="checkbox" checked={form.categories.includes(c.id)} onChange={() => toggleCategory(c.id)} />
+                    <span>{c.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <label className="field">
             <span>Тайлбар</span>
             <textarea rows="3" value={form.description} onChange={(e) => set({ description: e.target.value })} />
@@ -183,7 +199,7 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
               <p className="muted">
                 {isShorts
                   ? `${m.movie ? `→ ${movies.find((x) => x.id === m.movie)?.title || m.movie}` : 'Холбоогүй'}`
-                  : [m.year && `${m.year} он`, (m.genres || []).join(', ')].filter(Boolean).join(' · ')}
+                  : [m.year && `${m.year} он`, (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', ')].filter(Boolean).join(' · ')}
               </p>
               <p className="admin-pills">
                 {m.published === false ? <span className="pill">Ноорог</span> : <span className="pill ok">Нийтлэгдсэн</span>}
