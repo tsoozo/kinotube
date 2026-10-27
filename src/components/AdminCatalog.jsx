@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
-import { EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
-import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration } from '../admin.js'
+import CoverPicker from './CoverPicker.jsx'
+import { AutoIcon, EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
+import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration, videoSource } from '../admin.js'
+import { releaseFrames, videoFrames } from '../frames.js'
 import { CATEGORIES, categoryLabel, matches } from '../data.js'
 import { enqueue, isActive, subscribe } from '../uploads.js'
 import { RENTAL, formatMoney } from '../auth.js'
@@ -90,6 +92,31 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
     }
   }
 
+  // Нүүргүй, видео нь байршсан бичлэг бүрт видеоноос хамгийн тохиромжтой кадрыг нүүр болгоно.
+  const coverless = list.filter((m) => !m.thumbKey && m.videoReady)
+  const autoCovers = async () => {
+    if (!confirm(`Нүүр зураггүй ${coverless.length} бичлэгт видеоноос нь нүүр сонгож тавих уу?`)) return
+    setBusy(true)
+    let done = 0
+    const failed = []
+    for (const m of coverless) {
+      setMessage({ ok: true, text: `Нүүр сонгож байна ${done + failed.length + 1}/${coverless.length} · ${m.title}` })
+      try {
+        const k = isShorts ? 'short' : 'movie'
+        const { frames, best } = await videoFrames(await videoSource(k, m.id), k)
+        const thumbnail = await uploadThumbnail(k, m.id, frames[best].file)
+        releaseFrames(frames)
+        await saveCatalogItem({ ...cleanItem(kind, toForm(m), list, m.id), thumbnail })
+        done++
+      } catch (err) {
+        failed.push(`${m.title}: ${err.message}`)
+      }
+    }
+    setBusy(false)
+    onCatalog()
+    setMessage({ ok: !failed.length, text: [`${done} бичлэгт нүүр тавилаа.`, ...failed].join(' ') })
+  }
+
   const remove = async (m) => {
     if (!confirm(`"${m.title}"-г видео, зурагтай нь бүр мөсөн устгах уу?`)) return
     try {
@@ -121,6 +148,11 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
         <button className="btn-primary" onClick={() => open({ ...EMPTY })}>
           <PlusIcon width="20" height="20" /> {isShorts ? 'Shorts нэмэх' : 'Кино нэмэх'}
         </button>
+        {coverless.length > 0 && (
+          <button className="btn-secondary" disabled={busy} onClick={autoCovers} title="Видеоноос хамгийн тохиромжтой кадрыг нүүр болгоно">
+            <AutoIcon width="20" height="20" /> Нүүр сонгох ({coverless.length})
+          </button>
+        )}
       </div>
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
@@ -180,6 +212,15 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => set({ thumbFile: e.target.files[0] || null })} />
             </label>
           </div>
+          <CoverPicker
+            kind={isShorts ? 'short' : 'movie'}
+            id={form.originalId}
+            file={form.videoFile}
+            hasVideo={Boolean(form.originalId && list.find((m) => m.id === form.originalId)?.videoReady)}
+            auto={!form.thumbFile && !list.find((m) => m.id === form.originalId)?.thumbKey}
+            value={form.thumbFile}
+            onPick={(thumbFile) => set({ thumbFile })}
+          />
           <label className="check">
             <input type="checkbox" checked={form.published} onChange={(e) => set({ published: e.target.checked })} />
             <span>Сайтад нийтлэх{form.videoFile ? ' (видео хуулж дуусмагц)' : ''}</span>

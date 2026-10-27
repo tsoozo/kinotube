@@ -18,6 +18,7 @@ import {
   Download,
   Gauge,
   History,
+  Images,
   House,
   Lock,
   LogOut,
@@ -35,6 +36,7 @@ import {
   Smartphone,
   SquarePlay,
   Volume2,
+  WandSparkles,
   VolumeX,
   Trash2,
   X,
@@ -85,3 +87,5 @@ export const SuccessIcon = icon(CircleCheck)
 export const CardIcon = icon(CreditCard)
 export const QrIcon = icon(QrCode)
 export const PhoneIcon = icon(Smartphone)
+export const FramesIcon = icon(Images)
+export const AutoIcon = icon(WandSparkles)

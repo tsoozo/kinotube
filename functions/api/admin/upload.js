@@ -5,6 +5,7 @@
 //  abort    → тасалсан/алдаа гарсан хуулалтыг цуцалж, шалтгааныг группт мэдэгдэнэ
 //  thumb    → зургийн нэг PUT линк (кино хадгалахаас өмнө)
 //  delete   → кино/Shorts-ийг видео, зурагтай нь устгана
+//  source   → R2 дээрх видеоны унших линк (видеоноос нүүр зураг сонгох)
 import { SLUG_RE, json, notifyAdmins, requireAdmin, serviceClient } from '../../../server/core.js'
 import {
   abortMultipart, completeMultipart, createMultipart, deleteObject, partUrls, r2Configured, r2Url,
@@ -49,7 +50,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const db = serviceClient(env)
-  const { data: item, error: dbError } = await db.from('catalog').select('id, kind, title, thumbnail, published').eq('id', id).maybeSingle()
+  const { data: item, error: dbError } = await db.from('catalog').select('id, kind, title, thumbnail, published, video_ready').eq('id', id).maybeSingle()
   if (dbError) return json({ error: dbError.message }, 500)
   if (!item) return json({ error: 'Эхлээд кино/Shorts-ийн мэдээллийг хадгална уу.' }, 404)
   if (item.kind !== kind) return json({ error: 'Төрөл таарахгүй байна.' }, 400)
@@ -108,6 +109,11 @@ export async function onRequestPost({ request, env }) {
           ].join('\n'))
         }
         return json({ ok: true })
+      }
+
+      case 'source': {
+        if (!item.video_ready) return json({ error: 'Видео хараахан байршаагүй байна.' }, 409)
+        return json({ url: await r2Url(env, key, 3600) })
       }
 
       case 'delete': {

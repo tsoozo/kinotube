@@ -73,6 +73,9 @@ export async function uploadThumbnail(kind, id, file) {
   return key
 }
 
+// R2 дээрх видеоны унших линк (нүүр зураг сонгоход).
+export const videoSource = async (kind, id) => (await upload({ action: 'source', kind, id })).url
+
 // Видео файлын уртыг "Ц:ММ:СС" хэлбэрээр (хөтөч уншиж чадахгүй бол '').
 export function videoDuration(file) {
   return new Promise((resolve) => {
