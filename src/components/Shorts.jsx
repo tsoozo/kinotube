@@ -81,8 +81,8 @@ function ShortItem({ short, index, movie, active, muted, onMute, full, onFull })
           {movie && (
             <span className="short-movie"><FilmIcon /> <span>{movie.title}</span></span>
           )}
-          {/* Бичлэг дуусахад (видеогүй үед шууд) бүтэн кино руу орох товч. */}
-          {movie && (ended || failed) && (
+          {/* Бүтэн кино руу орох товч үргэлж харагдана. */}
+          {movie && (
             <a className="short-continue" href={`#watch-${encodeURIComponent(movie.id)}`}>
               <PlayIcon /> Цааш үзэх
             </a>
