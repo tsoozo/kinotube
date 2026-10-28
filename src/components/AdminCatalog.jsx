@@ -175,7 +175,7 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
             {!isShorts && field('genres', 'Төрөл (таслалаар)', { placeholder: 'Инээдмийн, Адал явдалт' })}
             {isShorts && (
               <label className="field">
-                <span>Бүтэн кино</span>
+                <span>Бүтэн кино ("Цааш үзэх" товч энэ кино руу орно)</span>
                 <select value={form.movie} onChange={(e) => set({ movie: e.target.value })}>
                   <option value="">Холбоогүй</option>
                   {movies.map((m) => <option key={m.id} value={m.id}>{m.title}</option>)}
@@ -247,6 +247,10 @@ export default function AdminCatalog({ kind, list, movies, onCatalog }) {
               <p className="admin-pills">
                 {m.published === false ? <span className="pill">Ноорог</span> : <span className="pill ok">Нийтлэгдсэн</span>}
                 <VideoPill item={m} job={jobOf(m.id)} />
+                {/* Кинотой холбоогүй (эсвэл кино нь ноорог) бол Shorts дээр "Цааш үзэх" товч гарахгүй. */}
+                {isShorts && !movies.some((x) => x.id === m.movie && x.published !== false) && (
+                  <span className="pill bad">"Цааш үзэх" товчгүй</span>
+                )}
               </p>
             </div>
             <div className="admin-row-actions">
