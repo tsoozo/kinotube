@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { stats } from '../admin.js'
-import { formatDate, formatMoney, isActive } from '../auth.js'
+import { formatDate, formatMoney, isActive, userContact } from '../auth.js'
 
 export default function AdminStats({ movies, shorts }) {
   const [s, setS] = useState(null)
@@ -59,7 +59,7 @@ export default function AdminStats({ movies, shorts }) {
           <ol className="rank">
             {s.recent.map((u) => (
               <li key={u.id}>
-                <a href="#admin-users">{u.email}</a>
+                <a href="#admin-users">{userContact(u) || u.name}</a>
                 <span className="muted">{isActive(u) ? 'Эрхтэй' : formatDate(u.createdAt)}</span>
               </li>
             ))}

@@ -106,7 +106,8 @@ function toUser(x) {
   return {
     id: x.id,
     email: x.email,
-    name: x.name || x.email,
+    phone: x.phone,
+    name: x.name || 'Хэрэглэгч',
     createdAt: x.created_at,
     role: x.is_admin ? 'admin' : undefined,
     blocked: x.blocked,
@@ -126,10 +127,16 @@ async function rpc(name, args) {
 export const listUsers = async (filter = 'all', query = '') =>
   (await rpc('admin_list_users', { p_filter: filter, p_query: query.trim() || null })).map(toUser)
 
-export async function findUserByEmail(email) {
-  const x = await rpc('admin_find_user', { p_email: email.trim() })
+// Утасны дугаар (эсвэл хуучин бүртгэлийн имэйл)-аар хайна.
+export async function findUser(query) {
+  const q = query.trim()
+  const x = await rpc('admin_find_user', { p_email: /@/.test(q) ? q : q.replace(/\D/g, '') })
   return x ? toUser(x) : null
 }
+
+// Кодоо мартсан хэрэглэгчид шинэ 4 оронтой код (дугаар хоосон бол хуучнаараа).
+export const adminSetPin = async (id, phone, pin) =>
+  toUser(await rpc('admin_set_pin', { p_user: id, p_phone: phone ? phone.replace(/\D/g, '') : null, p_pin: pin }))
 
 // Үнэгүй эрх олгоно. Идэвхтэй бол дуусах хугацаан дээр нь нэмнэ.
 export const adminGrant = async (id, { days = 0, months = 0 }) =>

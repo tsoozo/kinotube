@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  adminCancelPlan, adminGrant, adminSetBlocked, adminSetEnd, adminSetRole, findUserByEmail, listUsers,
+  adminCancelPlan, adminGrant, adminSetBlocked, adminSetEnd, adminSetPin, adminSetRole, findUser, listUsers,
 } from '../admin.js'
-import { daysLeft, formatDate, formatMoney, isActive, isAdmin, isValidEmail, loadUser } from '../auth.js'
+import { daysLeft, formatDate, formatMoney, isActive, isAdmin, isValidPhone, isValidPin, loadUser, userContact } from '../auth.js'
 
 const FILTERS = [
   ['all', 'Бүгд'],
@@ -42,7 +42,7 @@ function GrantControls({ user, onAction }) {
           <button key={label} className="chip" onClick={() => grant(label, period)}>+{label}</button>
         ))}
         {isActive(user) && (
-          <button className="chip danger" onClick={() => confirm(`${user.email}-ийн эрхийг цуцлах уу?`) && onAction(adminCancelPlan, () => 'эрх цуцлагдлаа.')}>
+          <button className="chip danger" onClick={() => confirm(`${userContact(user)}-ийн эрхийг цуцлах уу?`) && onAction(adminCancelPlan, () => 'эрх цуцлагдлаа.')}>
             Цуцлах
           </button>
         )}
@@ -65,12 +65,41 @@ function GrantControls({ user, onAction }) {
   )
 }
 
+// Кодоо мартсан хэрэглэгчид шинэ код (утсаар нь хүнийг таниад өгнө).
+function PinReset({ user, onAction, busy }) {
+  const [phone, setPhone] = useState(user.phone || '')
+  const [pin, setPin] = useState('')
+  const [err, setErr] = useState('')
+  const submit = (e) => {
+    e.preventDefault()
+    if (!isValidPhone(phone)) return setErr('Утасны дугаараа 8 оронтойгоор оруулна уу.')
+    if (!isValidPin(pin)) return setErr('4 оронтой код оруулна уу.')
+    setErr('')
+    onAction((id) => adminSetPin(id, phone, pin), `шинэ код ${pin} тохирууллаа.`)
+    setPin('')
+  }
+  return (
+    <section className="panel">
+      <h2>Нэвтрэх код</h2>
+      <p className="muted">Кодоо мартсан хэрэглэгчид шинэ 4 оронтой код өгнө. Хүнийг нь шалгаад өгөөрэй.</p>
+      <form className="grant-custom" onSubmit={submit}>
+        <input className="admin-search" type="tel" inputMode="numeric" maxLength={8} placeholder="Утасны дугаар" aria-label="Утасны дугаар"
+          value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} />
+        <input className="admin-search" type="text" inputMode="numeric" maxLength={4} placeholder="Шинэ код" aria-label="Шинэ код"
+          value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
+        <button className="btn-small" type="submit" disabled={busy}>Тохируулах</button>
+      </form>
+      {err && <p className="form-error">{err}</p>}
+    </section>
+  )
+}
+
 export default function AdminUsers({ me, onUser }) {
   const [users, setUsers] = useState(null)
   const [filter, setFilter] = useState('all')
   const [open, setOpen] = useState(null)
   const [message, setMessage] = useState(null)
-  const [email, setEmail] = useState('')
+  const [query, setQuery] = useState('')
   const [target, setTarget] = useState(null)
   const [grantMsg, setGrantMsg] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -93,7 +122,7 @@ export default function AdminUsers({ me, onUser }) {
       const next = await fn(u.id)
       if (u.id === me.id) loadUser().then((x) => x && onUser(x))
       if (target?.id === u.id) setTarget(next)
-      setMsg({ ok: true, text: `${u.email}: ${text(next)}` })
+      setMsg({ ok: true, text: `${userContact(u) || u.name}: ${text(next)}` })
       reload()
     } catch (e) {
       setMsg({ ok: false, text: e.message })
@@ -106,11 +135,11 @@ export default function AdminUsers({ me, onUser }) {
     e.preventDefault()
     setGrantMsg(null)
     setTarget(null)
-    if (!isValidEmail(email)) return setGrantMsg({ ok: false, text: 'Имэйл хаягаа зөв оруулна уу.' })
+    if (!isValidPhone(query) && !/@/.test(query)) return setGrantMsg({ ok: false, text: 'Утасны дугаараа 8 оронтойгоор оруулна уу.' })
     try {
-      const u = await findUserByEmail(email)
+      const u = await findUser(query)
       if (u) setTarget(u)
-      else setGrantMsg({ ok: false, text: `${email.trim()} хаягтай хэрэглэгч олдсонгүй. Эхлээд сайтад нэг удаа нэвтэрсэн байх ёстой.` })
+      else setGrantMsg({ ok: false, text: `${query.trim()} дугаартай хэрэглэгч олдсонгүй. Эхлээд сайтад бүртгүүлсэн байх ёстой.` })
     } catch (err) {
       setGrantMsg({ ok: false, text: err.message })
     }
@@ -119,7 +148,7 @@ export default function AdminUsers({ me, onUser }) {
   const userLine = (u) => (
     <span className="admin-user-text">
       <b>{u.name} {isAdmin(u) && <span className="pill ok">Админ</span>} {u.blocked && <span className="pill bad">Хаагдсан</span>}</b>
-      <span className="muted">{u.email} · {formatDate(u.createdAt)}</span>
+      <span className="muted">{userContact(u) || 'Дугааргүй'} · {formatDate(u.createdAt)}</span>
     </span>
   )
 
@@ -146,6 +175,7 @@ export default function AdminUsers({ me, onUser }) {
             {isAdmin(u) ? 'Админ эрх хасах' : 'Админ болгох'}
           </button>
         </div>
+        <PinReset user={u} onAction={act} busy={busy} />
         <p className="muted">
           Түрээсэлж буй кино: {u.rentals} · Үзсэн кино: {u.views} · Нийт төлсөн: {formatMoney(u.paid)}
         </p>
@@ -157,16 +187,16 @@ export default function AdminUsers({ me, onUser }) {
     <div className="admin-body">
       <section className="panel quick-grant">
         <h2>Эрх олгох, цуцлах</h2>
-        <p className="muted">Хэрэглэгчийн нэвтэрдэг имэйлийг оруулна.</p>
+        <p className="muted">Хэрэглэгчийн утасны дугаарыг оруулна.</p>
         <form className="grant-custom" onSubmit={find}>
           <input
             className="admin-search"
-            type="email"
-            inputMode="email"
-            placeholder="ner@jishee.mn"
-            aria-label="Имэйл"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setGrantMsg(null) }}
+            type="tel"
+            inputMode="numeric"
+            placeholder="99112233"
+            aria-label="Утасны дугаар"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setGrantMsg(null) }}
           />
           <button className="btn-small" type="submit">Хайх</button>
         </form>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { approvePayment, checkTelegram, listPaymentRequests, rejectPayment } from '../admin.js'
-import { PAYMENT_STATUS_TEXT, formatDateTime, formatMoney } from '../auth.js'
+import { PAYMENT_STATUS_TEXT, formatDateTime, formatMoney, formatPhone } from '../auth.js'
 
 const FILTERS = [['submitted', 'Шалгах'], ['approved', 'Батлагдсан'], ['rejected', 'Татгалзсан'], ['all', 'Бүгд']]
 
@@ -96,7 +96,7 @@ export default function AdminPayments() {
                   <tr key={p.id}>
                     <td>{formatDateTime(p.submitted_at || p.created_at)}</td>
                     <td className="mono">{p.ref_code}</td>
-                    <td>{p.email}</td>
+                    <td>{/^[0-9]{8}$/.test(p.email || '') ? formatPhone(p.email) : p.email}</td>
                     <td>{p.title}{p.movie_title ? ` · ${p.movie_title}` : ''}</td>
                     <td className="num">{formatMoney(p.amount_mnt)}</td>
                     <td>

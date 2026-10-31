@@ -17,7 +17,7 @@ import {
 } from './auth.js'
 
 // Хаяг: #cat-<ангилал>, #watch-<id>, #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
-// Хуучин #register, #forgot нь #login руу очно.
+// Хуучин #register, #forgot нь #login руу очно. #login-email: хуучин имэйл бүртгэлээр нэвтрэх (холбоосгүй).
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('cat-')) return { page: 'home', category: hash.slice(4) }
@@ -28,6 +28,7 @@ function readRoute() {
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
   if (['history', 'later', 'profile', 'login'].includes(hash)) return { page: hash }
   if (hash === 'register' || hash === 'forgot') return { page: 'login' }
+  if (hash === 'login-email') return { page: 'login', legacy: true }
   return { page: 'home' }
 }
 
@@ -180,7 +181,7 @@ export default function App() {
 
   let content
   if (error) content = <p className="notice">{error}</p>
-  else if (isAuth) content = <Login onDone={onLogin} />
+  else if (isAuth) content = <Login key={route.legacy ? 'email' : 'phone'} onDone={onLogin} legacy={route.legacy} />
   else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
   else if (page === 'pay') content = user && (current || (route.kind === 'month' && !route.id)) && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
   else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 
-// Кодын нүднүүд (имэйлээр ирэх 6 оронтой код). Тоо бичихэд дараагийн нүд рүү шилжинэ.
+// Кодын нүднүүд (4 оронтой нэвтрэх код, хуучин имэйлийн 6 оронтой код). Тоо бичихэд дараагийн нүд рүү шилжинэ.
 export default function PinInput({ id, value, onChange, length = 4, autoFocus, visible }) {
   const refs = useRef([])
   const digits = Array.from({ length }, (_, i) => value[i] || '')

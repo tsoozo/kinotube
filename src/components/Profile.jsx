@@ -1,10 +1,60 @@
 import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
+import PinInput from './PinInput.jsx'
 import { AdminIcon, LogoutIcon } from './Icons.jsx'
 import {
   PAYMENT_STATUS_TEXT, PLANS, RENTAL, activeRentals, daysLeft, effectiveStatus, formatDate, formatDateTime, formatMoney,
-  getHistory, isActive, isAdmin, listPayments, peekReturnTo, updateName, watchedRatio,
+  getHistory, isActive, isAdmin, isValidPhone, isValidPin, listPayments, peekReturnTo, setMyPin, updateName, userContact,
+  watchedRatio,
 } from '../auth.js'
+
+// Утасны дугаар, 4 оронтой код тохируулах/солих (хуучин имэйл бүртгэлд дугаар нэмэх).
+function PinSettings({ user, onUser, onMessage, onClose }) {
+  const [phone, setPhone] = useState(user.phone || '')
+  const [pin, setPin] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const save = async (e) => {
+    e.preventDefault()
+    if (!isValidPhone(phone)) return setError('Утасны дугаараа 8 оронтойгоор оруулна уу.')
+    if (!isValidPin(pin)) return setError('4 оронтой код оруулна уу.')
+    if (pin !== pin2) return setError('Хоёр код таарахгүй байна.')
+    setError('')
+    setBusy(true)
+    try {
+      onUser(await setMyPin(user, phone, pin))
+      onMessage({ ok: true, text: 'Нэвтрэх дугаар, код хадгалагдлаа' })
+      onClose?.()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="panel pin-settings">
+      <h2>{user.phone ? 'Код солих' : 'Утасны дугаар, код тохируулах'}</h2>
+      {!user.phone && <p className="muted">Дараа нь утасны дугаар, 4 оронтой кодоороо нэвтэрнэ.</p>}
+      <form onSubmit={save} noValidate>
+        <label className="field">
+          <span>Утасны дугаар</span>
+          <input id="my-phone" type="tel" inputMode="numeric" maxLength={8} placeholder="99112233" value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 8))} />
+        </label>
+        <div className="field"><span>Шинэ код</span><PinInput id="my-pin" value={pin} onChange={setPin} /></div>
+        <div className="field"><span>Кодоо давтах</span><PinInput id="my-pin2" value={pin2} onChange={setPin2} /></div>
+        {error && <p className="form-error">{error}</p>}
+        <div className="pin-actions">
+          <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Хадгалж байна…' : 'Хадгалах'}</button>
+          {onClose && <button className="btn-secondary" type="button" onClick={onClose}>Болих</button>}
+        </div>
+      </form>
+    </section>
+  )
+}
 
 export default function Profile({ user, movies, onUser, onLogout }) {
   const [tab, setTab] = useState('history')
@@ -13,6 +63,7 @@ export default function Profile({ user, movies, onUser, onLogout }) {
   const [name, setName] = useState(user.name)
   const [leaving, setLeaving] = useState(false)
   const [payments, setPayments] = useState(null)
+  const [pinOpen, setPinOpen] = useState(false)
 
   useEffect(() => {
     if (tab !== 'payments') return
@@ -56,7 +107,10 @@ export default function Profile({ user, movies, onUser, onLogout }) {
           ) : (
             <h1>{user.name} <button className="link-btn" onClick={() => setEditing(true)}>Засах</button></h1>
           )}
-          <p className="muted">{user.email} · {formatDate(user.createdAt)}-нд бүртгүүлсэн</p>
+          <p className="muted">
+            {userContact(user)}{userContact(user) && ' · '}{formatDate(user.createdAt)}-нд бүртгүүлсэн
+            {user.phone && !pinOpen && <> · <button className="link-btn" onClick={() => setPinOpen(true)}>Код солих</button></>}
+          </p>
         </div>
         <div className="profile-actions">
           {isAdmin(user) && <a className="btn-secondary" href="#admin"><AdminIcon width="20" height="20" /> Админ</a>}
@@ -68,7 +122,7 @@ export default function Profile({ user, movies, onUser, onLogout }) {
       {leaving && (
         <div className="panel logout-confirm" role="alertdialog" aria-labelledby="logout-q">
           <p id="logout-q"><b>Бүртгэлээсээ гарах уу?</b></p>
-          <p className="muted">Дахин орохдоо имэйл рүү ирэх кодоор нэвтэрнэ.</p>
+          <p className="muted">{user.phone ? 'Дахин орохдоо утасны дугаар, 4 оронтой кодоороо нэвтэрнэ.' : 'Утасны дугаар, код тохируулаагүй тул дахин нэвтрэхэд хүндрэлтэй. Эхлээд тохируулна уу.'}</p>
           <div>
             <button className="btn-danger" onClick={onLogout} autoFocus>Гарах</button>
             <button className="btn-secondary" onClick={() => setLeaving(false)}>Болих</button>
@@ -77,6 +131,9 @@ export default function Profile({ user, movies, onUser, onLogout }) {
       )}
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
+      {(!user.phone || pinOpen) && (
+        <PinSettings user={user} onUser={onUser} onMessage={setMessage} onClose={user.phone ? () => setPinOpen(false) : null} />
+      )}
       {back && !active && (
         <a className="toast ok back-link" href={`#watch-${encodeURIComponent(back.id)}`}>
           «{back.title}» руу буцаж эрхээ сонгох

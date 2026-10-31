@@ -93,7 +93,7 @@ export async function onRequestPost({ request, env }) {
         await notifyAdmins(env, [
           `📤 Видео байршлаа — «${item.title}»`,
           `${kindText(kind)} · ${size ? formatSize(size) : '—'}`,
-          `Админ: ${me.email}`,
+          `Админ: ${me.phone || me.email || me.name}`,
           published ? 'Сайтад нийтлэгдсэн' : 'Ноорог (сайтад хараахан харагдахгүй)',
         ].join('\n'))
         return json({ ok: true, published })
@@ -105,7 +105,7 @@ export async function onRequestPost({ request, env }) {
           await notifyAdmins(env, [
             `⚠️ Видео байршуулалт тасарлаа — «${item.title}»`,
             `Шалтгаан: ${String(body.reason).slice(0, 300)}`,
-            `Админ: ${me.email}`,
+            `Админ: ${me.phone || me.email || me.name}`,
           ].join('\n'))
         }
         return json({ ok: true })

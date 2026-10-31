@@ -1,4 +1,4 @@
-// Хэрэглэгч, үзэх эрх, төлбөр Supabase дээр (supabase/migrations). Нэвтрэлт: имэйлээр ирэх 6 оронтой код.
+// Хэрэглэгч, үзэх эрх, төлбөр Supabase дээр (supabase/migrations). Нэвтрэлт: утасны дугаар + 4 оронтой код (functions/api/auth/).
 // Төлбөр: банкны шилжүүлэг → "Гүйлгээ хийсэн" → Telegram бот руу ✅/❌ (functions/) → эрх нээгдэнэ.
 // Үнэ, эрх олгох бүх шийдвэрийг сервер гаргана. Үзсэн түүх, дараа үзэх жагсаалт хөтөч дээр (localStorage).
 import { createClient } from '@supabase/supabase-js'
@@ -58,6 +58,9 @@ const ERROR_TEXT = {
   movie_required: 'Кино сонгоно уу.',
   too_many_open: 'Танд дуусаагүй 3 төлбөрийн хүсэлт байна. Эхлээд тэдгээрийг дуусгана уу.',
   rate_limited: 'Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.',
+  invalid_phone: 'Утасны дугаараа 8 оронтойгоор оруулна уу.',
+  invalid_pin: '4 оронтой код оруулна уу.',
+  phone_taken: 'Энэ дугаар өөр бүртгэлд холбогдсон байна.',
   invalid_period: 'Хугацааг зөв оруулна уу (өнөөдрөөс хойш).',
 }
 export const fail = (error) => new Error(ERROR_TEXT[error?.message?.trim()] || 'Алдаа гарлаа. Дахин оролдоно уу.')
@@ -86,17 +89,12 @@ export async function api(path, options = {}) {
 /* Нэвтрэлт */
 
 export const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim())
+export const cleanPhone = (s) => String(s || '').replace(/\D/g, '')
+export const isValidPhone = (s) => /^[0-9]{8}$/.test(cleanPhone(s))
+export const isValidPin = (s) => /^[0-9]{4}$/.test(s)
 
-export async function sendCode(email) {
-  const { error } = await need().auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } })
-  if (error) {
-    throw new Error(error.status === 429 ? 'Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.' : 'Код илгээж чадсангүй. Дахин оролдоно уу.')
-  }
-}
-
-export async function verifyCode(email, code) {
-  const { error } = await need().auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: 'email' })
-  if (error) throw new Error('Код буруу эсвэл хугацаа нь дууссан байна.')
+// Нэвтэрсний дараа хэрэглэгчийг уншиж, хаагдсан эсэхийг шалгана.
+async function finishLogin() {
   const u = await loadUser()
   if (!u) throw new Error('Нэвтэрч чадсангүй. Дахин оролдоно уу.')
   if (u.blocked) {
@@ -106,12 +104,47 @@ export async function verifyCode(email, code) {
   return u
 }
 
+// Сервер дугаар, кодыг шалгаад session буцаана.
+async function pinAuth(path, body) {
+  const res = await api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  const { error } = await need().auth.setSession({ access_token: res.access_token, refresh_token: res.refresh_token })
+  if (error) throw new Error('Нэвтэрч чадсангүй. Дахин оролдоно уу.')
+  return finishLogin()
+}
+
+export const loginWithPin = (phone, pin) => pinAuth('/api/auth/login', { phone: cleanPhone(phone), pin })
+export const registerWithPin = (phone, pin, name) => pinAuth('/api/auth/register', { phone: cleanPhone(phone), pin, name })
+
+// Нэвтэрсэн хэрэглэгч дугаар, кодоо тохируулна/солино.
+export async function setMyPin(user, phone, pin) {
+  const { error } = await need().rpc('set_my_pin', { p_phone: cleanPhone(phone), p_pin: pin })
+  if (error) throw fail(error)
+  const u = { ...user, phone: cleanPhone(phone) }
+  write(USER_KEY, u)
+  return u
+}
+
+// Хуучин имэйл бүртгэлүүдэд (#login-email, цэсэнд холбоосгүй).
+export async function sendCode(email) {
+  const { error } = await need().auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false } })
+  if (error) {
+    throw new Error(error.status === 429 ? 'Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.' : 'Код илгээж чадсангүй. Дахин оролдоно уу.')
+  }
+}
+
+export async function verifyCode(email, code) {
+  const { error } = await need().auth.verifyOtp({ email: email.trim().toLowerCase(), token: code, type: 'email' })
+  if (error) throw new Error('Код буруу эсвэл хугацаа нь дууссан байна.')
+  return finishLogin()
+}
+
 // me() → апп доторх хэрэглэгчийн хэлбэр.
 function toUser(m) {
   const until = m.subscription_until || m.last_subscription_end
   return {
     id: m.id,
     email: m.email,
+    phone: m.phone,
     name: m.name || 'Хэрэглэгч',
     createdAt: m.created_at,
     role: m.is_admin ? 'admin' : undefined,
@@ -395,3 +428,8 @@ export function takeReturnTo() {
   write(RETURN_KEY, null)
   return id
 }
+
+// 99112233 → 9911 2233
+export const formatPhone = (p) => (p ? `${p.slice(0, 4)} ${p.slice(4)}` : '')
+// Хэрэглэгчийг таних текст: дугаар, хуучин бүртгэлд имэйл.
+export const userContact = (u) => (u?.phone ? formatPhone(u.phone) : u?.email || '')

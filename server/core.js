@@ -65,13 +65,14 @@ export async function loadRequestInfo(env, requestId) {
     .maybeSingle()
   if (error) console.error('loadRequestInfo', requestId, error.message)
   if (!r) return null
-  const { data: u, error: userError } = await db.auth.admin.getUserById(r.user_id)
-  if (userError) console.error('getUserById', userError.message)
+  // Утасны дугаар (хуучин хэрэглэгчид имэйл).
+  const { data: contact, error: userError } = await db.rpc('user_contact', { p_user: r.user_id })
+  if (userError) console.error('user_contact', userError.message)
   return {
     ...r,
     input: {
       refCode: r.ref_code,
-      email: u?.user?.email ?? null,
+      email: contact ?? null,
       productTitle: r.products?.title ?? '—',
       movieTitle: r.movie_title,
       amountMnt: r.amount_mnt,

@@ -1,16 +1,29 @@
 import { useState } from 'react'
 import PinInput from './PinInput.jsx'
 import Logo from './Logo.jsx'
-import { configured, isValidEmail, sendCode, verifyCode } from '../auth.js'
+import {
+  cleanPhone, configured, isValidEmail, isValidPhone, isValidPin, loginWithPin, registerWithPin, sendCode, verifyCode,
+} from '../auth.js'
 
-// Имэйл рүү ирсэн 6 оронтой кодоор нэвтэрнэ, шинэ хэрэглэгч автоматаар бүртгэгдэнэ.
-export default function Login({ onDone }) {
+// Утасны дугаар + 4 оронтой кодоор нэвтэрнэ/бүртгүүлнэ. legacy: хуучин имэйл бүртгэлд (#login-email).
+export default function Login({ onDone, legacy }) {
+  const [mode, setMode] = useState(legacy ? 'email' : 'login')
+  const [phone, setPhone] = useState('')
+  const [pin, setPin] = useState('')
+  const [pin2, setPin2] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [step, setStep] = useState('email')
   const [info, setInfo] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const go = (m) => {
+    setMode(m)
+    setError('')
+    setPin('')
+    setPin2('')
+  }
 
   const run = (fn) => async (e) => {
     e?.preventDefault()
@@ -25,18 +38,61 @@ export default function Login({ onDone }) {
     }
   }
 
+  const checkPhone = () => {
+    if (!isValidPhone(phone)) throw new Error('Утасны дугаараа 8 оронтойгоор оруулна уу.')
+  }
+
+  const login = run(async () => {
+    checkPhone()
+    if (!isValidPin(pin)) throw new Error('4 оронтой кодоо оруулна уу.')
+    try {
+      onDone(await loginWithPin(phone, pin))
+    } catch (err) {
+      setPin('')
+      throw err
+    }
+  })
+
+  const register = run(async () => {
+    checkPhone()
+    if (!isValidPin(pin)) throw new Error('4 оронтой код сонгоно уу.')
+    if (pin !== pin2) {
+      setPin2('')
+      throw new Error('Хоёр код таарахгүй байна.')
+    }
+    onDone(await registerWithPin(phone, pin, name))
+  })
+
   const send = run(async () => {
     if (!isValidEmail(email)) throw new Error('Имэйл хаягаа зөв оруулна уу.')
     await sendCode(email)
     setCode('')
-    setInfo(`${email.trim()} хаяг руу 6 оронтой код илгээлээ. Spam хавтсаа ч шалгаарай.`)
-    setStep('code')
+    setInfo(`${email.trim()} хаяг руу 6 оронтой код илгээлээ.`)
+    setMode('email-code')
   })
 
   const verify = run(async () => {
     if (!/^\d{6}$/.test(code)) throw new Error('6 оронтой кодоо оруулна уу.')
     onDone(await verifyCode(email, code))
   })
+
+  const phoneField = (
+    <label className="field">
+      <span>Утасны дугаар</span>
+      <input
+        id="phone"
+        type="tel"
+        inputMode="numeric"
+        autoComplete="tel-national"
+        placeholder="99112233"
+        maxLength={9}
+        value={phone}
+        onChange={(e) => setPhone(cleanPhone(e.target.value).slice(0, 8))}
+        autoFocus
+      />
+    </label>
+  )
+  const err = error && <p className="form-error">{error}</p>
 
   let body
   if (!configured) {
@@ -46,26 +102,63 @@ export default function Login({ onDone }) {
         <p className="form-error">Сервер тохируулаагүй байна. README-ийн дагуу .env файлаа бөглөнө үү.</p>
       </>
     )
-  } else if (step === 'email') {
+  } else if (mode === 'login') {
+    body = (
+      <form onSubmit={login} noValidate>
+        <h1>Нэвтрэх</h1>
+        {phoneField}
+        <div className="field"><span>4 оронтой код</span><PinInput id="pin" value={pin} onChange={setPin} /></div>
+        {err}
+        <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
+        <p className="form-links">
+          <button type="button" onClick={() => go('register')}>Бүртгүүлэх</button>
+          <button type="button" onClick={() => go('forgot')}>Кодоо мартсан</button>
+        </p>
+      </form>
+    )
+  } else if (mode === 'register') {
+    body = (
+      <form onSubmit={register} noValidate>
+        <h1>Бүртгүүлэх</h1>
+        {phoneField}
+        <label className="field">
+          <span>Нэр (заавал биш)</span>
+          <input id="name" type="text" autoComplete="nickname" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <div className="field"><span>4 оронтой код сонгох</span><PinInput id="pin" value={pin} onChange={setPin} /></div>
+        <div className="field"><span>Кодоо давтах</span><PinInput id="pin2" value={pin2} onChange={setPin2} /></div>
+        {err}
+        <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Бүртгэж байна…' : 'Бүртгүүлэх'}</button>
+        <p className="form-links">
+          <button type="button" onClick={() => go('login')}>Бүртгэлтэй юу? Нэвтрэх</button>
+        </p>
+      </form>
+    )
+  } else if (mode === 'forgot') {
+    body = (
+      <>
+        <h1>Кодоо мартсан</h1>
+        <p className="form-hint">Админд хандаж утасны дугаараа хэлээд шинэ код аваарай. Дараа нь профайлаасаа кодоо сольж болно.</p>
+        <p className="form-links">
+          <button type="button" onClick={() => go('login')}>Нэвтрэх рүү буцах</button>
+        </p>
+      </>
+    )
+  } else if (mode === 'email') {
     body = (
       <form onSubmit={send} noValidate>
-        <h1>Нэвтрэх</h1>
-        <p className="form-hint">Имэйл рүү тань нэвтрэх код илгээнэ. Бүртгэлгүй бол код оруулахад шинээр үүснэ.</p>
+        <h1>Хуучин бүртгэлээр нэвтрэх</h1>
+        <p className="form-hint">Өмнө нь имэйлээр бүртгүүлсэн бол нэвтрээд профайлаасаа утасны дугаар, код тохируулаарай.</p>
         <label className="field">
           <span>Имэйл</span>
-          <input
-            id="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="ner@jishee.mn"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoFocus
-          />
+          <input id="email" type="email" inputMode="email" autoComplete="email" value={email}
+            onChange={(e) => setEmail(e.target.value)} autoFocus />
         </label>
-        {error && <p className="form-error">{error}</p>}
+        {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Илгээж байна…' : 'Код авах'}</button>
+        <p className="form-links">
+          <a href="#login">Утасаар нэвтрэх</a>
+        </p>
       </form>
     )
   } else {
@@ -74,11 +167,10 @@ export default function Login({ onDone }) {
         <h1>Нэвтрэх код</h1>
         {info && <p className="form-hint">{info}</p>}
         <div className="field"><span>6 оронтой код</span><PinInput id="otp" length={6} value={code} onChange={setCode} visible autoFocus /></div>
-        {error && <p className="form-error">{error}</p>}
+        {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
         <p className="form-links">
-          <button type="button" onClick={() => { setStep('email'); setError('') }}>Имэйл солих</button>
-          <button type="button" onClick={send} disabled={busy}>Код дахин авах</button>
+          <button type="button" onClick={() => go('email')}>Имэйл солих</button>
         </p>
       </form>
     )
