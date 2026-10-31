@@ -41,24 +41,29 @@ window.addEventListener('beforeunload', (e) => {
   }
 })
 
-export function enqueue({ id, kind, title, file, publish }) {
-  if (jobs.some((j) => j.id === id && isActive(j))) throw new Error('Энэ бичлэгийн видео хуулагдаж байна.')
-  jobs = jobs.filter((j) => j.id !== id)
+// Хуулалтын түлхүүр: кино "<id>", цувралын анги "<id>/<дугаар>".
+export const jobKey = (id, ep) => (ep ? `${id}/${ep}` : id)
+
+// kind: movie | episode (ep: ангийн дугаар).
+export function enqueue({ id, kind, ep, title, file, publish }) {
+  const key = jobKey(id, ep)
+  if (jobs.some((j) => j.key === key && isActive(j))) throw new Error('Энэ бичлэгийн видео хуулагдаж байна.')
+  jobs = jobs.filter((j) => j.key !== key)
   jobs.push({
-    id, kind, title, file, publish, name: file.name, total: file.size, loaded: 0,
+    key, id, kind, ep, title: ep ? `${title} · ${ep}-р анги` : title, file, publish, name: file.name, total: file.size, loaded: 0,
     status: 'queued', error: '', controller: new AbortController(),
   })
   emit(true)
   pump()
 }
 
-export function cancel(id) {
-  jobs.find((j) => j.id === id && isActive(j))?.controller.abort()
+export function cancel(key) {
+  jobs.find((j) => j.key === key && isActive(j))?.controller.abort()
 }
 
 // Алдаа гарсан/цуцалсан хуулалтыг дахин эхлүүлнэ (файл санах ойд байгаа бол).
-export function retry(id) {
-  const job = jobs.find((j) => j.id === id && (j.status === 'error' || j.status === 'canceled') && j.file)
+export function retry(key) {
+  const job = jobs.find((j) => j.key === key && (j.status === 'error' || j.status === 'canceled') && j.file)
   if (!job) return
   Object.assign(job, { status: 'queued', error: '', loaded: 0, controller: new AbortController() })
   emit(true)
@@ -115,10 +120,10 @@ async function run(job) {
   running++
   job.status = 'uploading'
   emit(true)
-  const { file, kind, id } = job
+  const { file, kind, id, ep } = job
   let uploadId = null
   try {
-    const start = await uploadAction({ action: 'start', kind, id, size: file.size, type: file.type || 'video/mp4' })
+    const start = await uploadAction({ action: 'start', kind, id, ep, size: file.size, type: file.type || 'video/mp4' })
     uploadId = start.uploadId
     const { partSize, count } = start
     // Линкүүдийг сервер өгсөн багцаар (100) хэрэгтэй үед авна.
@@ -129,7 +134,7 @@ async function run(job) {
       if (!urls[i]) {
         const from = Math.floor(i / per) * per + 1
         if (!batches.has(from)) {
-          batches.set(from, uploadAction({ action: 'parts', kind, id, uploadId, from, to: Math.min(count, from + per - 1) })
+          batches.set(from, uploadAction({ action: 'parts', kind, id, ep, uploadId, from, to: Math.min(count, from + per - 1) })
             .then((r) => r.urls.forEach((u, k) => (urls[from - 1 + k] = u))))
         }
         await batches.get(from)
@@ -155,7 +160,7 @@ async function run(job) {
     job.status = 'finishing'
     emit(true)
     const done = await uploadAction({
-      action: 'complete', kind, id, uploadId, size: file.size, publish: job.publish,
+      action: 'complete', kind, id, ep, uploadId, size: file.size, publish: job.publish,
       parts: etags.map((etag, i) => ({ partNumber: i + 1, etag })),
     })
     Object.assign(job, { status: 'done', loaded: job.total, published: done.published, file: null })
@@ -163,7 +168,7 @@ async function run(job) {
     const canceled = job.controller.signal.aborted
     Object.assign(job, { status: canceled ? 'canceled' : 'error', error: canceled ? '' : e.message })
     // Сервер хагас хуулсан хэсгүүдийг цэвэрлэж, алдааг группт мэдэгдэнэ.
-    uploadAction({ action: 'abort', kind, id, uploadId, reason: canceled ? null : e.message }).catch(() => {})
+    uploadAction({ action: 'abort', kind, id, ep, uploadId, reason: canceled ? null : e.message }).catch(() => {})
   } finally {
     running--
     emit(true)

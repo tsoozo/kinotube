@@ -4,6 +4,8 @@ import { configured, supabase } from './auth.js'
 function fromRow(r) {
   return {
     id: r.id,
+    kind: r.kind,
+    orientation: r.orientation || 'horizontal',
     title: r.title,
     year: r.year,
     genres: r.genres || [],
@@ -14,32 +16,42 @@ function fromRow(r) {
     thumbnail: r.thumbnail ? `img/${r.thumbnail}` : '',
     thumbKey: r.thumbnail || '',
     subtitles: r.subtitles || undefined,
-    movie: r.movie_id || undefined,
     added: r.added,
     published: r.published,
     videoReady: r.video_ready,
     videoSize: r.video_size,
+    episodes: [],
   }
 }
 
+const fromEpisode = (e) => ({
+  number: e.number,
+  title: e.title || '',
+  duration: e.duration || '',
+  videoReady: e.video_ready,
+  videoSize: e.video_size,
+})
+
 let catalog = null
 
-// Кино, Shorts-ийг нэг дор уншина (админд ноорог ч орно, RLS). refresh: дахин уншина.
+// Кино, цувралыг ангитай нь нэг дор уншина (админд ноорог ч орно, RLS). refresh: дахин уншина.
 function loadCatalog(refresh = false) {
   if (!catalog || refresh) {
-    catalog = supabase
-      .from('catalog')
-      .select('*')
-      .order('added', { ascending: false })
-      .order('title')
-      .then(async ({ data, error }) => {
-        if (!error) return data.map((r) => ({ ...fromRow(r), kind: r.kind }))
-        // catalog хүснэгт хараахан үүсээгүй (migration хэрэгжээгүй) бол json файлаас.
-        console.warn('catalog:', error.message)
-        catalog = null
-        const [movies, shorts] = await Promise.all([loadJson('movies.json'), loadJson('shorts.json')])
-        return [...movies.map((m) => ({ ...m, kind: 'movie' })), ...shorts.map((s) => ({ ...s, kind: 'short' }))]
-      })
+    catalog = Promise.all([
+      supabase.from('catalog').select('*').order('added', { ascending: false }).order('title'),
+      supabase.from('episodes').select('series_id, number, title, duration, video_ready, video_size').order('number'),
+    ]).then(async ([{ data, error }, eps]) => {
+      if (!error) {
+        const items = data.map(fromRow)
+        const byId = new Map(items.map((m) => [m.id, m]))
+        ;(eps.data || []).forEach((e) => byId.get(e.series_id)?.episodes.push(fromEpisode(e)))
+        return items
+      }
+      // catalog хүснэгт хараахан үүсээгүй (migration хэрэгжээгүй) бол json файлаас.
+      console.warn('catalog:', error.message)
+      catalog = null
+      return loadLocal()
+    })
   }
   return catalog
 }
@@ -51,11 +63,41 @@ async function loadJson(file) {
   return res.json()
 }
 
+// movies.json: нэг ангитай кино, shorts.json: босоо цуврал (ангиудтай).
+async function loadLocal() {
+  const [movies, series] = await Promise.all([loadJson('movies.json'), loadJson('shorts.json').catch(() => [])])
+  return [
+    ...movies.map((m) => ({ orientation: 'horizontal', ...m, kind: 'movie', episodes: [] })),
+    ...series.map((s) => ({ orientation: 'vertical', ...s, kind: 'series', episodes: s.episodes || [] })),
+  ]
+}
+
+// Бүх кино, цуврал (kind: movie | series).
 export async function loadMovies(refresh = false) {
   if (window.__MOVIES__) return window.__MOVIES__
-  if (!configured) return loadJson('movies.json')
-  return (await loadCatalog(refresh)).filter((m) => m.kind === 'movie')
+  if (!configured) return loadLocal()
+  return loadCatalog(refresh)
 }
+
+// Үнэгүй үзэх хэмжээ (сервер functions/api/video ижил дүрмээр шалгана).
+export const FREE_SECONDS = 5 * 60
+export const FREE_EPISODES = 2
+
+export const isSeries = (item) => item?.kind === 'series'
+// Shorts = босоо цуврал.
+export const isShortSeries = (item) => isSeries(item) && item.orientation === 'vertical'
+export const episodesOf = (item) => (item?.episodes || []).slice().sort((a, b) => a.number - b.number)
+export const isFreeEpisode = (n) => n <= FREE_EPISODES
+
+// Үзэх хаяг: босоо цуврал Shorts-д, бусад нь үзэх хуудсанд. ep: ангийн дугаар.
+export function watchHref(item, ep) {
+  const id = encodeURIComponent(item.id)
+  const suffix = ep ? `/${ep}` : ''
+  return isShortSeries(item) ? `#shorts-${id}${suffix}` : `#watch-${id}${suffix}`
+}
+
+// Картын доор/зурган дээр: кино бол урт, цуврал бол ангийн тоо.
+export const lengthLabel = (item) => (isSeries(item) ? `${item.episodes?.length || 0} анги` : (item.duration || '').replace(/^0:/, ''))
 
 // Хэрэглэгчдэд харагдах нь: нийтэлсэн (json-д published байхгүй).
 export const isPublic = (item) => item.published !== false
@@ -85,15 +127,6 @@ export function matches(movie, query) {
     .join(' ')
     .toLowerCase()
     .includes(q)
-}
-
-// Shorts-ийг өөрийн нэр, тайлбар болон холбоотой киноны нэр, он, жанраар хайна.
-export function matchesShort(short, movies, query, genre = 'Бүгд', category = '') {
-  const movie = movies.find((m) => m.id === short.movie)
-  if (genre !== 'Бүгд' && !(movie?.genres || []).includes(genre)) return false
-  if (category && !inCategory(movie, category)) return false
-  const text = [short.description, movie?.title].filter(Boolean).join(' ')
-  return matches({ title: short.title, description: text, year: movie?.year, genres: movie?.genres, categories: movie?.categories }, query)
 }
 
 // Нэг жанртай киног эхэнд, дараа нь бусдыг нь.
@@ -130,25 +163,11 @@ export function hue(str) {
   return h
 }
 
-// Shorts-ийн дээд урт: 20 минут.
-export const SHORTS_MAX_SECONDS = 20 * 60
-
 // "Ц:ММ:СС" эсвэл "М:СС" -> секунд.
 export function toSeconds(duration) {
   return String(duration || '')
     .split(':')
     .reduce((sum, part) => sum * 60 + (Number(part) || 0), 0)
-}
-
-// public/shorts.json-ийг уншаад 20 минутаас урт бичлэгийг хасна.
-export async function loadShorts(refresh = false) {
-  const list = configured ? (await loadCatalog(refresh)).filter((m) => m.kind === 'short') : await loadJson('shorts.json')
-  return list.filter((s) => {
-    const sec = toSeconds(s.duration)
-    if (sec > 0 && sec <= SHORTS_MAX_SECONDS) return true
-    console.warn(`Shorts "${s.id}" хасагдлаа: урт нь ${s.duration || 'тодорхойгүй'} (дээд тал нь 20:00)`)
-    return false
-  })
 }
 
 // Секундийг "Ц:ММ:СС" эсвэл "М:СС" болгоно.

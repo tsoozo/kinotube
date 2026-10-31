@@ -4,7 +4,8 @@
 //  complete → хэсгүүдийг нийлүүлж, кино "видео бэлэн" болно, Telegram группт мэдэгдэнэ
 //  abort    → тасалсан/алдаа гарсан хуулалтыг цуцалж, шалтгааныг группт мэдэгдэнэ
 //  thumb    → зургийн нэг PUT линк (кино хадгалахаас өмнө)
-//  delete   → кино/Shorts-ийг видео, зурагтай нь устгана
+//  delete   → кино/цувралыг видео, зурагтай нь (эсвэл цувралын нэг ангийг) устгана
+// kind: movie | series | episode (episode бол id = цувралын id, ep = ангийн дугаар).
 //  source   → R2 дээрх видеоны унших линк (видеоноос нүүр зураг сонгох)
 import { SLUG_RE, json, notifyAdmins, requireAdmin, serviceClient } from '../../../server/core.js'
 import {
@@ -18,8 +19,8 @@ const BATCH = 100
 const VIDEO_TYPES = ['video/mp4', 'video/webm']
 const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
 
-const videoKey = (kind, id) => `${kind === 'short' ? 'shorts' : 'movies'}/${id}.mp4`
-const kindText = (kind) => (kind === 'short' ? 'Shorts' : 'Кино')
+const KINDS = ['movie', 'series', 'episode']
+const kindText = (kind, ep) => (kind === 'episode' ? `Цуврал · ${ep}-р анги` : kind === 'series' ? 'Цуврал' : 'Кино')
 
 function formatSize(bytes) {
   if (bytes >= 1024 * MB) return `${(bytes / 1024 / MB).toFixed(2)} GB`
@@ -36,8 +37,10 @@ export async function onRequestPost({ request, env }) {
 
   const body = await request.json().catch(() => ({}))
   const id = String(body.id ?? '')
-  const kind = body.kind === 'short' ? 'short' : 'movie'
+  const kind = KINDS.includes(body.kind) ? body.kind : 'movie'
+  const ep = Number(body.ep)
   if (!SLUG_RE.test(id) || id.length > 100) return json({ error: 'ID буруу байна.' }, 400)
+  if (kind === 'episode' && !(Number.isInteger(ep) && ep >= 1 && ep <= 999)) return json({ error: 'Ангийн дугаар буруу.' }, 400)
 
   // Зураг: шинэ кино хадгалагдахаас өмнө хуулагдана, мөр шаардахгүй.
   if (body.action === 'thumb') {
@@ -45,16 +48,36 @@ export async function onRequestPost({ request, env }) {
     if (!ext) return json({ error: 'JPG, PNG эсвэл WEBP зураг сонгоно уу.' }, 400)
     if (!(Number(body.size) > 0 && Number(body.size) <= 10 * MB)) return json({ error: 'Зураг 10 MB-аас бага байна.' }, 400)
     // Нэр бүр шинэ: хөтчийн кэш хуучин зургийг харуулахгүй.
-    const thumbKey = `thumbnails/${kind === 'short' ? 'shorts/' : ''}${id}-${Date.now().toString(36)}.${ext}`
+    const thumbKey = `thumbnails/${kind === 'movie' ? '' : 'series/'}${id}-${Date.now().toString(36)}.${ext}`
     return json({ key: thumbKey, url: await r2Url(env, thumbKey, 3600, { method: 'PUT' }) })
   }
 
   const db = serviceClient(env)
   const { data: item, error: dbError } = await db.from('catalog').select('id, kind, title, thumbnail, published, video_ready').eq('id', id).maybeSingle()
   if (dbError) return json({ error: dbError.message }, 500)
-  if (!item) return json({ error: 'Эхлээд кино/Shorts-ийн мэдээллийг хадгална уу.' }, 404)
-  if (item.kind !== kind) return json({ error: 'Төрөл таарахгүй байна.' }, 400)
-  const key = videoKey(kind, id)
+  if (!item) return json({ error: 'Эхлээд кино/цувралын мэдээллийг хадгална уу.' }, 404)
+  if (item.kind !== (kind === 'episode' ? 'series' : kind)) return json({ error: 'Төрөл таарахгүй байна.' }, 400)
+
+  // Анги: мөр нь эхлээд хадгалагдсан байна (admin_save_episode). Видео episodes/<цуврал>/<дугаар>.mp4.
+  let episode = null
+  if (kind === 'episode') {
+    const { data, error: epError } = await db.from('episodes').select('number, title, video_key, video_ready').eq('series_id', id).eq('number', ep).maybeSingle()
+    if (epError) return json({ error: epError.message }, 500)
+    if (!data) return json({ error: 'Эхлээд ангийг хадгална уу.' }, 404)
+    episode = data
+  }
+  if (kind === 'series' && body.action !== 'delete') return json({ error: 'Цувралын видеог анги бүрээр хуулна.' }, 400)
+  // Хуулах үед шинэ зам; унших (source) үед хадгалсан зам (хуучин Shorts: shorts/<id>.mp4).
+  const key = kind === 'episode'
+    ? (body.action === 'source' && episode.video_key) || `episodes/${id}/${ep}.mp4`
+    : `movies/${id}.mp4`
+  const setVideo = (patch) => {
+    const at = { ...patch, updated_at: new Date().toISOString() }
+    return kind === 'episode'
+      ? db.from('episodes').update(at).eq('series_id', id).eq('number', ep)
+      : db.from('catalog').update(at).eq('id', id)
+  }
+  const label = kind === 'episode' ? `«${item.title}» ${ep}-р анги` : `«${item.title}»`
 
   try {
     switch (body.action) {
@@ -66,7 +89,7 @@ export async function onRequestPost({ request, env }) {
         const count = Math.ceil(size / partSize)
         const uploadId = await createMultipart(env, key, body.type)
         // Шинэ видео хуулж байх хооронд хуучинд нь хандахгүй.
-        await db.from('catalog').update({ video_ready: false, updated_at: new Date().toISOString() }).eq('id', id)
+        if (kind !== 'series') await setVideo({ video_ready: false })
         return json({ key, uploadId, partSize, count, urls: await partUrls(env, key, uploadId, 1, Math.min(count, BATCH), LINK_TTL) })
       }
 
@@ -86,13 +109,16 @@ export async function onRequestPost({ request, env }) {
         await completeMultipart(env, key, body.uploadId, parts.sort((a, b) => a.partNumber - b.partNumber))
         const published = item.published || body.publish === true
         const size = Number(body.size) || null
-        const { error: upError } = await db.from('catalog')
-          .update({ video_ready: true, video_size: size, published, updated_at: new Date().toISOString() })
-          .eq('id', id)
+        const { error: upError } = await setVideo(kind === 'episode' ? { video_ready: true, video_size: size, video_key: key } : { video_ready: true, video_size: size, published })
         if (upError) throw new Error(upError.message)
+        // Хуучин замтай видео (shorts/...) солигдсон бол устгана.
+        if (kind === 'episode' && episode.video_key && episode.video_key !== key) await deleteObject(env, episode.video_key).catch(() => {})
+        if (kind === 'episode' && published && !item.published) {
+          await db.from('catalog').update({ published: true, updated_at: new Date().toISOString() }).eq('id', id)
+        }
         await notifyAdmins(env, [
-          `📤 Видео байршлаа — «${item.title}»`,
-          `${kindText(kind)} · ${size ? formatSize(size) : '—'}`,
+          `📤 Видео байршлаа — ${label}`,
+          `${kindText(kind, ep)} · ${size ? formatSize(size) : '—'}`,
           `Админ: ${me.phone || me.email || me.name}`,
           published ? 'Сайтад нийтлэгдсэн' : 'Ноорог (сайтад хараахан харагдахгүй)',
         ].join('\n'))
@@ -103,7 +129,7 @@ export async function onRequestPost({ request, env }) {
         if (body.uploadId) await abortMultipart(env, key, body.uploadId).catch(() => {})
         if (body.reason) {
           await notifyAdmins(env, [
-            `⚠️ Видео байршуулалт тасарлаа — «${item.title}»`,
+            `⚠️ Видео байршуулалт тасарлаа — ${label}`,
             `Шалтгаан: ${String(body.reason).slice(0, 300)}`,
             `Админ: ${me.phone || me.email || me.name}`,
           ].join('\n'))
@@ -112,12 +138,21 @@ export async function onRequestPost({ request, env }) {
       }
 
       case 'source': {
-        if (!item.video_ready) return json({ error: 'Видео хараахан байршаагүй байна.' }, 409)
+        if (!(kind === 'episode' ? episode.video_ready : item.video_ready)) return json({ error: 'Видео хараахан байршаагүй байна.' }, 409)
         return json({ url: await r2Url(env, key, 3600) })
       }
 
       case 'delete': {
-        await deleteObject(env, key).catch(() => {})
+        if (kind === 'episode') {
+          if (episode.video_key) await deleteObject(env, episode.video_key).catch(() => {})
+          const { error: delError } = await db.from('episodes').delete().eq('series_id', id).eq('number', ep)
+          if (delError) throw new Error(delError.message)
+          return json({ ok: true })
+        }
+        if (kind === 'series') {
+          const { data: eps } = await db.from('episodes').select('video_key').eq('series_id', id)
+          for (const e of eps || []) if (e.video_key) await deleteObject(env, e.video_key).catch(() => {})
+        } else await deleteObject(env, key).catch(() => {})
         if (item.thumbnail) await deleteObject(env, item.thumbnail).catch(() => {})
         const { error: delError } = await db.from('catalog').delete().eq('id', id)
         if (delError) throw new Error(delError.message)

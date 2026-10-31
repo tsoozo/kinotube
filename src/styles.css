@@ -478,8 +478,32 @@ a.tag:hover { background: var(--surface-hover); }
   position: relative; height: 100%; aspect-ratio: 9 / 16; max-width: 100%;
   border-radius: 12px; overflow: hidden; background: var(--media-bg); color: var(--on-media);
 }
-.short-frame video { width: 100%; height: 100%; object-fit: contain; display: block; cursor: pointer; }
-.short-frame.is-vertical video { object-fit: cover; }
+/* Ангиуд хөндлөн: нэг ангиас нөгөө рүү гүйлгэнэ. */
+.short-eps {
+  position: absolute; inset: 0; display: flex; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.short-eps::-webkit-scrollbar { display: none; }
+.short-ep-slot { position: relative; flex: 0 0 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.short-ep { position: absolute; inset: 0; }
+.short-ep video { width: 100%; height: 100%; object-fit: contain; display: block; cursor: pointer; }
+.short-ep.is-vertical video { object-fit: cover; }
+.short-ep.short-locked {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 24px 16px 140px; text-align: center;
+}
+.short-locked .locked-bg .short-poster { filter: blur(18px); transform: scale(1.2); }
+.short-locked .pay-options { grid-template-columns: minmax(0, 1fr); width: min(100%, 240px); }
+.short-ep-title { font-weight: 500; }
+.short-hint { display: inline-block; font-size: 12px; opacity: 0.75; }
+.short-side {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 50%;
+  background: var(--media-shade); color: var(--on-media); display: none; place-items: center; cursor: pointer;
+}
+.short-side.prev { left: 8px; }
+.short-side.next { right: 8px; }
+@media (hover: hover) { .short-side { display: grid; } }
 .short-missing { position: absolute; inset: 0; }
 .short-missing p {
   position: absolute; top: 40%; left: 0; right: 0; margin: 0; text-align: center;
@@ -504,7 +528,7 @@ a.tag:hover { background: var(--surface-hover); }
   background: var(--overlay); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
 .short-info {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 48px 64px 18px 16px; pointer-events: none;
+  position: absolute; left: 0; right: 0; bottom: 3px; padding: 48px 64px 18px 16px; pointer-events: none;
   background: linear-gradient(transparent, var(--media-shade));
 }
 .short-info h2 { margin: 0 0 6px; font-size: 16px; font-weight: 500; line-height: 22px; }
@@ -535,8 +559,8 @@ a.tag:hover { background: var(--surface-hover); }
 .shorts.is-full .shorts-feed { height: 100dvh; }
 .shorts.is-full .short { padding: 0; }
 .shorts.is-full .short-frame { width: 100%; height: 100%; aspect-ratio: auto; max-width: none; border-radius: 0; }
-.shorts.is-full .short-frame video { object-fit: contain; }
-.shorts.is-full .short-frame.is-vertical video { object-fit: cover; }
+.shorts.is-full .short-ep video { object-fit: contain; }
+.shorts.is-full .short-ep.is-vertical video { object-fit: cover; }
 .shorts.is-full .short-duration { top: calc(12px + var(--safe-top)); }
 .shorts.is-full .short-info { padding-bottom: calc(18px + var(--safe-bottom)); }
 .shorts.is-full .short-actions { bottom: calc(24px + var(--safe-bottom)); }
@@ -561,6 +585,20 @@ html.shorts-full, html.shorts-full body { overflow: hidden; }
   .short { padding: calc(var(--top) - var(--safe-top)) 0 0; }
   .short-frame { width: 100%; aspect-ratio: auto; border-radius: 0; }
 }
+
+/* Үзэх хуудас: цувралын ангиуд */
+.watch-ep { font-weight: 400; color: var(--muted); }
+.episodes { margin: 12px 0 16px; }
+.episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
+.episode-btn {
+  position: relative; height: 48px; border-radius: 8px; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 15px;
+}
+.episode-btn:hover { background: var(--surface-hover); }
+.episode-btn.on { background: var(--fg); color: var(--bg); }
+.episode-btn small { font-size: 10px; color: var(--accent); }
+.episode-btn.on small { color: inherit; }
+.episode-btn svg { opacity: 0.6; }
 
 /* Нүүр хуудсан дээрх Shorts мөр */
 .shorts-shelf { margin: 0 0 32px; min-width: 0; }
@@ -923,3 +961,21 @@ a.stat { color: inherit; text-decoration: none; }
 .pin-settings form { display: flex; flex-direction: column; gap: 14px; max-width: 360px; }
 .pin-settings h2 { margin-top: 0; }
 .pin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Админ: цувралын ангиуд */
+.admin-episodes { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border); }
+.admin-episodes h3 { margin: 0; font-size: 16px; }
+.admin-episodes .small { margin: 0; }
+.episode-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.episode-no { flex: 0 0 32px; height: 32px; border-radius: 8px; background: var(--surface); display: grid; place-items: center; font-size: 14px; }
+.episode-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.episode-title {
+  width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--fg); font: inherit; font-size: 14px;
+}
+.episode-title:focus { outline: none; border-color: var(--link); }
+.episode-main .admin-pills { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.episode-file, .episode-add { cursor: pointer; }
+.episode-add { align-self: flex-start; }
+.episode-add.disabled { opacity: 0.6; pointer-events: none; }
+@media (max-width: 600px) { .episode-file { padding: 0 12px; } }

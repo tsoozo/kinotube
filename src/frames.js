@@ -1,7 +1,7 @@
 // Видеоноос нүүр зураг гаргах: хэд хэдэн кадр авч, хамгийн тод, дэлгэрэнгүйг нь сонгоно.
-// Кино 16:9, Shorts 9:16. Харьцаа таарахгүй бол бүдгэрүүлсэн дэвсгэр дээр бүтнээр нь байрлуулна.
+// Хэвтээ 16:9, босоо 9:16. Харьцаа таарахгүй бол бүдгэрүүлсэн дэвсгэр дээр бүтнээр нь байрлуулна.
 
-const SIZE = { movie: [1280, 720], short: [720, 1280] }
+const SIZE = { horizontal: [1280, 720], vertical: [720, 1280] }
 
 function waitFor(v, event, ms) {
   return new Promise((resolve, reject) => {
@@ -55,7 +55,7 @@ function draw(ctx, v, w, h) {
 }
 
 // src: File эсвэл URL. shuffle: өөр цэгүүдээс авна. Буцаах: { frames: [{ time, file, url, score }], best }
-export async function videoFrames(src, kind = 'movie', count = 6, shuffle = false) {
+export async function videoFrames(src, orientation = 'horizontal', count = 6, shuffle = false) {
   const objectUrl = src instanceof Blob ? URL.createObjectURL(src) : null
   const v = document.createElement('video')
   v.crossOrigin = 'anonymous'
@@ -67,7 +67,7 @@ export async function videoFrames(src, kind = 'movie', count = 6, shuffle = fals
     await waitFor(v, 'loadeddata', 60000)
     const duration = v.duration
     if (!duration || !isFinite(duration)) throw new Error('Видеоны уртыг уншиж чадсангүй.')
-    const [w, h] = SIZE[kind] || SIZE.movie
+    const [w, h] = SIZE[orientation] || SIZE.horizontal
     const canvas = document.createElement('canvas')
     canvas.width = w
     canvas.height = h

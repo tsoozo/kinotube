@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
-import { categoryLabel, formatTime, hue, recommended, subtitlesOf, timeAgo } from '../data.js'
+import {
+  FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, subtitlesOf, timeAgo, watchHref,
+} from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
   recordView, rentPrice, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
@@ -10,7 +12,41 @@ import {
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
 
-export default function Watch({ movie, movies, user, onUser }) {
+// Төлбөрийн сонголт: нэвтрээгүй бол нэвтрэх товч, үгүй бол нэг кино / сарын эрх.
+export function Paywall({ movie, user, lead, sub, returnTo }) {
+  const month = PLANS[0]
+  const series = isSeries(movie)
+  if (!user) {
+    return (
+      <>
+        <p className="player-lead">{lead || 'Үргэлжлүүлэн үзэхийн тулд нэвтэрнэ үү'}</p>
+        <p className="player-sub">{series ? 'Энэ цуврал' : 'Энэ кино'} {formatMoney(rentPrice(movie))} · бүх кино сард {formatMoney(month.price)}</p>
+        <a className="btn-primary" href="#login" onClick={() => setReturnTo(returnTo || movie.id)}>Нэвтрэх</a>
+      </>
+    )
+  }
+  return (
+    <>
+      <p className="player-lead">{lead || 'Үзэх эрхээ сонгоно уу'}</p>
+      {sub && <p className="player-sub">{sub}</p>}
+      <div className="pay-options">
+        <a className="pay-option" href={`#pay-rent-${encodeURIComponent(movie.id)}`} onClick={() => setReturnTo(returnTo || movie.id)}>
+          <span>{series ? 'Зөвхөн энэ цуврал' : 'Зөвхөн энэ кино'}</span>
+          <b>{formatMoney(rentPrice(movie))}</b>
+          <small>{RENTAL.days} хоног үзнэ</small>
+        </a>
+        <a className="pay-option premium" href={`#pay-month-${encodeURIComponent(movie.id)}`} onClick={() => setReturnTo(returnTo || movie.id)}>
+          <CrownIcon className="pay-crown" />
+          <span>Бүх кино</span>
+          <b>{formatMoney(month.price)}</b>
+          <small>1 сар хязгааргүй</small>
+        </a>
+      </div>
+    </>
+  )
+}
+
+export default function Watch({ movie, ep, movies, user, onUser }) {
   const [videoError, setVideoError] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [resumed, setResumed] = useState(0)
@@ -20,11 +56,23 @@ export default function Watch({ movie, movies, user, onUser }) {
   const [flash, setFlash] = useState('')
   const [bgFailed, setBgFailed] = useState(false)
   const [src, setSrc] = useState(null)
+  // Эрхгүй үед үнэгүй үзэх секунд (кино: 5 минут), limitHit: түүнийг үзэж дууссан.
+  const [preview, setPreview] = useState(0)
+  const [limitHit, setLimitHit] = useState(false)
   const videoRef = useRef(null)
   const retried = useRef(false)
   const lastSave = useRef(0)
   const flashTimer = useRef(0)
   const canWatch = canWatchMovie(user, movie.id)
+  const series = isSeries(movie)
+  const episodes = episodesOf(movie)
+  const n = series ? (episodes.some((e) => e.number === ep) ? ep : episodes[0]?.number || 1) : 0
+  const episode = episodes.find((e) => e.number === n)
+  const nextEpisode = episodes.find((e) => e.number > n)
+  // Цувралын эхний 2 анги, киноны эхний 5 минут хүн бүрт үнэгүй.
+  const locked = series && !canWatch && !isFreeEpisode(n)
+  const videoReady = series ? episode?.videoReady !== false && Boolean(episode) : movie.videoReady !== false
+  const viewKey = `${movie.id}:${n}`
   const rentEnds = rentalEndsAt(user, movie.id)
   const subs = subtitlesOf(movie)
   const saved = isLater(user, movie.id)
@@ -35,12 +83,17 @@ export default function Watch({ movie, movies, user, onUser }) {
     setResumed(0)
     setShape('tall')
     setBgFailed(false)
-  }, [movie.id])
+    setLimitHit(false)
+  }, [movie.id, n])
 
   // Видеоны хугацаатай линкийг серверээс авна (эрхийг сервер дахин шалгана).
   const fetchSrc = () =>
-    videoUrl(movie)
-      .then(setSrc)
+    videoUrl(movie, n || undefined)
+      .then(({ url, preview: p }) => {
+        if (!url) return setVideoError(true)
+        setPreview(p)
+        setSrc(url)
+      })
       .catch((e) => {
         // Эрх дууссан бол хэрэглэгчийн мэдээллийг шинэчилж, түгжээтэй дэлгэц гаргана.
         if (e.status === 401 || e.status === 403) loadUser().then((u) => u && onUser(u))
@@ -49,15 +102,35 @@ export default function Watch({ movie, movies, user, onUser }) {
 
   useEffect(() => {
     setSrc(null)
+    setPreview(0)
     retried.current = false
     // Видео R2-д хараахан хуулагдаагүй бол шууд "удахгүй нэмэгдэнэ".
-    if (user && canWatch) movie.videoReady === false ? setVideoError(true) : fetchSrc()
+    if (!locked) videoReady ? fetchSrc() : setVideoError(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.id, canWatch])
+  }, [viewKey, user?.id, canWatch])
+
+  // Үнэгүй 5 минутаас цааш тоглуулахгүй, гүйлгэхгүй (сервер ч цааших байтыг өгөхгүй).
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !preview) return
+    const clamp = () => {
+      if (v.currentTime >= preview) {
+        v.pause()
+        v.currentTime = preview
+        setLimitHit(true)
+      }
+    }
+    v.addEventListener('timeupdate', clamp)
+    v.addEventListener('seeking', clamp)
+    return () => {
+      v.removeEventListener('timeupdate', clamp)
+      v.removeEventListener('seeking', clamp)
+    }
+  }, [src, preview])
 
   // Линкийн хугацаа дууссан байж болзошгүй: нэг удаа шинээр авна.
   const onVideoError = () => {
-    if (src && src !== movie.video && !retried.current) {
+    if (src && !retried.current) {
       retried.current = true
       save()
       fetchSrc()
@@ -104,9 +177,11 @@ export default function Watch({ movie, movies, user, onUser }) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // Байрлалыг зөвхөн бүтэн эрхтэй кинонд хадгална.
+  const tracksProgress = !series && canWatch
   const save = () => {
     const v = videoRef.current
-    if (v && user && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
+    if (v && user && tracksProgress && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
   }
 
   // Хуудаснаас гарах үед байрлалыг хадгална.
@@ -115,14 +190,14 @@ export default function Watch({ movie, movies, user, onUser }) {
     window.addEventListener('pagehide', save)
     return () => {
       window.removeEventListener('pagehide', save)
-      if (v && user && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
+      if (v && user && tracksProgress && v.currentTime > 0) saveProgress(user, movie.id, v.currentTime, v.duration)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.id, canWatch])
+  }, [viewKey, user?.id, canWatch])
 
   // Өмнө зогссон газраас нь үргэлжлүүлнэ.
   const onLoaded = () => {
-    const h = getProgress(user, movie.id)
+    const h = tracksProgress && getProgress(user, movie.id)
     const v = videoRef.current
     if (v) v.playbackRate = speed
     if (v && h && !h.done && h.pos > 5 && h.pos < v.duration - 10) {
@@ -140,19 +215,19 @@ export default function Watch({ movie, movies, user, onUser }) {
     }
   }
 
-  // Эрхтэй үед л үзсэн түүхэнд нэмнэ.
+  // Үзэж эхэлсэн (үнэгүй хэсэг ч) киног түүхэнд нэмнэ.
   useEffect(() => {
-    if (canWatch) {
-      const u = pushHistory(user, movie.id)
+    if (!locked) {
+      const u = pushHistory(user, movie.id, n || undefined)
       if (u) onUser(u)
       recordView(user, movie.id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movie.id, user?.id, canWatch])
+  }, [viewKey, user?.id, locked])
+
+  const goEpisode = (num) => (location.hash = watchHref(movie, num))
 
   const list = recommended(movies, movie)
-
-  const month = PLANS[0]
 
   // Түгжээтэй үед ард нь киноны зургийг бүдгэрүүлж тавина. Зураггүй бол өнгөт fallback.
   const h = hue(movie.id)
@@ -163,37 +238,22 @@ export default function Watch({ movie, movies, user, onUser }) {
   )
 
   let player
-  if (!user) {
+  if (locked || limitHit) {
     player = (
       <div className="player-error player-locked">
         {backdrop}
         <LockIcon />
-        <p className="player-lead">Кино үзэхийн тулд нэвтэрнэ үү</p>
-        <p className="player-sub">Энэ кино {formatMoney(rentPrice(movie))} · бүх кино сард {formatMoney(month.price)}</p>
-        <a className="btn-primary" href="#login" onClick={() => setReturnTo(movie.id)}>Нэвтрэх</a>
-      </div>
-    )
-  } else if (!canWatch) {
-    player = (
-      <div className="player-error player-locked">
-        {backdrop}
-        <LockIcon />
-        <p className="player-lead">
-          {user.subscription ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : 'Үзэх эрхээ сонгоно уу'}
-        </p>
-        <div className="pay-options">
-          <a className="pay-option" href={`#pay-rent-${encodeURIComponent(movie.id)}`}>
-            <span>Зөвхөн энэ кино</span>
-            <b>{formatMoney(rentPrice(movie))}</b>
-            <small>{RENTAL.days} хоног үзнэ</small>
-          </a>
-          <a className="pay-option premium" href={`#pay-month-${encodeURIComponent(movie.id)}`}>
-            <CrownIcon className="pay-crown" />
-            <span>Бүх кино</span>
-            <b>{formatMoney(month.price)}</b>
-            <small>1 сар хязгааргүй</small>
-          </a>
-        </div>
+        <Paywall
+          movie={movie}
+          user={user}
+          returnTo={series ? `${movie.id}/${n}` : movie.id}
+          lead={
+            series
+              ? `Эхний ${FREE_EPISODES} анги үнэгүй. ${n}-р ангиас цааш үзэх эрх авна уу`
+              : `Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`
+          }
+          sub={user?.subscription && !canWatch ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : ''}
+        />
       </div>
     )
   } else if (videoError) {
@@ -213,7 +273,7 @@ export default function Watch({ movie, movies, user, onUser }) {
   } else {
     player = (
       <Player
-        key={movie.id}
+        key={viewKey}
         videoRef={videoRef}
         onShape={setShape}
         src={src}
@@ -223,7 +283,8 @@ export default function Watch({ movie, movies, user, onUser }) {
         onPause={save}
         onEnded={() => {
           save()
-          recordView(user, movie.id, true)
+          recordView(user, movie.id, !nextEpisode)
+          if (nextEpisode) goEpisode(nextEpisode.number)
         }}
         onError={onVideoError}
       >
@@ -233,7 +294,7 @@ export default function Watch({ movie, movies, user, onUser }) {
       </Player>
     )
   }
-  const playing = user && canWatch && !videoError
+  const playing = !locked && !limitHit && !videoError
 
   return (
     <div className="watch">
@@ -256,7 +317,10 @@ export default function Watch({ movie, movies, user, onUser }) {
             </button>
           </p>
         )}
-        <h1 className="watch-title">{movie.title}</h1>
+        {preview > 0 && !limitHit && !videoError && (
+          <p className="resume-note">Эхний {FREE_SECONDS / 60} минут үнэгүй · <a className="link-btn" href={`#pay-rent-${encodeURIComponent(movie.id)}`} onClick={() => setReturnTo(movie.id)}>Бүтнээр үзэх</a></p>
+        )}
+        <h1 className="watch-title">{movie.title}{series && <span className="watch-ep"> · {n}-р анги{episode?.title ? `: ${episode.title}` : ''}</span>}</h1>
         {rentEnds && <p className="muted rent-note">Энэ киног {formatDateTime(rentEnds)} хүртэл үзэх эрхтэй</p>}
         <div className="watch-actions">
           <button
@@ -285,6 +349,23 @@ export default function Watch({ movie, movies, user, onUser }) {
             </button>
           )}
         </div>
+        {series && (
+          <section className="episodes" aria-label="Ангиуд">
+            <h2 className="section-title">Ангиуд · {episodes.length}</h2>
+            <div className="episode-grid">
+              {episodes.map((e) => {
+                const free = isFreeEpisode(e.number)
+                return (
+                  <a key={e.number} className={`episode-btn ${e.number === n ? 'on' : ''}`} href={watchHref(movie, e.number)} aria-current={e.number === n ? 'true' : undefined}>
+                    <b>{e.number}</b>
+                    {!canWatch && !free && <LockIcon width="14" height="14" />}
+                    {!canWatch && free && <small>Үнэгүй</small>}
+                  </a>
+                )
+              })}
+            </div>
+          </section>
+        )}
         <div className="watch-chips">
           {(movie.categories || []).map((c) => (
             <a key={c} className="tag" href={`#cat-${c}`}>{categoryLabel(c)}</a>
@@ -295,7 +376,7 @@ export default function Watch({ movie, movies, user, onUser }) {
         </div>
         <div className={`description ${expanded ? 'expanded' : ''}`} onClick={() => setExpanded(true)}>
           <p className="description-meta">
-            {movie.year} он · {movie.duration}
+            {movie.year} он · {series ? `${episodes.length} анги` : movie.duration}
             {movie.added ? ` · ${timeAgo(movie.added)}` : ''}
           </p>
           <p>{movie.description}</p>

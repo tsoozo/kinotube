@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { hue } from '../data.js'
+import { hue, lengthLabel } from '../data.js'
 
 // Зураг байхгүй үед киноны нэр бүхий өнгөт зураг харуулна.
 export default function Thumbnail({ movie, small, progress = 0 }) {
@@ -19,7 +19,7 @@ export default function Thumbnail({ movie, small, progress = 0 }) {
       ) : (
         <img src={movie.thumbnail} alt="" loading="lazy" onError={() => setFailed(true)} />
       )}
-      {movie.duration && <span className="duration">{progress >= 1 ? 'Үзсэн' : movie.duration.replace(/^0:/, '')}</span>}
+      {lengthLabel(movie) && <span className="duration">{progress >= 1 ? 'Үзсэн' : lengthLabel(movie)}</span>}
       {progress > 0 && (
         <span className="thumb-progress">
           <span style={{ width: `${Math.max(progress * 100, 3)}%` }} />

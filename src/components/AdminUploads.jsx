@@ -30,7 +30,7 @@ export default function AdminUploads() {
         {jobs.map((j) => {
           const pct = j.total ? Math.floor((j.loaded / j.total) * 100) : 0
           return (
-            <li key={j.id}>
+            <li key={j.key}>
               <div className="uploads-row">
                 <b>{j.title}</b>
                 <span className={`pill ${j.status === 'done' ? 'ok' : j.status === 'error' ? 'bad' : ''}`}>
@@ -43,8 +43,8 @@ export default function AdminUploads() {
                 {j.status === 'done' && (j.published ? ' · сайтад нийтлэгдсэн' : ' · ноорог')}
                 {j.error && ` · ${j.error}`}
               </p>
-              {isActive(j) && <button className="link-btn" onClick={() => cancel(j.id)}>Цуцлах</button>}
-              {(j.status === 'error' || j.status === 'canceled') && j.file && <button className="link-btn" onClick={() => retry(j.id)}>Дахин оролдох</button>}
+              {isActive(j) && <button className="link-btn" onClick={() => cancel(j.key)}>Цуцлах</button>}
+              {(j.status === 'error' || j.status === 'canceled') && j.file && <button className="link-btn" onClick={() => retry(j.key)}>Дахин оролдох</button>}
             </li>
           )
         })}

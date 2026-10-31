@@ -311,15 +311,19 @@ export function watchPayment(id, onChange) {
 
 /* Видео */
 
-// R2 дээрх видеоны хугацаатай линк. Видео сервер тохируулаагүй (локал хөгжүүлэлт) бол json доторх замаар.
-export async function videoUrl(item, kind = 'movie') {
-  if (!configured) return item.video
-  const q = kind === 'short' ? '?kind=short' : ''
+// R2 дээрх видеоны хугацаатай линк: { url, preview } (preview: эрхгүй үед үнэгүй үзэх секунд).
+// ep: цувралын ангийн дугаар. Видео сервер тохируулаагүй (локал хөгжүүлэлт) бол json доторх замаар.
+export async function videoUrl(item, ep) {
+  const local = () => {
+    const url = ep ? item.episodes?.find((e) => e.number === ep)?.video : item.video
+    return { url, preview: ep || canWatchMovie(currentUser(), item.id) ? 0 : 300 }
+  }
+  if (!configured) return local()
   try {
-    const { url } = await api(`/api/video/${encodeURIComponent(item.id)}${q}`)
-    return url
+    const json = await api(`/api/video/${encodeURIComponent(item.id)}${ep ? `?ep=${ep}` : ''}`)
+    return { url: json.url, preview: json.preview || 0 }
   } catch (e) {
-    if (e.status === 503 || (import.meta.env.DEV && e.status === 404)) return item.video
+    if (e.status === 503 || (import.meta.env.DEV && e.status === 404)) return local()
     throw e
   }
 }
@@ -346,9 +350,10 @@ function saveHistory(user, list) {
 }
 
 // Үзэж эхэлсэн киног түүхийн эхэнд гаргана. Өмнөх байрлалыг (pos) хадгална.
-export function pushHistory(user, id) {
+// ep: цувралын сүүлд үзсэн анги.
+export function pushHistory(user, id, ep) {
   const old = getHistory(user).find((x) => x.id === id)
-  const entry = { ...old, id, at: new Date().toISOString() }
+  const entry = { ...old, id, at: new Date().toISOString(), ...(ep ? { ep } : {}) }
   return saveHistory(user, [entry, ...getHistory(user).filter((x) => x.id !== id)].slice(0, 100))
 }
 

@@ -6,8 +6,8 @@ import { releaseFrames, videoFrames } from '../frames.js'
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
 // Видеоноос нүүр зураг сонгох: кадрууд гаргаж, хамгийн тохиромжтойг автоматаар сонгоно, админ өөр кадр сонгож болно.
-// file: шинээр сонгосон видео (байхгүй бол R2 дээрх видео), auto: видео сонгомогц өөрөө гаргана.
-export default function CoverPicker({ kind, id, file, hasVideo, auto, value, onPick }) {
+// file: шинээр сонгосон видео (байхгүй бол R2 дээрх видео, цуврал бол 1-р анги), auto: видео сонгомогц өөрөө гаргана.
+export default function CoverPicker({ kind, id, orientation = 'horizontal', file, hasVideo, auto, value, onPick }) {
   const [frames, setFrames] = useState([])
   const [best, setBest] = useState(-1)
   const [busy, setBusy] = useState(false)
@@ -23,7 +23,7 @@ export default function CoverPicker({ kind, id, file, hasVideo, auto, value, onP
     setError('')
     try {
       const src = file || (await videoSource(kind, id))
-      const res = await videoFrames(src, kind, 6, shuffle)
+      const res = await videoFrames(src, orientation, 6, shuffle)
       if (n !== run.current) return releaseFrames(res.frames)
       setFrames(res.frames)
       setBest(res.best)
@@ -59,7 +59,7 @@ export default function CoverPicker({ kind, id, file, hasVideo, auto, value, onP
       {error && <p className="toast bad">{error}</p>}
       {frames.length > 0 && (
         <>
-          <div className={`cover-frames ${kind === 'short' ? 'tall' : ''}`}>
+          <div className={`cover-frames ${orientation === 'vertical' ? 'tall' : ''}`}>
             {frames.map((f, i) => (
               <button
                 key={f.url}

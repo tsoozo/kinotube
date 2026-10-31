@@ -11,20 +11,26 @@ import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
 import UploadIndicator from './components/UploadIndicator.jsx'
-import { CATEGORIES, allGenres, inCategory, isPublic, loadMovies, loadShorts, matches, matchesShort } from './data.js'
+import { CATEGORIES, allGenres, inCategory, isPublic, isShortSeries, loadMovies, matches, watchHref } from './data.js'
 import {
   canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
 } from './auth.js'
 
-// Хаяг: #cat-<ангилал>, #watch-<id>, #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>, #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
+// Хаяг: #cat-<ангилал>, #watch-<id>[/<анги>], #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>[/<анги>], #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
 // Хуучин #register, #forgot нь #login руу очно. #login-email: хуучин имэйл бүртгэлээр нэвтрэх (холбоосгүй).
+// "<id>/<анги>" → { id, ep }
+function splitEp(text) {
+  const m = /^(.*)\/(\d+)$/.exec(text)
+  return m ? { id: m[1], ep: Number(m[2]) } : { id: text, ep: 0 }
+}
+
 function readRoute() {
   const hash = decodeURIComponent(location.hash.slice(1))
   if (hash.startsWith('cat-')) return { page: 'home', category: hash.slice(4) }
-  if (hash.startsWith('watch-')) return { page: 'watch', id: hash.slice(6) }
+  if (hash.startsWith('watch-')) return { page: 'watch', ...splitEp(hash.slice(6)) }
   const pay = hash.match(/^pay-(rent|month)(?:-(.+))?$/)
   if (pay) return { page: 'pay', kind: pay[1], id: pay[2] || '' }
-  if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', id: hash.slice(7) }
+  if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', ...splitEp(hash.slice(7)) }
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
   if (['history', 'later', 'profile', 'login'].includes(hash)) return { page: hash }
   if (hash === 'register' || hash === 'forgot') return { page: 'login' }
@@ -33,11 +39,12 @@ function readRoute() {
 }
 
 export default function App() {
-  // all*: админд ноорог ч орно; хэрэглэгчдэд зөвхөн нийтэлсэн нь.
-  const [allMovies, setMovies] = useState([])
-  const [allShorts, setShorts] = useState(null)
-  const movies = useMemo(() => allMovies.filter(isPublic), [allMovies])
-  const shorts = useMemo(() => allShorts && allShorts.filter(isPublic), [allShorts])
+  // allMovies: бүх кино, цуврал (админд ноорог ч орно); хэрэглэгчдэд зөвхөн нийтэлсэн нь.
+  // movies: нүүрний кино, хэвтээ цуврал; shorts: босоо цуврал (Shorts).
+  const [allMovies, setMovies] = useState(null)
+  const published = useMemo(() => (allMovies || []).filter(isPublic), [allMovies])
+  const movies = useMemo(() => published.filter((m) => !isShortSeries(m)), [published])
+  const shorts = useMemo(() => allMovies && published.filter(isShortSeries), [allMovies, published])
   const [error, setError] = useState('')
   const [route, setRoute] = useState(readRoute)
   const [query, setQuery] = useState('')
@@ -52,8 +59,10 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    loadMovies().then(setMovies).catch((e) => setError(e.message))
-    loadShorts().then(setShorts).catch(() => setShorts([]))
+    loadMovies().then(setMovies).catch((e) => {
+      setError(e.message)
+      setMovies([])
+    })
   }, [])
 
   useEffect(() => {
@@ -101,11 +110,10 @@ export default function App() {
   )
 
   // Хайлт, ангилал эсвэл жанр сонгосон үед зөвхөн тохирох Shorts.
-  const visibleShorts = useMemo(() => {
-    if (!shorts) return []
-    if (!query.trim() && genre === 'Бүгд' && !category) return shorts
-    return shorts.filter((s) => matchesShort(s, movies, query, genre, category))
-  }, [shorts, movies, query, genre, category])
+  const visibleShorts = useMemo(
+    () => (shorts || []).filter((s) => inCategory(s, category) && matches(s, query) && (genre === 'Бүгд' || (s.genres || []).includes(genre))),
+    [shorts, query, genre, category],
+  )
 
   // Ангилал солиход өмнөх жанр тэнд байхгүй байж болно.
   useEffect(() => setGenre('Бүгд'), [category])
@@ -140,18 +148,27 @@ export default function App() {
     if (route.page !== 'home') go('')
   }
 
+  // Буцаж орох хаяг: "<id>" эсвэл "<id>/<анги>".
+  const returnHash = (r) => {
+    const { id, ep } = splitEp(r)
+    const item = (allMovies || []).find((m) => m.id === id)
+    return item ? watchHref(item, ep) : `#watch-${encodeURIComponent(id)}`
+  }
+  const returnId = () => splitEp(peekReturnTo() || '').id
+
   // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол Shorts руу.
   const onLogin = (u) => {
     setUser(u)
-    const id = canWatchMovie(u, peekReturnTo()) ? takeReturnTo() : peekReturnTo()
-    go(id ? `#watch-${encodeURIComponent(id)}` : isAdmin(u) ? '#admin' : '#shorts')
+    const r = canWatchMovie(u, returnId()) ? takeReturnTo() : peekReturnTo()
+    go(r ? returnHash(r) : isAdmin(u) ? '#admin' : '#shorts')
   }
 
   // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.
   useEffect(() => {
-    if (route.page !== 'profile' || !canWatchMovie(user, peekReturnTo())) return
-    const id = takeReturnTo()
-    if (id) location.hash = `watch-${encodeURIComponent(id)}`
+    if (route.page !== 'profile' || !canWatchMovie(user, returnId())) return
+    const r = takeReturnTo()
+    if (r) location.hash = returnHash(r).slice(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route, user])
 
   const goHome = () => {
@@ -163,7 +180,6 @@ export default function App() {
   // Админ кино нэмж/засахад серверээс дахин уншина.
   const onCatalog = () => {
     loadMovies(true).then(setMovies).catch(() => {})
-    loadShorts().then(setShorts).catch(() => {})
   }
 
   // Эхлээд нүүр рүү шилжинэ, эс бөгөөс профайлын хамгаалалт нэвтрэх хуудас руу аваачна.
@@ -177,19 +193,24 @@ export default function App() {
   const page = route.page
   const isWatch = page === 'watch'
   const isAuth = page === 'login'
-  const current = isWatch || page === 'pay' ? allMovies.find((m) => m.id === route.id) : null
+  const current = isWatch || page === 'pay' ? (allMovies || []).find((m) => m.id === route.id) : null
+
+  // Босоо цувралыг Shorts-д үзнэ.
+  useEffect(() => {
+    if (isWatch && current && isShortSeries(current)) location.replace(watchHref(current, route.ep))
+  }, [isWatch, current, route.ep])
 
   let content
   if (error) content = <p className="notice">{error}</p>
   else if (isAuth) content = <Login key={route.legacy ? 'email' : 'phone'} onDone={onLogin} legacy={route.legacy} />
-  else if (page === 'profile') content = user && <Profile user={user} movies={movies} onUser={setUser} onLogout={onLogout} />
+  else if (page === 'profile') content = user && <Profile user={user} movies={published} onUser={setUser} onLogout={onLogout} />
   else if (page === 'pay') content = user && (current || (route.kind === 'month' && !route.id)) && <Checkout key={route.id + route.kind} kind={route.kind} movie={current} user={user} onUser={setUser} />
-  else if (isWatch && current) content = <Watch movie={current} movies={movies} user={user} onUser={setUser} />
-  else if (page === 'shorts') content = <Shorts shorts={query.trim() ? visibleShorts : shorts || []} movies={movies} startId={route.id} loading={!shorts} />
-  else if (isWatch && movies.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
-  else if (page === 'admin') content = user && <Admin tab={route.id} user={user} movies={allMovies} shorts={allShorts || []} onCatalog={onCatalog} onUser={setUser} />
-  else if (page === 'history') content = <History movies={movies} user={user} onUser={setUser} />
-  else if (page === 'later') content = <Later movies={movies} user={user} onUser={setUser} />
+  else if (isWatch && current) content = <Watch key={current.id} movie={current} ep={route.ep} movies={movies} user={user} onUser={setUser} />
+  else if (page === 'shorts') content = <Shorts series={query.trim() ? visibleShorts : shorts || []} startId={route.id} startEp={route.ep} user={user} loading={!shorts} />
+  else if (isWatch && allMovies?.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
+  else if (page === 'admin') content = user && <Admin tab={route.id} user={user} items={allMovies || []} onCatalog={onCatalog} onUser={setUser} />
+  else if (page === 'history') content = <History movies={published} user={user} onUser={setUser} />
+  else if (page === 'later') content = <Later movies={published} user={user} onUser={setUser} />
   else if (!isWatch)
     content = (
       <Home
@@ -202,7 +223,7 @@ export default function App() {
         query={query}
         onClearSearch={() => setQuery('')}
         progressOf={(id) => progress[id]}
-        loading={movies.length === 0}
+        loading={!allMovies}
         shorts={page === 'home' && (genre === 'Бүгд' || query.trim()) ? visibleShorts : []}
         continueItems={page === 'home' && genre === 'Бүгд' && !category && !query.trim() ? continueItems : []}
         categoryRows={page === 'home' && genre === 'Бүгд' && !category && !query.trim()}

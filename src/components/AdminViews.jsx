@@ -52,7 +52,7 @@ export default function AdminViews({ movies }) {
           </table>
         </div>
       )}
-      <p className="muted small">Үзэлт = киног үзэж эхэлсэн хэрэглэгчийн тоо (хүн бүр нэг удаа). Shorts-ийн үзэлт бүртгэгддэггүй.</p>
+      <p className="muted small">Үзэлт = кино, цувралыг үзэж эхэлсэн хэрэглэгчийн тоо (хүн бүр нэг удаа, Shorts ч орно).</p>
     </div>
   )
 }

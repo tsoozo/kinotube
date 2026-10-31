@@ -1,81 +1,193 @@
 [
   {
-    "id": "metropolis-robot-maria",
-    "title": "Робот Мариа амь ордог мөч",
-    "duration": "1:12",
-    "description": "Ротвангийн лабораторид машин хүн анх удаа нүдээ нээнэ. Кино түүхийн хамгийн алдартай үзэгдлийн нэг.",
-    "video": "shorts/metropolis-robot-maria.mp4",
-    "thumbnail": "shorts/metropolis-robot-maria.jpg",
-    "movie": "metropolis",
-    "added": "2026-10-21"
+    "id": "tal-nutgiin-bvsgvi",
+    "title": "Тал нутгийн бүсгүй",
+    "year": 2026,
+    "genres": [
+      "Драм",
+      "Романтик"
+    ],
+    "categories": [
+      "mongolian"
+    ],
+    "description": "Хотод сурч төгссөн Солонго аавынхаа малчин айлд буцаж ирээд хөрш залуутай зөрчилдөнө. Богино ангит босоо цуврал.",
+    "added": "2026-10-31",
+    "episodes": [
+      {
+        "number": 1,
+        "title": "",
+        "duration": "2:10",
+        "video": "episodes/tal-nutgiin-bvsgvi/1.mp4"
+      },
+      {
+        "number": 2,
+        "title": "",
+        "duration": "1:55",
+        "video": "episodes/tal-nutgiin-bvsgvi/2.mp4"
+      },
+      {
+        "number": 3,
+        "title": "",
+        "duration": "2:30",
+        "video": "episodes/tal-nutgiin-bvsgvi/3.mp4"
+      },
+      {
+        "number": 4,
+        "title": "",
+        "duration": "2:10",
+        "video": "episodes/tal-nutgiin-bvsgvi/4.mp4"
+      },
+      {
+        "number": 5,
+        "title": "",
+        "duration": "1:55",
+        "video": "episodes/tal-nutgiin-bvsgvi/5.mp4"
+      },
+      {
+        "number": 6,
+        "title": "",
+        "duration": "2:30",
+        "video": "episodes/tal-nutgiin-bvsgvi/6.mp4"
+      },
+      {
+        "number": 7,
+        "title": "",
+        "duration": "2:10",
+        "video": "episodes/tal-nutgiin-bvsgvi/7.mp4"
+      },
+      {
+        "number": 8,
+        "title": "",
+        "duration": "1:55",
+        "video": "episodes/tal-nutgiin-bvsgvi/8.mp4"
+      }
+    ]
   },
   {
-    "id": "general-train-chase",
-    "title": "Галт тэрэгний хөөцөлдөөн",
-    "duration": "3:40",
-    "description": "Бастер Китон ямар ч дублёргүйгээр хөдөлж буй галт тэрэг дээр трюк хийнэ.",
-    "video": "shorts/general-train-chase.mp4",
-    "thumbnail": "shorts/general-train-chase.jpg",
-    "movie": "the-general",
-    "added": "2026-10-21"
+    "id": "nuuts-ezen",
+    "title": "Нууц эзэн",
+    "year": 2026,
+    "genres": [
+      "Триллер"
+    ],
+    "categories": [
+      "ai"
+    ],
+    "description": "Компанийн шинэ ажилтан захирлынхаа нууцыг олж мэдэв. Анги бүр 2 минут.",
+    "added": "2026-10-30",
+    "episodes": [
+      {
+        "number": 1,
+        "title": "",
+        "duration": "1:45",
+        "video": "episodes/nuuts-ezen/1.mp4"
+      },
+      {
+        "number": 2,
+        "title": "",
+        "duration": "2:05",
+        "video": "episodes/nuuts-ezen/2.mp4"
+      },
+      {
+        "number": 3,
+        "title": "",
+        "duration": "1:45",
+        "video": "episodes/nuuts-ezen/3.mp4"
+      },
+      {
+        "number": 4,
+        "title": "",
+        "duration": "2:05",
+        "video": "episodes/nuuts-ezen/4.mp4"
+      },
+      {
+        "number": 5,
+        "title": "",
+        "duration": "1:45",
+        "video": "episodes/nuuts-ezen/5.mp4"
+      },
+      {
+        "number": 6,
+        "title": "",
+        "duration": "2:05",
+        "video": "episodes/nuuts-ezen/6.mp4"
+      }
+    ]
   },
   {
-    "id": "nosferatu-stairs",
-    "title": "Шатан дээрх сүүдэр",
-    "duration": "0:48",
-    "description": "Гүн Орлокын сүүдэр шатаар аажуухан мөлхөн гарна. Аймшгийн киноны сонгодог кадр.",
-    "video": "shorts/nosferatu-stairs.mp4",
-    "thumbnail": "shorts/nosferatu-stairs.jpg",
-    "movie": "nosferatu",
-    "added": "2026-10-20"
-  },
-  {
-    "id": "moon-landing",
-    "title": "Сарны нүдэнд пуужин",
-    "duration": "2:05",
-    "description": "Жорж Мельесийн 1902 оны кинон дахь сарны нүдэнд пуужин буух алдартай мөч.",
-    "video": "shorts/moon-landing.mp4",
-    "thumbnail": "shorts/moon-landing.jpg",
-    "movie": "a-trip-to-the-moon",
-    "added": "2026-10-20"
-  },
-  {
-    "id": "sherlock-jr-screen",
-    "title": "Дэлгэц рүү үсэрсэн кино механикч",
-    "duration": "6:30",
-    "description": "Шерлок бага кинон дахь гайхалтай монтажийн трюкүүд хэрхэн бүтсэн бэ.",
-    "video": "shorts/sherlock-jr-screen.mp4",
-    "thumbnail": "shorts/sherlock-jr-screen.jpg",
-    "movie": "sherlock-jr",
-    "added": "2026-10-19"
-  },
-  {
-    "id": "silent-film-explained",
-    "title": "Дуугүй кино яагаад 24 биш 18 кадртай вэ?",
-    "duration": "12:15",
-    "description": "Эрт үеийн кино камер, гар эргүүлгийн хурд, хуучин кино яагаад хурдан харагддаг тухай товч тайлбар.",
-    "video": "shorts/silent-film-explained.mp4",
-    "thumbnail": "shorts/silent-film-explained.jpg",
-    "added": "2026-10-19"
-  },
-  {
-    "id": "caligari-sets",
-    "title": "Калигаригийн муруй ертөнц",
-    "duration": "4:20",
-    "description": "Будсан хана, хазгай цонх: экспрессионист декорацийг хэрхэн бүтээсэн бэ.",
-    "video": "shorts/caligari-sets.mp4",
-    "thumbnail": "shorts/caligari-sets.jpg",
-    "movie": "the-cabinet-of-dr-caligari",
-    "added": "2026-10-18"
-  },
-  {
-    "id": "kid-best-moments",
-    "title": "Чаплин ба Хүүхэд: шилдэг 5 мөч",
-    "duration": "9:58",
-    "description": "Чарли Чаплин, Жеки Куган хоёрын инээдтэй бас сэтгэл хөдлөм үзэгдлүүд.",
-    "video": "shorts/kid-best-moments.mp4",
-    "thumbnail": "shorts/kid-best-moments.jpg",
-    "movie": "the-kid",
-    "added": "2026-10-18"
+    "id": "seoul-hairiin-tuuh",
+    "title": "Сөүлийн хайрын түүх",
+    "year": 2025,
+    "genres": [
+      "Романтик",
+      "Инээдмийн"
+    ],
+    "categories": [
+      "korean"
+    ],
+    "description": "Сөүлд оюутан солилцоогоор очсон Тэмүүлэн кофе шопын эзэн бүсгүйтэй танилцана.",
+    "added": "2026-10-29",
+    "episodes": [
+      {
+        "number": 1,
+        "title": "",
+        "duration": "2:20",
+        "video": "episodes/seoul-hairiin-tuuh/1.mp4"
+      },
+      {
+        "number": 2,
+        "title": "",
+        "duration": "2:00",
+        "video": "episodes/seoul-hairiin-tuuh/2.mp4"
+      },
+      {
+        "number": 3,
+        "title": "",
+        "duration": "1:50",
+        "video": "episodes/seoul-hairiin-tuuh/3.mp4"
+      },
+      {
+        "number": 4,
+        "title": "",
+        "duration": "2:20",
+        "video": "episodes/seoul-hairiin-tuuh/4.mp4"
+      },
+      {
+        "number": 5,
+        "title": "",
+        "duration": "2:00",
+        "video": "episodes/seoul-hairiin-tuuh/5.mp4"
+      },
+      {
+        "number": 6,
+        "title": "",
+        "duration": "1:50",
+        "video": "episodes/seoul-hairiin-tuuh/6.mp4"
+      },
+      {
+        "number": 7,
+        "title": "",
+        "duration": "2:20",
+        "video": "episodes/seoul-hairiin-tuuh/7.mp4"
+      },
+      {
+        "number": 8,
+        "title": "",
+        "duration": "2:00",
+        "video": "episodes/seoul-hairiin-tuuh/8.mp4"
+      },
+      {
+        "number": 9,
+        "title": "",
+        "duration": "1:50",
+        "video": "episodes/seoul-hairiin-tuuh/9.mp4"
+      },
+      {
+        "number": 10,
+        "title": "",
+        "duration": "2:20",
+        "video": "episodes/seoul-hairiin-tuuh/10.mp4"
+      }
+    ]
   }
 ]

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import { CloseIcon, LaterIcon, SearchIcon, TrashIcon } from './Icons.jsx'
-import { formatTime, matches } from '../data.js'
+import { formatTime, matches, watchHref } from '../data.js'
 import { clearHistory, formatDate, getHistory, getLater, removeHistory, watchedRatio } from '../auth.js'
 
 // Үзсэн огноогоор нь бүлэглэнэ: Өнөөдөр, Өчигдөр, Энэ долоо хоног, эсвэл огноо.
@@ -70,7 +70,7 @@ export default function History({ movies, user, onUser }) {
               <ul className="list">
                 {g.items.map((h) => {
                   const ratio = watchedRatio(h)
-                  const href = `#watch-${encodeURIComponent(h.id)}`
+                  const href = watchHref(h.movie, h.ep)
                   return (
                     <li key={h.id} className="history-item">
                       <a className="history-thumb" href={href}>
@@ -80,7 +80,9 @@ export default function History({ movies, user, onUser }) {
                         <h3>{h.movie.title}</h3>
                         <p className="muted">{h.movie.year} он · {(h.movie.genres || []).join(' · ')}</p>
                         <p className="history-status">
-                          {h.done
+                          {h.ep
+                            ? `${h.ep}-р анги хүртэл үзсэн`
+                            : h.done
                             ? 'Бүтэн үзсэн'
                             : h.pos > 0
                               ? `${formatTime(h.pos)} / ${h.dur ? formatTime(h.dur) : h.movie.duration} хүртэл үзсэн`

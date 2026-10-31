@@ -1,10 +1,10 @@
 import Thumbnail from './Thumbnail.jsx'
-import { timeAgo } from '../data.js'
+import { timeAgo, watchHref } from '../data.js'
 
 export default function MovieCard({ movie, compact, progress }) {
   const avatarHue = [...movie.id].reduce((a, c) => a + c.charCodeAt(0), 0) % 360
   return (
-    <a className={`card ${compact ? 'card-compact' : ''}`} href={`#watch-${encodeURIComponent(movie.id)}`}>
+    <a className={`card ${compact ? 'card-compact' : ''}`} href={watchHref(movie)}>
       <Thumbnail movie={movie} small={compact} progress={progress} />
       <div className="card-info">
         {!compact && (

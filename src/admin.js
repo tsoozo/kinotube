@@ -1,9 +1,8 @@
 // Админ хэсгийн өгөгдлийн давхарга. Бүгд Supabase-ийн admin_* функцууд, functions/api/admin/-аар
-// (сервер админ эсэхийг шалгана). Кино, Shorts-ийн жагсаалт catalog хүснэгтэд, видео, зураг R2-д.
+// (сервер админ эсэхийг шалгана). Кино, цувралын жагсаалт catalog, ангиуд episodes хүснэгтэд, видео, зураг R2-д.
 import { api, fail, need } from './auth.js'
-import { SHORTS_MAX_SECONDS, toSeconds } from './data.js'
 
-// ---------- Кино ба Shorts ----------
+// ---------- Кино ба цуврал ----------
 
 const DURATION_RE = /^\d{1,2}(:\d{2}){1,2}$/
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -18,7 +17,7 @@ export const slugify = (title) =>
   [...title.toLowerCase()].map((c) => LATIN[c] ?? c).join('')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80).replace(/-+$/, '')
 
-// Формын утгыг шалгаж, admin_save_catalog-д өгөх мөр болгоно. Буруу бол Error.
+// Формын утгыг шалгаж, admin_save_catalog-д өгөх мөр болгоно. kind: movie | series. Буруу бол Error.
 export function cleanItem(kind, form, list, originalId) {
   const id = form.id.trim().toLowerCase()
   if (!SLUG.test(id)) throw new Error('ID зөвхөн латин жижиг үсэг, тоо, зураастай байна (жишээ: the-general).')
@@ -28,17 +27,13 @@ export function cleanItem(kind, form, list, originalId) {
   if (duration && !DURATION_RE.test(duration)) throw new Error('Үргэлжлэх хугацааг "Ц:ММ:СС" эсвэл "М:СС" хэлбэрээр бичнэ үү.')
   const item = {
     id,
-    kind: kind === 'shorts' ? 'short' : 'movie',
+    kind: kind === 'series' ? 'series' : 'movie',
+    orientation: form.orientation === 'vertical' ? 'vertical' : 'horizontal',
     title: form.title.trim(),
-    duration,
+    duration: kind === 'series' ? '' : duration,
     description: form.description.trim(),
     added: form.added || new Date().toISOString().slice(0, 10),
     published: Boolean(form.published),
-  }
-  if (kind === 'shorts') {
-    const sec = toSeconds(duration)
-    if (duration && (sec <= 0 || sec > SHORTS_MAX_SECONDS)) throw new Error('Shorts 20 минутаас урт байж болохгүй.')
-    return { ...item, movie_id: form.movie || null }
   }
   const year = form.year ? Number(form.year) : null
   if (year !== null && (!Number.isInteger(year) || year < 1880 || year > 2100)) throw new Error('Оныг зөв оруулна уу.')
@@ -62,8 +57,18 @@ const upload = (body) => api('/api/admin/upload', {
 })
 export { upload as uploadAction }
 
-// Видео, зураг, мөрийг хамт устгана.
+// Видео, зураг, мөрийг хамт устгана (цувралыг бүх ангитай нь).
 export const deleteCatalogItem = (kind, id) => upload({ action: 'delete', kind, id })
+
+// Цувралын анги: дугаар, нэр, урт. Видеог uploads.js-ээр (kind: 'episode') хуулна.
+export async function saveEpisode(seriesId, { number, title = '', duration = '' }) {
+  if (duration && !DURATION_RE.test(duration)) throw new Error('Ангийн уртыг "Ц:ММ:СС" эсвэл "М:СС" хэлбэрээр бичнэ үү.')
+  const { data, error } = await need().rpc('admin_save_episode', { p: { series_id: seriesId, number, title: title.trim(), duration } })
+  if (error) throw fail(error)
+  return data
+}
+
+export const deleteEpisode = (seriesId, ep) => upload({ action: 'delete', kind: 'episode', id: seriesId, ep })
 
 // Зургийг R2 руу шууд хуулж, түлхүүрийг (thumbnails/...) буцаана.
 export async function uploadThumbnail(kind, id, file) {
@@ -73,8 +78,9 @@ export async function uploadThumbnail(kind, id, file) {
   return key
 }
 
-// R2 дээрх видеоны унших линк (нүүр зураг сонгоход).
-export const videoSource = async (kind, id) => (await upload({ action: 'source', kind, id })).url
+// R2 дээрх видеоны унших линк (нүүр зураг сонгоход). Цуврал бол эхний ангийнх.
+export const videoSource = async (kind, id, ep) =>
+  (await upload({ action: 'source', kind: kind === 'series' ? 'episode' : kind, id, ep: kind === 'series' ? ep || 1 : ep })).url
 
 // Видео файлын уртыг "Ц:ММ:СС" хэлбэрээр (хөтөч уншиж чадахгүй бол '').
 export function videoDuration(file) {
@@ -174,7 +180,7 @@ export async function viewRanking(movies) {
     .sort((a, b) => b.count - a.count || b.done - a.done || a.movie.title.localeCompare(b.movie.title))
 }
 
-export async function stats(movies, shorts) {
+export async function stats(movies, series) {
   const [s, ranking] = await Promise.all([rpc('admin_stats'), viewRanking(movies)])
   return {
     users: s.users,
@@ -189,7 +195,7 @@ export async function stats(movies, shorts) {
     planAll: s.all_month,
     rentAll: s.all_rent,
     movies: movies.length,
-    shorts: shorts.length,
+    series: series.length,
     top: ranking.filter((x) => x.count > 0).slice(0, 5),
     least: ranking.slice(-5).reverse(),
     recent: (s.recent || []).map(toUser),

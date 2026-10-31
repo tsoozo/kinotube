@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { stats } from '../admin.js'
 import { formatDate, formatMoney, isActive, userContact } from '../auth.js'
 
-export default function AdminStats({ movies, shorts }) {
+export default function AdminStats({ movies, series }) {
   const [s, setS] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    stats(movies, shorts).then(setS).catch((e) => setError(e.message))
-  }, [movies, shorts])
+    stats(movies, series).then(setS).catch((e) => setError(e.message))
+  }, [movies, series])
 
   if (error) return <p className="notice">{error}</p>
   if (!s) return <p className="notice">Ачаалж байна…</p>
@@ -32,7 +32,7 @@ export default function AdminStats({ movies, shorts }) {
         {tile('Шалгах төлбөр', s.pending, s.pending ? 'Telegram эсвэл энд батална' : 'Хүлээгдэж буй төлбөр алга', '#admin-payments')}
         {tile('Энэ сарын орлого', formatMoney(s.planMonth + s.rentMonth), `Сарын эрх ${formatMoney(s.planMonth)} · Нэг кино ${formatMoney(s.rentMonth)}`)}
         {tile('Нийт орлого', formatMoney(s.planAll + s.rentAll), `Сарын эрх ${formatMoney(s.planAll)} · Нэг кино ${formatMoney(s.rentAll)}`)}
-        {tile('Кино / Shorts', `${s.movies} / ${s.shorts}`, '')}
+        {tile('Кино / Цуврал', `${s.movies} / ${s.series}`, '')}
       </div>
 
       <div className="profile-cards">
