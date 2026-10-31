@@ -112,7 +112,6 @@ export default function Login({ onDone, legacy }) {
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
         <p className="form-links">
           <button type="button" onClick={() => go('register')}>Бүртгүүлэх</button>
-          <button type="button" onClick={() => go('forgot')}>Кодоо мартсан</button>
         </p>
       </form>
     )
@@ -133,16 +132,6 @@ export default function Login({ onDone, legacy }) {
           <button type="button" onClick={() => go('login')}>Бүртгэлтэй юу? Нэвтрэх</button>
         </p>
       </form>
-    )
-  } else if (mode === 'forgot') {
-    body = (
-      <>
-        <h1>Кодоо мартсан</h1>
-        <p className="form-hint">Админд хандаж утасны дугаараа хэлээд шинэ код аваарай. Дараа нь профайлаасаа кодоо сольж болно.</p>
-        <p className="form-links">
-          <button type="button" onClick={() => go('login')}>Нэвтрэх рүү буцах</button>
-        </p>
-      </>
     )
   } else if (mode === 'email') {
     body = (
