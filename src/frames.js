@@ -103,3 +103,11 @@ export async function videoFrames(src, orientation = 'horizontal', count = 6, sh
 }
 
 export const releaseFrames = (frames) => frames.forEach((f) => URL.revokeObjectURL(f.url))
+
+// Хамгийн тохиромжтой нэг кадрыг зураг файл болгож буцаана (нүүр автоматаар тавихад).
+export async function bestFrame(src, orientation = 'horizontal') {
+  const { frames, best } = await videoFrames(src, orientation)
+  const file = frames[best].file
+  releaseFrames(frames)
+  return file
+}

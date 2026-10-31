@@ -4,7 +4,7 @@ import CoverPicker from './CoverPicker.jsx'
 import { AutoIcon, EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
 import AdminEpisodes from './AdminEpisodes.jsx'
 import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration, videoSource } from '../admin.js'
-import { releaseFrames, videoFrames } from '../frames.js'
+import { bestFrame } from '../frames.js'
 import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, matches } from '../data.js'
 import { enqueue, isActive, jobKey, subscribe } from '../uploads.js'
 import { RENTAL, formatMoney } from '../auth.js'
@@ -84,6 +84,12 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
       const old = list.find((m) => m.id === form.originalId)
       item.thumbnail = old?.thumbKey || null
       if (form.thumbFile) item.thumbnail = await uploadThumbnail(item.kind, item.id, form.thumbFile)
+      // Нүүр сонгоогүй бол шинэ видеоноос хамгийн тохиромжтой кадрыг нүүр болгоно.
+      if (!item.thumbnail && form.videoFile) {
+        setMessage({ ok: true, text: 'Видеоноос нүүр зураг авч байна…' })
+        item.thumbnail = await autoThumb(item.kind, item.id, form.videoFile, item.orientation)
+        setMessage(null)
+      }
       if (isSeries) {
         // Бэлэн ангигүй цуврал эхний анги хуулагдмагц нийтлэгдэнэ.
         const ready = (old?.episodes || []).some((e) => e.videoReady)
@@ -121,6 +127,24 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
     }
   }
 
+  // Видеоноос нүүр зураг гаргаж хуулна. Бүтэхгүй бол null (өнгөт fallback харагдана).
+  const autoThumb = async (k, id, src, orientation) => {
+    try {
+      return await uploadThumbnail(k, id, await bestFrame(src, orientation))
+    } catch {
+      return null
+    }
+  }
+
+  // Нүүргүй цувралд анги нэмэхэд эхний видеоноос нүүр тавина (админ гараар сонгосон бол хийхгүй).
+  const seriesCover = async (series, file) => {
+    if (series.thumbKey || form?.thumbFile) return false
+    const thumbnail = await autoThumb('series', series.id, file, series.orientation)
+    if (!thumbnail) return false
+    await saveCatalogItem({ ...cleanItem('series', toForm(series), list, series.id), thumbnail })
+    return true
+  }
+
   // Нүүргүй, видео нь байршсан бичлэг бүрт видеоноос хамгийн тохиромжтой кадрыг нүүр болгоно.
   const hasVideo = (m) => (isSeries ? episodesOf(m)[0]?.videoReady : m.videoReady)
   const coverless = list.filter((m) => !m.thumbKey && hasVideo(m))
@@ -132,9 +156,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
     for (const m of coverless) {
       setMessage({ ok: true, text: `Нүүр сонгож байна ${done + failed.length + 1}/${coverless.length} · ${m.title}` })
       try {
-        const { frames, best } = await videoFrames(await videoSource(kind, m.id), m.orientation)
-        const thumbnail = await uploadThumbnail(kind, m.id, frames[best].file)
-        releaseFrames(frames)
+        const thumbnail = await uploadThumbnail(kind, m.id, await bestFrame(await videoSource(kind, m.id), m.orientation))
         await saveCatalogItem({ ...cleanItem(kind, toForm(m), list, m.id), thumbnail })
         done++
       } catch (err) {
@@ -271,7 +293,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
             <button className="btn-secondary" type="button" onClick={() => setForm(null)}>{isSeries && form.originalId ? 'Хаах' : 'Болих'}</button>
           </div>
           {isSeries && editing && (
-            <AdminEpisodes series={editing} jobs={jobs} publish={form.published} onChange={onCatalog} onMessage={setMessage} />
+            <AdminEpisodes series={editing} jobs={jobs} publish={form.published} onChange={onCatalog} onMessage={setMessage} onCover={seriesCover} />
           )}
           {isSeries && !editing && <p className="muted small">Цувралаа хадгалсны дараа ангиудаа нэмнэ.</p>}
         </form>

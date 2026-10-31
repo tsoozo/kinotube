@@ -20,7 +20,7 @@ function EpisodePill({ episode, job }) {
 }
 
 // Цувралын ангиуд: олон видео нэг дор сонгоход дарааллаар нь анги болгож хуулна, анги бүрийн видеог сольж, устгана.
-export default function AdminEpisodes({ series, jobs, publish, onChange, onMessage }) {
+export default function AdminEpisodes({ series, jobs, publish, onChange, onMessage, onCover }) {
   const [busy, setBusy] = useState(false)
   const [drafts, setDrafts] = useState({})
   const episodes = episodesOf(series)
@@ -45,13 +45,16 @@ export default function AdminEpisodes({ series, jobs, publish, onChange, onMessa
     run(async () => {
       const files = [...list].sort(byName)
       if (!files.length) return
+      // Нүүргүй цуврал бол эхний видеоноос нүүр авна (хуулалт эхлэхээс өмнө: нийтлэлтийн төлөвийг дарахгүй).
+      if (!series.thumbKey && onCover) onMessage({ ok: true, text: 'Видеоноос нүүр зураг авч байна…' })
+      const covered = !series.thumbKey && onCover ? await onCover(series, files[0]) : false
       let n = episodes.reduce((max, e) => Math.max(max, e.number), 0)
       for (const file of files) {
         n++
         await saveEpisode(series.id, { number: n, duration: await videoDuration(file) })
         upload(n, file)
       }
-      onMessage({ ok: true, text: `${files.length} анги нэмэгдлээ. Видео хуулагдаж байна, дуусахад Telegram группт мэдэгдэнэ.` })
+      onMessage({ ok: true, text: `${files.length} анги нэмэгдлээ${covered ? ', нүүр зургийг видеоноос авлаа' : ''}. Видео хуулагдаж байна, дуусахад Telegram группт мэдэгдэнэ.` })
     })
 
   const replace = (e, file) =>
