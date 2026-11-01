@@ -76,6 +76,18 @@ export default function Login({ onDone, legacy }) {
     onDone(await verifyCode(email, code))
   })
 
+  // 8 оронтой дугаар бүрэн болмогц кодын эхний нүд рүү шилжинэ.
+  const onPhone = (v) => {
+    const next = cleanPhone(v).slice(0, 8)
+    if (next.length === 8 && phone.length < 8) setTimeout(() => document.getElementById('pin-0')?.focus(), 0)
+    setPhone(next)
+  }
+  // Бүртгэлд: код бүрэн болмогц давтах нүд рүү.
+  const onPin = (v) => {
+    if (mode === 'register' && v.length === 4 && pin.length < 4) setTimeout(() => document.getElementById('pin2-0')?.focus(), 0)
+    setPin(v)
+  }
+
   const phoneField = (
     <label className="field">
       <span>Утасны дугаар</span>
@@ -87,7 +99,7 @@ export default function Login({ onDone, legacy }) {
         placeholder="99112233"
         maxLength={9}
         value={phone}
-        onChange={(e) => setPhone(cleanPhone(e.target.value).slice(0, 8))}
+        onChange={(e) => onPhone(e.target.value)}
         autoFocus
       />
     </label>
@@ -107,7 +119,7 @@ export default function Login({ onDone, legacy }) {
       <form onSubmit={login} noValidate>
         <h1>Нэвтрэх</h1>
         {phoneField}
-        <div className="field"><span>4 оронтой код</span><PinInput id="pin" value={pin} onChange={setPin} /></div>
+        <div className="field"><span>4 оронтой код</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
         {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
         <p className="form-links">
@@ -124,7 +136,7 @@ export default function Login({ onDone, legacy }) {
           <span>Нэр (заавал биш)</span>
           <input id="name" type="text" autoComplete="nickname" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} />
         </label>
-        <div className="field"><span>4 оронтой код сонгох</span><PinInput id="pin" value={pin} onChange={setPin} /></div>
+        <div className="field"><span>4 оронтой код сонгох</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
         <div className="field"><span>Кодоо давтах</span><PinInput id="pin2" value={pin2} onChange={setPin2} /></div>
         {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Бүртгэж байна…' : 'Бүртгүүлэх'}</button>
