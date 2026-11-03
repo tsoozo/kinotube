@@ -16,6 +16,7 @@ import {
   CreditCard,
   Crown,
   Download,
+  Forward,
   Gauge,
   History,
   Images,
@@ -89,3 +90,4 @@ export const QrIcon = icon(QrCode)
 export const PhoneIcon = icon(Smartphone)
 export const FramesIcon = icon(Images)
 export const AutoIcon = icon(WandSparkles)
+export const ShareIcon = icon(Forward)

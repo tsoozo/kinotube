@@ -96,6 +96,29 @@ export function watchHref(item, ep) {
   return isShortsItem(item) ? `#shorts-${id}${suffix}` : `#watch-${id}${suffix}`
 }
 
+// Хуваалцах хаяг: /m/<id> нь Facebook, Messenger-т кино бүрийн зураг, гарчигтай харагдана (functions/m).
+export const shareUrl = (item, ep) => `${location.origin}/m/${encodeURIComponent(item.id)}${ep ? `/${ep}` : ''}`
+
+// Утсанд хуваалцах цонх, бусад үед линкийг хуулна. → 'shared' | 'copied' | null
+export async function shareItem(item, ep) {
+  const url = shareUrl(item, ep)
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: item.title, url })
+      return 'shared'
+    } catch (err) {
+      if (err.name === 'AbortError') return null
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url)
+    return 'copied'
+  } catch {
+    window.prompt('Линкийг хуулж хуваалцаарай', url)
+    return null
+  }
+}
+
 // Картын доор/зурган дээр: кино бол урт, цуврал бол ангийн тоо.
 export const lengthLabel = (item) => (isSeries(item) ? `${item.episodes?.length || 0} анги` : (item.duration || '').replace(/^0:/, ''))
 

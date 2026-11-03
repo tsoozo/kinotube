@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
-import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, SpeedIcon } from './Icons.jsx'
+import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, ShareIcon, SpeedIcon } from './Icons.jsx'
 import {
-  FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, subtitlesOf, timeAgo, watchHref,
+  FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, shareItem, subtitlesOf, timeAgo, watchHref,
 } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
@@ -76,6 +76,13 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const rentEnds = rentalEndsAt(user, movie.id)
   const subs = subtitlesOf(movie)
   const saved = isLater(user, movie.id)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(false), 2500)
+    return () => clearTimeout(t)
+  }, [copied])
 
   useEffect(() => {
     setVideoError(false)
@@ -336,6 +343,10 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
           >
             {saved ? <SavedIcon /> : <SaveIcon />}
             <span>{saved ? 'Хадгалсан' : 'Дараа үзэх'}</span>
+          </button>
+          <button className="action-btn" onClick={() => shareItem(movie, series ? n : 0).then((r) => r === 'copied' && setCopied(true))}>
+            <ShareIcon />
+            <span>{copied ? 'Линк хуулагдлаа' : 'Хуваалцах'}</span>
           </button>
           {playing && subs.length > 0 && (
             <button className={`action-btn ${captions ? 'active' : ''}`} aria-pressed={captions} title="Хадмал (C)" onClick={() => setCaptions((c) => !c)}>

@@ -4,6 +4,7 @@
 //  complete → хэсгүүдийг нийлүүлж, кино "видео бэлэн" болно, Telegram группт мэдэгдэнэ
 //  abort    → тасалсан/алдаа гарсан хуулалтыг цуцалж, шалтгааныг группт мэдэгдэнэ
 //  thumb    → зургийн нэг PUT линк (кино хадгалахаас өмнө)
+//  og       → хуваалцах картын (1200×630 JPG) PUT линк: thumbnails/og/<id>.jpg (functions/m)
 //  delete   → кино/цувралыг видео, зурагтай нь (эсвэл цувралын нэг ангийг) устгана
 // kind: movie | series | episode (episode бол id = цувралын id, ep = ангийн дугаар).
 //  source   → R2 дээрх видеоны унших линк (видеоноос нүүр зураг сонгох)
@@ -50,6 +51,12 @@ export async function onRequestPost({ request, env }) {
     // Нэр бүр шинэ: хөтчийн кэш хуучин зургийг харуулахгүй.
     const thumbKey = `thumbnails/${kind === 'movie' ? '' : 'series/'}${id}-${Date.now().toString(36)}.${ext}`
     return json({ key: thumbKey, url: await r2Url(env, thumbKey, 3600, { method: 'PUT' }) })
+  }
+
+  // Хуваалцах карт: зам тогтмол, functions/m ETag-аар шинэчлэлтийг мэднэ.
+  if (body.action === 'og') {
+    if (kind === 'episode') return json({ error: 'Төрөл буруу.' }, 400)
+    return json({ url: await r2Url(env, `thumbnails/og/${id}.jpg`, 3600, { method: 'PUT' }) })
   }
 
   const db = serviceClient(env)
@@ -154,6 +161,7 @@ export async function onRequestPost({ request, env }) {
           for (const e of eps || []) if (e.video_key) await deleteObject(env, e.video_key).catch(() => {})
         } else await deleteObject(env, key).catch(() => {})
         if (item.thumbnail) await deleteObject(env, item.thumbnail).catch(() => {})
+        await deleteObject(env, `thumbnails/og/${id}.jpg`).catch(() => {})
         const { error: delError } = await db.from('catalog').delete().eq('id', id)
         if (delError) throw new Error(delError.message)
         return json({ ok: true })

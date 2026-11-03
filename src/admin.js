@@ -1,6 +1,7 @@
 // Админ хэсгийн өгөгдлийн давхарга. Бүгд Supabase-ийн admin_* функцууд, functions/api/admin/-аар
 // (сервер админ эсэхийг шалгана). Кино, цувралын жагсаалт catalog, ангиуд episodes хүснэгтэд, видео, зураг R2-д.
 import { api, fail, need } from './auth.js'
+import { makeOgCard } from './ogcard.js'
 
 // ---------- Кино ба цуврал ----------
 
@@ -76,6 +77,18 @@ export async function uploadThumbnail(kind, id, file) {
   const res = await fetch(url, { method: 'PUT', body: file, headers: { 'content-type': file.type } }).catch(() => null)
   if (!res?.ok) throw new Error('Зураг хуулж чадсангүй. R2-ийн CORS тохиргоог шалгана уу (README).')
   return key
+}
+
+// Хуваалцах карт (Facebook, Messenger-ийн link preview) зурж thumbnails/og/<id>.jpg болгон хуулна.
+// cover: шинэ зургийн File, эс бөгөөс R2 дээрх нүүр (item.thumbnail). Нүүргүй бол юу ч хийхгүй.
+export async function uploadOgCard(item, cover) {
+  const src = cover || (item.thumbnail ? `img/${item.thumbnail}` : null)
+  if (!src) return false
+  const blob = await makeOgCard(item, src)
+  const { url } = await upload({ action: 'og', kind: item.kind, id: item.id })
+  const res = await fetch(url, { method: 'PUT', body: blob, headers: { 'content-type': 'image/jpeg' } }).catch(() => null)
+  if (!res?.ok) throw new Error('Хуваалцах зураг хуулж чадсангүй.')
+  return true
 }
 
 // R2 дээрх видеоны унших линк (нүүр зураг сонгоход). Цуврал бол эхний ангийнх.

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import Thumbnail from './Thumbnail.jsx'
 import CoverPicker from './CoverPicker.jsx'
-import { AutoIcon, EditIcon, PlusIcon, TrashIcon } from './Icons.jsx'
+import { AutoIcon, EditIcon, PlusIcon, ShareIcon, TrashIcon } from './Icons.jsx'
 import AdminEpisodes from './AdminEpisodes.jsx'
-import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadThumbnail, videoDuration, videoSource } from '../admin.js'
+import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadOgCard, uploadThumbnail, videoDuration, videoSource } from '../admin.js'
 import { bestFrame } from '../frames.js'
 import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, matches } from '../data.js'
 import { enqueue, isActive, jobKey, subscribe } from '../uploads.js'
@@ -96,6 +96,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
         const wantsPublish = item.published
         if (!ready) item.published = false
         await saveCatalogItem(item)
+        await shareCard(item, form.thumbFile)
         onCatalog()
         // Шинэ цувралын формыг нээлттэй үлдээж ангиудыг нэмүүлнэ.
         setForm({ ...toForm({ ...item, price: item.price_mnt, published: wantsPublish }), originalId: item.id, thumbFile: null })
@@ -111,6 +112,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
       const publishAfterUpload = Boolean(form.videoFile && item.published)
       if (form.videoFile) item.published = false
       await saveCatalogItem(item)
+      await shareCard(item, form.thumbFile)
       if (form.videoFile) enqueue({ id: item.id, kind: 'movie', title: item.title, file: form.videoFile, publish: publishAfterUpload })
       onCatalog()
       setForm(null)
@@ -127,6 +129,9 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
     }
   }
 
+  // Хуваалцах карт: бүтэхгүй бол хадгалалтыг саатуулахгүй (дараа "Хуваалцах зураг"-аар дахин үүсгэнэ).
+  const shareCard = (item, cover) => uploadOgCard(item, cover).catch((err) => console.warn('og card', item.id, err.message))
+
   // Видеоноос нүүр зураг гаргаж хуулна. Бүтэхгүй бол null (өнгөт fallback харагдана).
   const autoThumb = async (k, id, src, orientation) => {
     try {
@@ -141,7 +146,9 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
     if (series.thumbKey || form?.thumbFile) return false
     const thumbnail = await autoThumb('series', series.id, file, series.orientation)
     if (!thumbnail) return false
-    await saveCatalogItem({ ...cleanItem('series', toForm(series), list, series.id), thumbnail })
+    const item = { ...cleanItem('series', toForm(series), list, series.id), thumbnail }
+    await saveCatalogItem(item)
+    await shareCard(item)
     return true
   }
 
@@ -157,7 +164,9 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
       setMessage({ ok: true, text: `Нүүр сонгож байна ${done + failed.length + 1}/${coverless.length} · ${m.title}` })
       try {
         const thumbnail = await uploadThumbnail(kind, m.id, await bestFrame(await videoSource(kind, m.id), m.orientation))
-        await saveCatalogItem({ ...cleanItem(kind, toForm(m), list, m.id), thumbnail })
+        const item = { ...cleanItem(kind, toForm(m), list, m.id), thumbnail }
+        await saveCatalogItem(item)
+        await shareCard(item)
         done++
       } catch (err) {
         failed.push(`${m.title}: ${err.message}`)
@@ -166,6 +175,26 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
     setBusy(false)
     onCatalog()
     setMessage({ ok: !failed.length, text: [`${done} бичлэгт нүүр тавилаа.`, ...failed].join(' ') })
+  }
+
+  // Нүүртэй бүх бичлэгт хуваалцах карт (дахин) үүсгэнэ.
+  const covered = list.filter((m) => m.thumbKey)
+  const shareCards = async () => {
+    if (!confirm(`${covered.length} бичлэгт Facebook-т хуваалцах зураг үүсгэх үү?`)) return
+    setBusy(true)
+    let done = 0
+    const failed = []
+    for (const m of covered) {
+      setMessage({ ok: true, text: `Хуваалцах зураг үүсгэж байна ${done + failed.length + 1}/${covered.length} · ${m.title}` })
+      try {
+        await uploadOgCard({ ...m, thumbnail: m.thumbKey })
+        done++
+      } catch (err) {
+        failed.push(`${m.title}: ${err.message}`)
+      }
+    }
+    setBusy(false)
+    setMessage({ ok: !failed.length, text: [`${done} бичлэгт хуваалцах зураг үүслээ.`, ...failed].join(' ') })
   }
 
   const remove = async (m) => {
@@ -204,6 +233,11 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
         {coverless.length > 0 && (
           <button className="btn-secondary" disabled={busy} onClick={autoCovers} title="Видеоноос хамгийн тохиромжтой кадрыг нүүр болгоно">
             <AutoIcon width="20" height="20" /> Нүүр сонгох ({coverless.length})
+          </button>
+        )}
+        {covered.length > 0 && (
+          <button className="btn-secondary" disabled={busy} onClick={shareCards} title="Facebook, Messenger-т линк хуваалцахад харагдах зургийг үүсгэнэ">
+            <ShareIcon width="20" height="20" /> Хуваалцах зураг
           </button>
         )}
       </div>

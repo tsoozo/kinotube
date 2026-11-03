@@ -3,9 +3,9 @@ import ShortPoster from './ShortPoster.jsx'
 import Scrubber from './Scrubber.jsx'
 import { Paywall } from './Watch.jsx'
 import {
-  BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, SoundIcon, UpIcon,
+  BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, ShareIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
-import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries } from '../data.js'
+import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries, shareItem } from '../data.js'
 import { canWatchMovie, pushHistory, recordView, videoUrl } from '../auth.js'
 
 // Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
@@ -295,6 +295,9 @@ function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFu
           {next && <span className="short-hint">Дараагийн анги → хөндлөн гүйлгэнэ</span>}
         </div>
         <div className="short-actions">
+          <button className="short-action" onClick={() => shareItem(series, single ? 0 : current?.number)} aria-label="Хуваалцах">
+            <ShareIcon />
+          </button>
           <button className="short-action" onClick={onFull} aria-label={full ? 'Жижигрүүлэх' : 'Дэлгэц дүүрэн'}>
             {full ? <FullscreenExitIcon /> : <FullscreenIcon />}
           </button>
