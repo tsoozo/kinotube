@@ -4,11 +4,15 @@ import { Paywall } from './Watch.jsx'
 import {
   CloseIcon, DownIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PlayIcon, PrevIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
-import { FREE_EPISODES, episodesOf, isFreeEpisode } from '../data.js'
+import { FREE_EPISODES, FREE_SECONDS, episodesOf, isFreeEpisode, isSeries } from '../data.js'
 import { canWatchMovie, pushHistory, recordView, videoUrl } from '../auth.js'
 
-// Shorts = олон ангитай босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
-// Эхний 2 анги хүн бүрт үнэгүй, цааш нь эрх (сервер ч шалгана).
+// Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
+// Цуврал: эхний 2 анги үнэгүй. Нэг ангитай кино: эхний 5 минут үнэгүй. Цааш нь эрх (сервер ч шалгана).
+
+// Нэг ангитай киног нэг "анги" гэж үзнэ.
+const slidesOf = (item) =>
+  isSeries(item) ? episodesOf(item) : [{ number: 1, title: '', duration: item.duration, videoReady: item.videoReady, movie: true }]
 
 // Нэг анги: идэвхтэй болоход л видеоны линкийг авч тоглуулна.
 function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded }) {
@@ -18,12 +22,20 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
   const [progress, setProgress] = useState(0)
   const [vertical, setVertical] = useState(true)
   const [src, setSrc] = useState(null)
+  // Нэг ангитай кинонд эрхгүй үед үнэгүй үзэх секунд, limitHit: дууссан.
+  const [preview, setPreview] = useState(0)
+  const [limitHit, setLimitHit] = useState(false)
 
   useEffect(() => {
     if (!active || src || failed || locked) return
     let live = true
-    videoUrl(series, episode.number)
-      .then(({ url }) => live && (url ? setSrc(url) : setFailed(true)))
+    videoUrl(series, episode.movie ? undefined : episode.number)
+      .then(({ url, preview: p }) => {
+        if (!live) return
+        if (!url) return setFailed(true)
+        setPreview(p || 0)
+        setSrc(url)
+      })
       .catch(() => live && setFailed(true))
     return () => {
       live = false
@@ -49,6 +61,26 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
       v.pause()
       setPaused(true)
     }
+  }
+
+  // Үнэгүй 5 минутаас цааш тоглуулахгүй, гүйлгэхгүй.
+  const clamp = (e) => {
+    const v = e.target
+    if (preview && v.currentTime >= preview) {
+      v.pause()
+      v.currentTime = preview
+      setLimitHit(true)
+    }
+  }
+
+  if (limitHit) {
+    return (
+      <div className="short-ep short-locked player-locked">
+        <div className="locked-bg" aria-hidden="true"><ShortPoster short={series} /></div>
+        <LockIcon />
+        <Paywall movie={series} user={user} returnTo={series.id} lead={`Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`} />
+      </div>
+    )
   }
 
   if (locked) {
@@ -89,7 +121,11 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         // Босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
         onLoadedMetadata={(e) => setVertical(e.target.videoHeight / e.target.videoWidth >= 1.5)}
         onEnded={onEnded}
-        onTimeUpdate={(e) => setProgress(e.target.currentTime / (e.target.duration || 1))}
+        onSeeking={clamp}
+        onTimeUpdate={(e) => {
+          clamp(e)
+          setProgress(e.target.currentTime / (e.target.duration || 1))
+        }}
       />
       {paused && <span className="short-paused" aria-hidden="true"><PlayIcon /></span>}
       <div className="short-progress"><span style={{ width: `${progress * 100}%` }} /></div>
@@ -100,7 +136,8 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
 // Нэг цуврал: ангиуд хөндлөн байрлана (scroll-snap).
 function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFull, user }) {
   const rowRef = useRef(null)
-  const episodes = episodesOf(series)
+  const episodes = slidesOf(series)
+  const single = !isSeries(series)
   const canWatch = canWatchMovie(user, series.id)
   const i = Math.max(0, episodes.findIndex((e) => e.number === ep))
   const current = episodes[i]
@@ -132,8 +169,8 @@ function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFu
 
   // Үзэж эхэлсэн цувралыг түүхэнд нэмнэ.
   useEffect(() => {
-    if (!active || !current || (!canWatch && !isFreeEpisode(current.number))) return
-    pushHistory(user, series.id, current.number)
+    if (!active || !current || (!single && !canWatch && !isFreeEpisode(current.number))) return
+    pushHistory(user, series.id, single ? undefined : current.number)
     recordView(user, series.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, current?.number])
@@ -152,7 +189,7 @@ function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFu
                   episode={e}
                   active={active && e.number === current?.number}
                   muted={muted}
-                  locked={!canWatch && !isFreeEpisode(e.number)}
+                  locked={!single && !canWatch && !isFreeEpisode(e.number)}
                   user={user}
                   onEnded={() => next && onEp(next.number)}
                 />
@@ -167,7 +204,9 @@ function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFu
         )}
         {current && (
           <span className="short-duration">
-            {current.number}/{episodes.length}-р анги{!canWatch && isFreeEpisode(current.number) ? ' · Үнэгүй' : ''}
+            {single
+              ? `${(series.duration || '').replace(/^0:/, '')}${canWatch ? '' : ` · Эхний ${FREE_SECONDS / 60} мин үнэгүй`}`
+              : `${current.number}/${episodes.length}-р анги${!canWatch && isFreeEpisode(current.number) ? ' · Үнэгүй' : ''}`}
           </span>
         )}
         <div className="short-info">
@@ -209,7 +248,7 @@ export default function Shorts({ series, startId, startEp, loading, user }) {
   // Дэлгэц дүүрэн горим: CSS-ээр бүх дэлгэцийг эзэлнэ, боломжтой хөтөчид Fullscreen API-г ч ашиглана (iPhone-д CSS л).
   const [full, setFull] = useState(false)
 
-  const epOf = (s) => eps[s.id] || episodesOf(s)[0]?.number || 1
+  const epOf = (s) => eps[s.id] || slidesOf(s)[0]?.number || 1
   const setEp = (id, n) => setEps((m) => (m[id] === n ? m : { ...m, [id]: n }))
 
   const toggleFull = () => {
@@ -296,7 +335,7 @@ export default function Shorts({ series, startId, startEp, loading, user }) {
       if (e.key === 'ArrowUp') { e.preventDefault(); goTo(Math.max(active - 1, 0)) }
       if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && current) {
         e.preventDefault()
-        const list = episodesOf(current)
+        const list = slidesOf(current)
         const k = list.findIndex((x) => x.number === currentEp) + (e.key === 'ArrowRight' ? 1 : -1)
         if (list[k]) setEp(current.id, list[k].number)
       }

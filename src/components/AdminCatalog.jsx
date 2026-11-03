@@ -210,8 +210,8 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
 
       <p className="muted small">
         {isSeries
-          ? `Олон ангитай кино. Эхний ${FREE_EPISODES} анги үнэгүй, цааш нь төлбөртэй. Босоо цуврал Shorts-д (хөндлөн гүйлгэж дараагийн анги), хэвтээ нь үзэх хуудсанд.`
-          : `Нэг ангитай кино. Эхний ${FREE_SECONDS / 60} минут үнэгүй, цааш нь төлбөртэй.`}
+          ? `Олон ангитай кино. Эхний ${FREE_EPISODES} анги үнэгүй, цааш нь төлбөртэй. Босоо бол Shorts-д (хөндлөн гүйлгэж дараагийн анги), хэвтээ нь үзэх хуудсанд.`
+          : `Нэг ангитай кино. Эхний ${FREE_SECONDS / 60} минут үнэгүй, цааш нь төлбөртэй. Босоо кино Shorts-д харагдана.`}
       </p>
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}
@@ -232,7 +232,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
               <span>Хэлбэр</span>
               <select value={form.orientation} onChange={(e) => set({ orientation: e.target.value })}>
                 <option value="horizontal">Хэвтээ (16:9)</option>
-                <option value="vertical">Босоо (9:16){isSeries ? ' · Shorts' : ''}</option>
+                <option value="vertical">Босоо (9:16) · Shorts</option>
               </select>
             </label>
             {field('year', 'Он', { inputMode: 'numeric', placeholder: '2026' })}
@@ -308,7 +308,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
               <b>{m.title}</b>
               <p className="muted">
                 {[
-                  m.orientation === 'vertical' ? (isSeries ? 'Босоо · Shorts' : 'Босоо') : 'Хэвтээ',
+                  m.orientation === 'vertical' ? 'Босоо · Shorts' : 'Хэвтээ',
                   isSeries && `${(m.episodes || []).length} анги`,
                   m.year && `${m.year} он`, m.price && formatMoney(m.price), (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', '),
                 ].filter(Boolean).join(' · ')}

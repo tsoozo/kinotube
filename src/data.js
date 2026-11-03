@@ -84,16 +84,16 @@ export const FREE_SECONDS = 5 * 60
 export const FREE_EPISODES = 2
 
 export const isSeries = (item) => item?.kind === 'series'
-// Shorts = босоо цуврал.
-export const isShortSeries = (item) => isSeries(item) && item.orientation === 'vertical'
+// Shorts = босоо кино (олон ангитай цуврал эсвэл нэг ангитай кино).
+export const isShortsItem = (item) => item?.orientation === 'vertical'
 export const episodesOf = (item) => (item?.episodes || []).slice().sort((a, b) => a.number - b.number)
 export const isFreeEpisode = (n) => n <= FREE_EPISODES
 
-// Үзэх хаяг: босоо цуврал Shorts-д, бусад нь үзэх хуудсанд. ep: ангийн дугаар.
+// Үзэх хаяг: босоо кино Shorts-д, бусад нь үзэх хуудсанд. ep: ангийн дугаар.
 export function watchHref(item, ep) {
   const id = encodeURIComponent(item.id)
   const suffix = ep ? `/${ep}` : ''
-  return isShortSeries(item) ? `#shorts-${id}${suffix}` : `#watch-${id}${suffix}`
+  return isShortsItem(item) ? `#shorts-${id}${suffix}` : `#watch-${id}${suffix}`
 }
 
 // Картын доор/зурган дээр: кино бол урт, цуврал бол ангийн тоо.

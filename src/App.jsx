@@ -11,7 +11,7 @@ import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
 import Checkout from './components/Checkout.jsx'
 import UploadIndicator from './components/UploadIndicator.jsx'
-import { CATEGORIES, allGenres, inCategory, isPublic, isShortSeries, loadMovies, matches, watchHref } from './data.js'
+import { CATEGORIES, allGenres, inCategory, isPublic, isShortsItem, loadMovies, matches, watchHref } from './data.js'
 import {
   canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
 } from './auth.js'
@@ -43,8 +43,8 @@ export default function App() {
   // movies: нүүрний кино, хэвтээ цуврал; shorts: босоо цуврал (Shorts).
   const [allMovies, setMovies] = useState(null)
   const published = useMemo(() => (allMovies || []).filter(isPublic), [allMovies])
-  const movies = useMemo(() => published.filter((m) => !isShortSeries(m)), [published])
-  const shorts = useMemo(() => allMovies && published.filter(isShortSeries), [allMovies, published])
+  const movies = useMemo(() => published.filter((m) => !isShortsItem(m)), [published])
+  const shorts = useMemo(() => allMovies && published.filter(isShortsItem), [allMovies, published])
   const [error, setError] = useState('')
   const [route, setRoute] = useState(readRoute)
   const [query, setQuery] = useState('')
@@ -197,7 +197,7 @@ export default function App() {
 
   // Босоо цувралыг Shorts-д үзнэ.
   useEffect(() => {
-    if (isWatch && current && isShortSeries(current)) location.replace(watchHref(current, route.ep))
+    if (isWatch && current && isShortsItem(current)) location.replace(watchHref(current, route.ep))
   }, [isWatch, current, route.ep])
 
   let content
