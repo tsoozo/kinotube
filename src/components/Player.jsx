@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Scrubber from './Scrubber.jsx'
 import { formatTime } from '../data.js'
 import {
   BackTenIcon, ForwardTenIcon, FullscreenExitIcon, FullscreenIcon, MuteIcon, PauseIcon, PlayArrowIcon, SoundIcon,
@@ -7,7 +8,8 @@ import {
 const SKIP = 10
 
 // Кино тоглуулагч: зогсоох, гүйлгэх, ±10 секунд, бүтэн дэлгэц. Хоёр товшилтоор зүүн/баруун тал руу 10 секунд.
-export default function Player({ videoRef, src, poster, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError, children }) {
+// limit: үнэгүй үзэх хэсгийн төгсгөл (секунд), түүнээс цааш гүйлгэхгүй.
+export default function Player({ videoRef, src, poster, limit = 0, onShape, onLoadedMetadata, onTimeUpdate, onPause, onEnded, onError, children }) {
   const boxRef = useRef(null)
   const tapTimer = useRef(0)
   const lastTap = useRef(0)
@@ -20,6 +22,8 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
   const [vertical, setVertical] = useState(false)
   const [flash, setFlash] = useState(null)
   const [pokeAt, setPokeAt] = useState(0)
+  const [scrubbing, setScrubbing] = useState(false)
+  const [buffered, setBuffered] = useState(0)
 
   const video = () => videoRef.current
 
@@ -30,10 +34,10 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
   }
 
   useEffect(() => {
-    if (!playing || !shown) return
+    if (!playing || !shown || scrubbing) return
     const t = setTimeout(() => setShown(false), 3000)
     return () => clearTimeout(t)
-  }, [playing, shown, pokeAt])
+  }, [playing, shown, pokeAt, scrubbing])
 
   const toggle = () => {
     const v = video()
@@ -114,7 +118,7 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  // Нэг товшилт: хулганаар бол зогсоох/тоглуулах, хуруугаар бол удирдлага харуулах/нуух (зогссон үед тоглуулна).
+  // Нэг товшилт: хулганаар бол зогсоох/тоглуулах, хуруугаар бол удирдлага харуулах/нуух (зогссон үед ч).
   // Хоёр товшилт: зүүн хагас -10 сек, баруун хагас +10 сек.
   const onSurface = (e) => {
     const now = Date.now()
@@ -130,18 +134,23 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
     const touch = e.pointerType !== 'mouse'
     tapTimer.current = setTimeout(() => {
       const v = video()
-      if (!touch || !v || v.paused) toggle()
+      if (!touch || !v) toggle()
       else if (shown) setShown(false)
       else poke()
     }, touch ? 300 : 200)
   }
 
-  const pct = duration ? (time / duration) * 100 : 0
+  const seek = (t) => {
+    const v = video()
+    if (v) v.currentTime = t
+    setTime(t)
+    poke()
+  }
 
   return (
     <div
       ref={boxRef}
-      className={`vp ${shown || !playing ? 'show' : ''} ${full ? 'is-full' : ''} ${vertical ? 'is-vertical' : ''}`}
+      className={`vp ${shown || scrubbing ? 'show' : ''} ${full ? 'is-full' : ''} ${vertical ? 'is-vertical' : ''}`}
       onPointerMove={(e) => e.pointerType === 'mouse' && poke()}
     >
       <video
@@ -156,8 +165,12 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
           onLoadedMetadata?.(e)
         }}
         onDurationChange={(e) => setDuration(e.target.duration)}
+        onProgress={(e) => {
+          const b = e.target.buffered
+          if (b.length) setBuffered(b.end(b.length - 1))
+        }}
         onTimeUpdate={(e) => {
-          setTime(e.target.currentTime)
+          if (!scrubbing) setTime(e.target.currentTime)
           onTimeUpdate?.(e)
         }}
         onPlay={() => {
@@ -190,22 +203,7 @@ export default function Player({ videoRef, src, poster, onShape, onLoadedMetadat
         <button className="vp-btn" onClick={() => skip(SKIP)} aria-label="10 секунд урагшлуулах"><ForwardTenIcon /><small>10</small></button>
       </div>
       <div className="vp-bar">
-        <input
-          className="vp-seek"
-          type="range"
-          min="0"
-          max={duration || 0}
-          step="0.1"
-          value={time}
-          style={{ '--pct': `${pct}%` }}
-          aria-label="Бичлэг гүйлгэх"
-          onChange={(e) => {
-            const v = video()
-            if (v) v.currentTime = Number(e.target.value)
-            setTime(Number(e.target.value))
-            poke()
-          }}
-        />
+        <Scrubber time={time} duration={duration} limit={limit} buffered={buffered} onSeek={seek} onScrub={setScrubbing} />
         <div className="vp-row">
           <span className="vp-time">{formatTime(time)} / {formatTime(duration)}</span>
           <button className="vp-btn sm" onClick={toggleMute} aria-label={muted ? 'Дуу нээх' : 'Дуу хаах'}>

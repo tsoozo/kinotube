@@ -275,6 +275,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
       <Player
         key={viewKey}
         videoRef={videoRef}
+        limit={preview}
         onShape={setShape}
         src={src}
         poster={movie.thumbnail}

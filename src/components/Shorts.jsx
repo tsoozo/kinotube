@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import ShortPoster from './ShortPoster.jsx'
+import Scrubber from './Scrubber.jsx'
 import { Paywall } from './Watch.jsx'
 import {
-  CloseIcon, DownIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PlayIcon, PrevIcon, SoundIcon, UpIcon,
+  CloseIcon, DownIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
-import { FREE_EPISODES, FREE_SECONDS, episodesOf, isFreeEpisode, isSeries } from '../data.js'
+import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries } from '../data.js'
 import { canWatchMovie, pushHistory, recordView, videoUrl } from '../auth.js'
 
 // Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
@@ -19,7 +20,12 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
   const ref = useRef(null)
   const [failed, setFailed] = useState(episode.videoReady === false)
   const [paused, setPaused] = useState(false)
-  const [progress, setProgress] = useState(0)
+  const [time, setTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  // Удирдлага (тоглуулах товч, гүйлгэх зурвас): дэлгэц нэг товшиход гарч, дахин товшиход арилна.
+  const [ui, setUi] = useState(false)
+  const [uiAt, setUiAt] = useState(0)
+  const [scrubbing, setScrubbing] = useState(false)
   const [vertical, setVertical] = useState(true)
   const [src, setSrc] = useState(null)
   // Нэг ангитай кинонд эрхгүй үед үнэгүй үзэх секунд, limitHit: дууссан.
@@ -49,9 +55,25 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
     if (active) {
       v.currentTime = 0
       setPaused(false)
-      v.play().catch(() => setPaused(true))
+      setUi(false)
+      v.play().catch(() => {
+        setPaused(true)
+        setUi(true)
+      })
     } else v.pause()
   }, [active, src])
+
+  // Тоглож байхад удирдлага 3 секундын дараа өөрөө арилна.
+  useEffect(() => {
+    if (!ui || paused || scrubbing) return
+    const t = setTimeout(() => setUi(false), 3000)
+    return () => clearTimeout(t)
+  }, [ui, paused, scrubbing, uiAt])
+
+  const showUi = () => {
+    setUi(true)
+    setUiAt(Date.now())
+  }
 
   const toggle = () => {
     const v = ref.current
@@ -61,6 +83,14 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
       v.pause()
       setPaused(true)
     }
+    showUi()
+  }
+
+  const seek = (t) => {
+    const v = ref.current
+    if (v) v.currentTime = t
+    setTime(t)
+    showUi()
   }
 
   // Үнэгүй 5 минутаас цааш тоглуулахгүй, гүйлгэхгүй.
@@ -116,19 +146,33 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         muted={muted}
         playsInline
         preload={active ? 'auto' : 'none'}
-        onClick={toggle}
+        onClick={() => (ui ? setUi(false) : showUi())}
         onError={() => setFailed(true)}
         // Босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
-        onLoadedMetadata={(e) => setVertical(e.target.videoHeight / e.target.videoWidth >= 1.5)}
+        onLoadedMetadata={(e) => {
+          setVertical(e.target.videoHeight / e.target.videoWidth >= 1.5)
+          setDuration(e.target.duration)
+        }}
+        onDurationChange={(e) => setDuration(e.target.duration)}
+        onPlay={() => setPaused(false)}
+        onPause={() => setPaused(true)}
         onEnded={onEnded}
         onSeeking={clamp}
         onTimeUpdate={(e) => {
           clamp(e)
-          setProgress(e.target.currentTime / (e.target.duration || 1))
+          if (!scrubbing) setTime(e.target.currentTime)
         }}
       />
-      {paused && <span className="short-paused" aria-hidden="true"><PlayIcon /></span>}
-      <div className="short-progress"><span style={{ width: `${progress * 100}%` }} /></div>
+      <div className={`short-ui ${ui || scrubbing ? 'show' : ''}`}>
+        <button className="short-play" onClick={toggle} aria-label={paused ? 'Тоглуулах' : 'Зогсоох'}>
+          {paused ? <PlayArrowIcon /> : <PauseIcon />}
+        </button>
+        <div className="short-scrub">
+          <span className="short-time">{formatTime(time)} / {formatTime(duration)}</span>
+          <Scrubber time={time} duration={duration} limit={preview} onSeek={seek} onScrub={setScrubbing} />
+        </div>
+      </div>
+      <div className="short-progress"><span style={{ width: `${duration ? (time / duration) * 100 : 0}%` }} /></div>
     </div>
   )
 }
