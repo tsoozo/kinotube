@@ -156,11 +156,11 @@ export default function App() {
   }
   const returnId = () => splitEp(peekReturnTo() || '').id
 
-  // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол Shorts руу.
+  // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол нүүр рүү.
   const onLogin = (u) => {
     setUser(u)
     const r = canWatchMovie(u, returnId()) ? takeReturnTo() : peekReturnTo()
-    go(r ? returnHash(r) : isAdmin(u) ? '#admin' : '#shorts')
+    go(r ? returnHash(r) : isAdmin(u) ? '#admin' : '')
   }
 
   // Профайл дээр эрх авмагц хүлээж байсан кино руу шилжинэ.

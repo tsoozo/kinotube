@@ -51,8 +51,8 @@ export default function Home({ movies, genres, genre, onGenre, category, onCateg
       ) : (
         <>
           {/* Shorts хамгийн эхэнд харагдана. */}
-          <ContinueShelf items={continueItems} />
           <ShortsShelf shorts={shorts} />
+          <ContinueShelf items={continueItems} />
           {/* Ангилал бүрийн мөр (AI кино эхэнд), доор нь бүх кино. */}
           {categoryRows && CATEGORIES.map((c) => (
             <CategoryShelf key={c.id} category={c} movies={movies.filter((m) => inCategory(m, c.id))} progressOf={progressOf} />
