@@ -287,7 +287,7 @@ a.tag:hover { background: var(--surface-hover); }
 .vp-btn.sm { width: 40px; height: 40px; }
 .vp-btn.sm svg { width: 24px; height: 24px; }
 .vp-bar {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 12px 4px;
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 12px 10px;
   background: linear-gradient(transparent, var(--media-shade));
 }
 .vp-row { display: flex; align-items: center; gap: 4px; }
@@ -515,7 +515,7 @@ a.tag:hover { background: var(--surface-hover); }
   background: var(--overlay); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;
 }
 .short-info {
-  position: absolute; left: 0; right: 0; bottom: 3px; padding: 48px 64px 40px 16px; pointer-events: none;
+  position: absolute; left: 0; right: 0; bottom: 3px; padding: 48px 64px 60px 16px; pointer-events: none;
   background: linear-gradient(transparent, var(--media-shade));
 }
 .short-info h2 { margin: 0 0 6px; font-size: 16px; font-weight: 500; line-height: 22px; }
@@ -535,7 +535,7 @@ a.tag:hover { background: var(--surface-hover); }
   background: var(--accent); color: var(--on-media); font-size: 15px; font-weight: 500;
 }
 .short-continue svg { width: 22px; height: 22px; }
-.short-actions { position: absolute; right: 12px; bottom: 52px; display: flex; flex-direction: column; gap: 12px; }
+.short-actions { position: absolute; right: 12px; bottom: 72px; display: flex; flex-direction: column; gap: 12px; }
 .short-action, .short-close {
   width: 44px; height: 44px; border: 0; border-radius: 50%; cursor: pointer;
   background: var(--media-shade); color: var(--on-media); display: grid; place-items: center;
@@ -550,8 +550,8 @@ a.tag:hover { background: var(--surface-hover); }
 .shorts.is-full .short-ep.is-vertical video { object-fit: cover; }
 .shorts.is-full .short-duration { top: calc(12px + var(--safe-top)); }
 .shorts.is-full .short-info { padding-bottom: calc(18px + var(--safe-bottom)); }
-.shorts.is-full .short-actions { bottom: calc(52px + var(--safe-bottom)); }
-.shorts.is-full .short-scrub { bottom: var(--safe-bottom); }
+.shorts.is-full .short-actions { bottom: calc(72px + var(--safe-bottom)); }
+.shorts.is-full .short-scrub { bottom: calc(20px + var(--safe-bottom)); }
 .shorts.is-full .shorts-nav { left: auto; right: 24px; }
 .shorts.is-full .shorts-nav .icon-btn { background: var(--media-shade); color: var(--on-media); }
 html.shorts-full, html.shorts-full body { overflow: hidden; }
@@ -996,14 +996,24 @@ a.stat { color: inherit; text-decoration: none; }
 /* Shorts: дэлгэц товшиход тоглуулах товч, гүйлгэх зурвас гарч, дахин товшиход арилна. */
 .short-ui { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; z-index: 2; }
 .short-ui.show { opacity: 1; }
-.short-ui.show .short-play, .short-ui.show .short-scrub { pointer-events: auto; }
+.short-ui.show .short-play, .short-ui.show .short-skip, .short-ui.show .short-scrub { pointer-events: auto; }
+.short-center {
+  position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center; gap: 36px;
+}
+.short-skip {
+  position: relative; width: 52px; height: 52px; border: 0; border-radius: 50%; background: var(--media-shade);
+  color: var(--on-media); display: grid; place-items: center; cursor: pointer;
+}
+.short-skip svg { width: 30px; height: 30px; }
+.short-skip small { position: absolute; font-size: 10px; font-weight: 700; top: 50%; left: 50%; transform: translate(-50%, -40%); }
 .short-play {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 68px;
+  position: relative; width: 68px; height: 68px;
   border: 0; border-radius: 50%; background: var(--media-shade); color: var(--on-media);
   display: grid; place-items: center; cursor: pointer;
 }
 .short-play svg { width: 34px; height: 34px; }
-.short-scrub { position: absolute; left: 12px; right: 12px; bottom: 0; }
+.short-scrub { position: absolute; left: 12px; right: 12px; bottom: 20px; }
 .short-time {
   display: inline-block; margin-bottom: -4px; padding: 2px 8px; border-radius: 10px;
   background: var(--media-shade); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums;

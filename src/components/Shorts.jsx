@@ -3,7 +3,7 @@ import ShortPoster from './ShortPoster.jsx'
 import Scrubber from './Scrubber.jsx'
 import { Paywall } from './Watch.jsx'
 import {
-  CloseIcon, DownIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, SoundIcon, UpIcon,
+  BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
 import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries } from '../data.js'
 import { canWatchMovie, pushHistory, recordView, videoUrl } from '../auth.js'
@@ -93,6 +93,34 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
     showUi()
   }
 
+  // ±10 секунд (үнэгүй хэсгийн төгсгөлөөс цааш биш).
+  const [flash, setFlash] = useState(null)
+  const skip = (sec) => {
+    const v = ref.current
+    if (!v || !v.duration) return
+    const end = preview ? Math.min(preview, v.duration) : v.duration
+    seek(Math.min(Math.max(v.currentTime + sec, 0), end))
+    setFlash({ dir: sec < 0 ? 'back' : 'fwd', at: Date.now() })
+  }
+
+  // Нэг товшилт: удирдлага гаргах/нуух. Хоёр товшилт: зүүн тал −10, баруун тал +10 секунд.
+  const tapTimer = useRef(0)
+  const lastTap = useRef(0)
+  useEffect(() => () => clearTimeout(tapTimer.current), [])
+  const onTap = (e) => {
+    const now = Date.now()
+    const r = e.currentTarget.getBoundingClientRect()
+    const left = e.clientX - r.left < r.width / 2
+    if (now - lastTap.current < 300) {
+      clearTimeout(tapTimer.current)
+      lastTap.current = 0
+      skip(left ? -10 : 10)
+      return
+    }
+    lastTap.current = now
+    tapTimer.current = setTimeout(() => (ui ? setUi(false) : showUi()), 250)
+  }
+
   // Үнэгүй 5 минутаас цааш тоглуулахгүй, гүйлгэхгүй.
   const clamp = (e) => {
     const v = e.target
@@ -146,7 +174,7 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         muted={muted}
         playsInline
         preload={active ? 'auto' : 'none'}
-        onClick={() => (ui ? setUi(false) : showUi())}
+        onClick={onTap}
         onError={() => setFailed(true)}
         // Босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
         onLoadedMetadata={(e) => {
@@ -164,14 +192,21 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         }}
       />
       <div className={`short-ui ${ui || scrubbing ? 'show' : ''}`}>
-        <button className="short-play" onClick={toggle} aria-label={paused ? 'Тоглуулах' : 'Зогсоох'}>
-          {paused ? <PlayArrowIcon /> : <PauseIcon />}
-        </button>
+        <div className="short-center">
+          <button className="short-skip" onClick={() => skip(-10)} aria-label="10 секунд ухраах"><BackTenIcon /><small>10</small></button>
+          <button className="short-play" onClick={toggle} aria-label={paused ? 'Тоглуулах' : 'Зогсоох'}>
+            {paused ? <PlayArrowIcon /> : <PauseIcon />}
+          </button>
+          <button className="short-skip" onClick={() => skip(10)} aria-label="10 секунд урагшлуулах"><ForwardTenIcon /><small>10</small></button>
+        </div>
         <div className="short-scrub">
           <span className="short-time">{formatTime(time)} / {formatTime(duration)}</span>
           <Scrubber time={time} duration={duration} limit={preview} onSeek={seek} onScrub={setScrubbing} />
         </div>
       </div>
+      {flash && (
+        <span key={flash.at} className={`vp-flash ${flash.dir}`} aria-hidden="true">{flash.dir === 'back' ? '−' : '+'}10 сек</span>
+      )}
       <div className="short-progress"><span style={{ width: `${duration ? (time / duration) * 100 : 0}%` }} /></div>
     </div>
   )
