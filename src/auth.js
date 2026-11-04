@@ -25,6 +25,7 @@ export const rentPrice = (movie) => movie?.price || RENTAL.price
 const USER_KEY = 'kino-user'
 const GUEST_HISTORY_KEY = 'kino-history'
 const RETURN_KEY = 'kino-return'
+const PAYWALL_KEY = 'kino-paywall'
 const POLL_MS = 10_000
 
 let memory = {}
@@ -437,6 +438,30 @@ export function takeReturnTo() {
   const id = peekReturnTo()
   write(RETURN_KEY, null)
   return id
+}
+
+// Төлбөрийн сонголтоос (4,900₮ / 15,900₮) төлбөрийн хуудас руу орсон газар.
+// Төлбөрийн хуудаснаас "Буцах" дарвал тэр сонголт руу буцна.
+export function markPaywall(movieId) {
+  write(PAYWALL_KEY, { id: movieId, from: location.hash, at: Date.now(), back: false })
+}
+
+// Төлбөрийн хуудаснаас буцахад: сонголт руу шууд буцаж болох бол true (history.back хийнэ).
+export function backToPaywall(movieId) {
+  const p = read(PAYWALL_KEY, null)
+  if (!p || p.id !== movieId || Date.now() - p.at > 30 * 60000) return false
+  write(PAYWALL_KEY, { ...p, back: true })
+  return Boolean(p.from) && history.length > 1
+}
+
+// Үзэх хуудас/Shorts: төлбөрөөс буцаж ирсэн бол үнэгүй хэсгийг дахин тоглуулалгүй сонголтыг шууд харуулна.
+export function takePaywall(movieId) {
+  const p = read(PAYWALL_KEY, null)
+  if (!p?.back || p.id !== movieId || Date.now() - p.at > 30 * 60000) return false
+  // Нэг л удаа (StrictMode давхар дуудлагад 2 секундын зай).
+  if (p.used) return Date.now() - p.used < 2000
+  write(PAYWALL_KEY, { ...p, used: Date.now() })
+  return true
 }
 
 // 99112233 → 9911 2233

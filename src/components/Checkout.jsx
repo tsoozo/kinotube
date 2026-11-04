@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BackIcon, CrownIcon, SuccessIcon } from './Icons.jsx'
 import {
   BANK, PLANS, RENTAL, canWatchMovie, createPayment, effectiveStatus, findOpenPayment, formatDateTime, formatMoney,
-  loadUser, rentPrice, rentalEndsAt, submitPayment, takeReturnTo, watchPayment,
+  backToPaywall, loadUser, rentPrice, rentalEndsAt, submitPayment, takeReturnTo, watchPayment,
 } from '../auth.js'
 
 async function copyText(text) {
@@ -221,9 +221,17 @@ export default function Checkout({ kind, movie, user, onUser }) {
     )
   }
 
+  // Буцах: эрх сонгосон дэлгэц (4,900₮ / 15,900₮) рүү.
+  const back = (e) => {
+    if (movie && backToPaywall(movie.id)) {
+      e.preventDefault()
+      history.back()
+    }
+  }
+
   return (
     <div className="checkout" data-status={status || 'new'}>
-      {status !== 'approved' && <a className="link-btn checkout-back" href={backHash}><BackIcon /> Буцах</a>}
+      {status !== 'approved' && <a className="link-btn checkout-back" href={backHash} onClick={back}><BackIcon /> Буцах</a>}
       {(!status || status === 'created') && <h1>Төлбөр төлөх</h1>}
       {body}
     </div>

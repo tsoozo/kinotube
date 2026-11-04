@@ -7,7 +7,7 @@ import {
 } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
-  recordView, rentPrice, rentalEndsAt, saveProgress, setReturnTo, toggleLater, videoUrl, watchedRatio,
+  recordView, rentPrice, rentalEndsAt, saveProgress, setReturnTo, takePaywall, toggleLater, videoUrl, watchedRatio, markPaywall,
 } from '../auth.js'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
@@ -25,17 +25,21 @@ export function Paywall({ movie, user, lead, sub, returnTo }) {
       </>
     )
   }
+  const choose = () => {
+    setReturnTo(returnTo || movie.id)
+    markPaywall(movie.id)
+  }
   return (
     <>
       <p className="player-lead">{lead || 'Үзэх эрхээ сонгоно уу'}</p>
       {sub && <p className="player-sub">{sub}</p>}
       <div className="pay-options">
-        <a className="pay-option" href={`#pay-rent-${encodeURIComponent(movie.id)}`} onClick={() => setReturnTo(returnTo || movie.id)}>
+        <a className="pay-option" href={`#pay-rent-${encodeURIComponent(movie.id)}`} onClick={choose}>
           <span>{series ? 'Зөвхөн энэ цуврал' : 'Зөвхөн энэ кино'}</span>
           <b>{formatMoney(rentPrice(movie))}</b>
           <small>{RENTAL.days} хоног үзнэ</small>
         </a>
-        <a className="pay-option premium" href={`#pay-month-${encodeURIComponent(movie.id)}`} onClick={() => setReturnTo(returnTo || movie.id)}>
+        <a className="pay-option premium" href={`#pay-month-${encodeURIComponent(movie.id)}`} onClick={choose}>
           <CrownIcon className="pay-crown" />
           <span>Бүх кино</span>
           <b>{formatMoney(month.price)}</b>
@@ -90,7 +94,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
     setResumed(0)
     setShape('tall')
     setBgFailed(false)
-    setLimitHit(false)
+    setLimitHit(takePaywall(movie.id))
   }, [movie.id, n])
 
   // Видеоны хугацаатай линкийг серверээс авна (эрхийг сервер дахин шалгана).

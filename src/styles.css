@@ -499,6 +499,8 @@ a.tag:hover { background: var(--surface-hover); }
   position: absolute; top: 40%; left: 0; right: 0; margin: 0; text-align: center;
   font-size: 15px; opacity: 0.85;
 }
+.short-retry { position: absolute; top: 40%; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.short-retry p { position: static; }
 .short-poster { width: 100%; height: 100%; object-fit: cover; display: block; }
 .short-poster-fallback { display: flex; align-items: flex-end; padding: 12px; color: var(--on-media); }
 .short-poster-fallback span {

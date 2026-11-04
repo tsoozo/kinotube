@@ -6,7 +6,7 @@ import {
   BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, ShareIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
 import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries, shareItem } from '../data.js'
-import { canWatchMovie, pushHistory, recordView, videoUrl } from '../auth.js'
+import { canWatchMovie, pushHistory, recordView, takePaywall, videoUrl } from '../auth.js'
 
 // Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
 // Цуврал: эхний 2 анги үнэгүй. Нэг ангитай кино: эхний 5 минут үнэгүй. Цааш нь эрх (сервер ч шалгана).
@@ -18,7 +18,9 @@ const slidesOf = (item) =>
 // Нэг анги: идэвхтэй болоход л видеоны линкийг авч тоглуулна.
 function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded }) {
   const ref = useRef(null)
-  const [failed, setFailed] = useState(episode.videoReady === false)
+  // failed: 'missing' — видео хуулагдаагүй, 'error' — ачаалж чадсангүй (дахин оролдож болно).
+  const [failed, setFailed] = useState(episode.videoReady === false ? 'missing' : '')
+  const retried = useRef(false)
   const [paused, setPaused] = useState(false)
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -30,23 +32,24 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
   const [src, setSrc] = useState(null)
   // Нэг ангитай кинонд эрхгүй үед үнэгүй үзэх секунд, limitHit: дууссан.
   const [preview, setPreview] = useState(0)
-  const [limitHit, setLimitHit] = useState(false)
+  // Төлбөрийн хуудаснаас буцаж ирсэн бол эрхийн сонголтыг шууд харуулна (5 минут үнэгүй хэсэгтэйд).
+  const [limitHit, setLimitHit] = useState(() => (episode.movie || episodesOf(series).length === 1) && takePaywall(series.id))
 
   useEffect(() => {
-    if (!active || src || failed || locked) return
+    if (!active || src || failed || locked || limitHit) return
     let live = true
     videoUrl(series, episode.movie ? undefined : episode.number)
       .then(({ url, preview: p }) => {
         if (!live) return
-        if (!url) return setFailed(true)
+        if (!url) return setFailed('missing')
         setPreview(p || 0)
         setSrc(url)
       })
-      .catch(() => live && setFailed(true))
+      .catch((e) => live && setFailed(e.status === 404 ? 'missing' : 'error'))
     return () => {
       live = false
     }
-  }, [active, src, failed, locked, series, episode.number])
+  }, [active, src, failed, locked, limitHit, series, episode.number])
 
   // Идэвхтэй болоход эхнээс нь тоглуулна, бусад үед зогсооно.
   useEffect(() => {
@@ -160,7 +163,14 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
     return (
       <div className="short-ep short-missing">
         <ShortPoster short={series} />
-        <p>Видео удахгүй нэмэгдэнэ</p>
+        {failed === 'missing' ? (
+          <p>Видео удахгүй нэмэгдэнэ</p>
+        ) : (
+          <div className="short-retry">
+            <p>Видео ачаалж чадсангүй</p>
+            <button className="btn-secondary" onClick={() => { retried.current = false; setSrc(null); setFailed('') }}>Дахин оролдох</button>
+          </div>
+        )}
       </div>
     )
   }
@@ -175,7 +185,13 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         playsInline
         preload={active ? 'auto' : 'none'}
         onClick={onTap}
-        onError={() => setFailed(true)}
+        onError={() => {
+          // Линкийн хугацаа дууссан г.м.: нэг удаа шинэ линк авна.
+          if (!retried.current) {
+            retried.current = true
+            setSrc(null)
+          } else setFailed('error')
+        }}
         // Босоо (≈9:16) бичлэг дэлгэцийг дүүргэнэ, бусад нь бүтнээрээ харагдана.
         onLoadedMetadata={(e) => {
           setVertical(e.target.videoHeight / e.target.videoWidth >= 1.5)
