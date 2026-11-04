@@ -27,12 +27,13 @@ async function ogCard(env, id) {
 }
 
 function describe(m, epCount, ep) {
-  const series = m.kind === 'series'
+  // Ганц ангитай цуврал = бүтэн кино (эхний 5 минут үнэгүй).
+  const series = m.kind === 'series' && epCount !== 1
   const free = series ? `🎁 Эхний ${FREE_EPISODES} анги ҮНЭГҮЙ` : `🎁 Эхний ${FREE_SECONDS / 60} минут ҮНЭГҮЙ`
   const meta = [
     m.year,
     (m.genres || []).slice(0, 2).join(', '),
-    series ? (epCount ? `${epCount} анги` : '') : clock(m.duration),
+    series ? (epCount ? `${epCount} анги` : '') : m.kind === 'series' ? '' : clock(m.duration),
   ].filter(Boolean).join(' · ')
   const about = m.description ? cut(m.description.replace(/\s+/g, ' ').trim(), 160) : ''
   return [ep ? `${ep}-р анги.` : '', `${free} — одоо үзээрэй ▶️`, meta && `${meta}.`, about].filter(Boolean).join(' ')

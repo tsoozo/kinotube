@@ -285,7 +285,9 @@ function SeriesItem({ series, index, active, ep, onEp, muted, onMute, full, onFu
           <span className="short-duration">
             {single
               ? `${(series.duration || '').replace(/^0:/, '')}${canWatch ? '' : ` · Эхний ${FREE_SECONDS / 60} мин үнэгүй`}`
-              : `${current.number}/${episodes.length}-р анги${!canWatch && isFreeEpisode(current.number) ? ' · Үнэгүй' : ''}`}
+              : episodes.length === 1
+                ? `${(current.duration || '').replace(/^0:/, '')}${canWatch ? '' : ` · Эхний ${FREE_SECONDS / 60} мин үнэгүй`}`
+                : `${current.number}/${episodes.length}-р анги${!canWatch && isFreeEpisode(current.number) ? ' · Үнэгүй' : ''}`}
           </span>
         )}
         <div className="short-info">

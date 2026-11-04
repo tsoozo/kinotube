@@ -255,7 +255,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
           user={user}
           returnTo={series ? `${movie.id}/${n}` : movie.id}
           lead={
-            series
+            locked
               ? `Эхний ${FREE_EPISODES} анги үнэгүй. ${n}-р ангиас цааш үзэх эрх авна уу`
               : `Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`
           }
