@@ -195,7 +195,7 @@ export default function Login({ onDone, legacy }) {
         </label>
         <div className="field"><span>4 оронтой код сонгох</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
         <div className="field"><span>Кодоо давтах</span><PinInput id="pin2" value={pin2} onChange={setPin2} /></div>
-        <p className="form-hint">Өөрийн зохиосон 4 оронтой кодыг оруулна уу. Код SMS-ээр ирэхгүй, дараа нь энэ дугаар, кодоороо нэвтэрнэ тул сайн санаарай.</p>
+        <p className="form-hint">Өөрийн зохиосон 4 оронтой кодыг оруулна уу. Код SMS-ээр ирэхгүй, дараа нь энэ дугаар, кодоороо нэвтрэх тул сайн санаарай.</p>
         {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Бүртгэж байна…' : 'Бүртгүүлэх'}</button>
         <p className="form-links">
