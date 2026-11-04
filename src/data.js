@@ -132,6 +132,7 @@ export const CATEGORIES = [
   { id: 'mongolian', label: 'Монгол кино' },
   { id: 'chinese', label: 'Хятад кино' },
   { id: 'korean', label: 'Солонгос кино' },
+  { id: 'russian', label: 'Орос кино' },
 ]
 export const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label || id
 export const inCategory = (movie, category) => !category || (movie?.categories || []).includes(category)

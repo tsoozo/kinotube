@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(33);
+select plan(34);
 
 insert into auth.users (id, email, aud, role) values
   ('bbbbbbbb-0000-4000-8000-000000000001', 'viewer@test.mn',       'authenticated', 'authenticated'),
@@ -49,6 +49,8 @@ select throws_ok($$ select public.admin_save_catalog('{"id":"draft-film","kind":
                  '23514', null, 'unknown category rejected');
 select is((public.admin_save_catalog('{"id":"draft-series","kind":"series","orientation":"vertical","title":"x","categories":["ai"]}')).categories,
           array['ai'], 'series have categories');
+select is((public.admin_save_catalog('{"id":"draft-film","kind":"movie","title":"Ноорог 2","categories":["russian"],"published":false}')).categories,
+          array['russian'], 'russian category allowed');
 select is((select orientation from public.catalog where id = 'draft-series'), 'vertical', 'orientation saved');
 select throws_ok($$ select public.admin_save_catalog('{"id":"bad-short","kind":"short","title":"x"}') $$,
                  '23514', null, 'old short kind rejected');
