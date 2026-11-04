@@ -9,7 +9,7 @@ import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, mat
 import { enqueue, isActive, jobKey, subscribe } from '../uploads.js'
 import { RENTAL, formatMoney } from '../auth.js'
 
-const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], price: '', duration: '', description: '', orientation: 'horizontal', added: '', published: true }
+const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], price: String(RENTAL.price), duration: '', description: '', orientation: 'horizontal', added: '', published: true }
 
 const toForm = (m) => ({
   ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], price: m.price ? String(m.price) : '', orientation: m.orientation || 'horizontal', published: m.published !== false,
@@ -269,9 +269,9 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
                 <option value="vertical">Босоо (9:16) · Shorts</option>
               </select>
             </label>
+            {field('price', `Үнэ, ₮ · ${noun} бүтнээр ${RENTAL.days} хоног үзэх`, { inputMode: 'numeric', placeholder: String(RENTAL.price), required: true })}
             {field('year', 'Он', { inputMode: 'numeric', placeholder: '2026' })}
             {!isSeries && field('duration', 'Урт', { placeholder: '1:18:00' })}
-            {field('price', `Үнэ, ₮ (${noun} бүтнээр ${RENTAL.days} хоног, хоосон бол ${formatMoney(RENTAL.price)})`, { inputMode: 'numeric', placeholder: String(RENTAL.price) })}
             {field('genres', 'Төрөл (таслалаар)', { placeholder: 'Инээдмийн, Адал явдалт' })}
             {field('added', 'Нэмсэн огноо', { type: 'date' })}
           </div>
@@ -344,7 +344,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
                 {[
                   m.orientation === 'vertical' ? 'Босоо · Shorts' : 'Хэвтээ',
                   isSeries && `${(m.episodes || []).length} анги`,
-                  m.year && `${m.year} он`, m.price && formatMoney(m.price), (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', '),
+                  m.year && `${m.year} он`, `${formatMoney(m.price || RENTAL.price)} / ${RENTAL.days} хоног`, (m.categories || []).map(categoryLabel).join(', '), (m.genres || []).join(', '),
                 ].filter(Boolean).join(' · ')}
               </p>
               <p className="admin-pills">
@@ -353,7 +353,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
               </p>
             </div>
             <div className="admin-row-actions">
-              <button className="icon-btn" aria-label="Засах" title="Засах" onClick={() => open({ ...toForm(m), originalId: m.id })}>
+              <button className="icon-btn" aria-label="Засах" title="Засах" onClick={() => open({ ...toForm(m), price: String(m.price || RENTAL.price), originalId: m.id })}>
                 <EditIcon width="20" height="20" />
               </button>
               <button className="icon-btn" aria-label="Устгах" title="Устгах" disabled={jobs.some((j) => j.id === m.id && isActive(j))} onClick={() => remove(m)}>
