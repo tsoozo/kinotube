@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PinInput from './PinInput.jsx'
 import Logo from './Logo.jsx'
 import {
-  cleanPhone, configured, isValidEmail, isValidPhone, isValidPin, loginWithPin, registerWithPin, sendCode, verifyCode,
+  cleanPhone, configured, isValidEmail, isValidPhone, isValidPin, loginWithPin, phoneRegistered, registerWithPin, sendCode, verifyCode,
 } from '../auth.js'
 
 // Утасны дугаар + 4 оронтой кодоор нэвтэрнэ/бүртгүүлнэ. legacy: хуучин имэйл бүртгэлд (#login-email).
@@ -17,6 +17,8 @@ export default function Login({ onDone, legacy }) {
   const [info, setInfo] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  // Нэвтрэхэд: { phone, registered } — дугаар бүртгэлтэй эсэхийг кодын өмнө шалгана.
+  const [known, setKnown] = useState(null)
 
   const go = (m) => {
     setMode(m)
@@ -42,8 +44,30 @@ export default function Login({ onDone, legacy }) {
     if (!isValidPhone(phone)) throw new Error('Утасны дугаараа 8 оронтойгоор оруулна уу.')
   }
 
+  // Дугаарыг шалгаад бүртгэлтэй бол кодын нүд рүү шилжинэ. Шалгаж чадахгүй бол кодыг асууна.
+  const check = async (p) => {
+    let registered = true
+    try {
+      registered = await phoneRegistered(p)
+    } catch {
+      // Сүлжээний алдаа: шууд нэвтрэх оролдлогод үлдээнэ.
+    }
+    setKnown((k) => (k?.phone === p ? { phone: p, registered } : k))
+  }
+
+  // Бүртгэлтэй нь батлагдмагц кодын эхний нүд рүү.
+  const ready = mode === 'login' && known?.phone === phone && known.registered === true
+  useEffect(() => {
+    if (ready) document.getElementById('pin-0')?.focus()
+  }, [ready])
+
   const login = run(async () => {
     checkPhone()
+    if (known?.phone !== phone || known.registered == null) {
+      setKnown({ phone, registered: null })
+      return check(phone)
+    }
+    if (!known.registered) return
     if (!isValidPin(pin)) throw new Error('4 оронтой кодоо оруулна уу.')
     try {
       onDone(await loginWithPin(phone, pin))
@@ -76,11 +100,20 @@ export default function Login({ onDone, legacy }) {
     onDone(await verifyCode(email, code))
   })
 
-  // 8 оронтой дугаар бүрэн болмогц кодын эхний нүд рүү шилжинэ.
+  // 8 оронтой дугаар бүрэн болмогц нэвтрэхэд бүртгэлийг шалгана, бүртгүүлэхэд кодын нүд рүү шилжинэ.
   const onPhone = (v) => {
     const next = cleanPhone(v).slice(0, 8)
-    if (next.length === 8 && phone.length < 8) setTimeout(() => document.getElementById('pin-0')?.focus(), 0)
     setPhone(next)
+    setError('')
+    if (mode === 'login') {
+      setPin('')
+      if (next.length === 8) {
+        if (known?.phone !== next) {
+          setKnown({ phone: next, registered: null })
+          check(next)
+        }
+      } else setKnown(null)
+    } else if (next.length === 8 && phone.length < 8) setTimeout(() => document.getElementById('pin-0')?.focus(), 0)
   }
   // Бүртгэлд: код бүрэн болмогц давтах нүд рүү.
   const onPin = (v) => {
@@ -115,16 +148,40 @@ export default function Login({ onDone, legacy }) {
       </>
     )
   } else if (mode === 'login') {
+    const state = known?.phone === phone ? known.registered : undefined
     body = (
       <form onSubmit={login} noValidate>
         <h1>Нэвтрэх</h1>
         {phoneField}
-        <div className="field"><span>4 оронтой код</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
-        {err}
-        <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
-        <p className="form-links">
-          <button type="button" onClick={() => go('register')}>Бүртгүүлэх</button>
-        </p>
+        {state === false ? (
+          <>
+            <div className="auth-notice">
+              <strong>Бүртгэлтэй хэрэглэгч алга</strong>
+              <span>{phone} дугаараар бүртгэл байхгүй байна. Эхлээд бүртгүүлж, өөрийн 4 оронтой кодыг сонгоно уу.</span>
+            </div>
+            <button className="btn-primary" type="button" onClick={() => go('register')}>Бүртгүүлэх</button>
+          </>
+        ) : state === true ? (
+          <>
+            <div className="field"><span>4 оронтой код</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
+            <p className="form-hint">Бүртгүүлэхдээ өөрийн зохиосон 4 оронтой кодоо оруулна уу. Код SMS-ээр ирэхгүй.</p>
+            {err}
+            <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Шалгаж байна…' : 'Нэвтрэх'}</button>
+          </>
+        ) : (
+          <>
+            {err}
+            <button className="btn-primary" type="submit" disabled={busy || state === null}>
+              {state === null ? 'Шалгаж байна…' : 'Үргэлжлүүлэх'}
+            </button>
+          </>
+        )}
+        {state !== false && (
+          <p className="form-links">
+            <span>Шинэ хэрэглэгч үү?</span>
+            <button type="button" onClick={() => go('register')}>Бүртгүүлэх</button>
+          </p>
+        )}
       </form>
     )
   } else if (mode === 'register') {
@@ -138,6 +195,7 @@ export default function Login({ onDone, legacy }) {
         </label>
         <div className="field"><span>4 оронтой код сонгох</span><PinInput id="pin" value={pin} onChange={onPin} /></div>
         <div className="field"><span>Кодоо давтах</span><PinInput id="pin2" value={pin2} onChange={setPin2} /></div>
+        <p className="form-hint">Өөрийн зохиосон 4 оронтой кодыг оруулна уу. Код SMS-ээр ирэхгүй, дараа нь энэ дугаар, кодоороо нэвтэрнэ тул сайн санаарай.</p>
         {err}
         <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Бүртгэж байна…' : 'Бүртгүүлэх'}</button>
         <p className="form-links">

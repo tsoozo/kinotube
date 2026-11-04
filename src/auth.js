@@ -113,6 +113,11 @@ async function pinAuth(path, body) {
 }
 
 export const loginWithPin = (phone, pin) => pinAuth('/api/auth/login', { phone: cleanPhone(phone), pin })
+// Дугаар бүртгэлтэй эсэх (true/false).
+export async function phoneRegistered(phone) {
+  const res = await api('/api/auth/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phone: cleanPhone(phone) }) })
+  return !!res.registered
+}
 export const registerWithPin = (phone, pin, name) => pinAuth('/api/auth/register', { phone: cleanPhone(phone), pin, name })
 
 // Нэвтэрсэн хэрэглэгч дугаар, кодоо тохируулна/солино.

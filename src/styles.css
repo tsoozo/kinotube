@@ -384,6 +384,9 @@ a.tag:hover { background: var(--surface-hover); }
 .auth-logo { margin-bottom: 20px; display: flex; }
 .form-error { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--bad-bg); color: var(--bad); }
 .form-hint { margin: 0; color: var(--muted); line-height: 20px; }
+.auth-notice { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 10px; background: var(--link-bg); color: var(--fg); line-height: 20px; }
+.auth-notice strong { font-weight: 500; }
+.auth-notice span { color: var(--muted); }
 .form-links { margin: 0; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--muted); }
 .form-links a { color: var(--link); font-weight: 500; }
 .form-links button { border: 0; background: none; padding: 0; color: var(--link); font-weight: 500; }
