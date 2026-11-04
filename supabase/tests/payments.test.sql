@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(56);
+select plan(59);
 
 select is(
   (select count(*) from pg_tables where schemaname = 'public' and not rowsecurity)::int, 0,
@@ -134,6 +134,9 @@ select ok(not public.can_watch('aaaaaaaa-0000-4000-8000-000000000002', 'nosferat
 -------------------------------------------------------------------------------
 select pg_temp.as_user('aaaaaaaa-0000-4000-8000-000000000003');
 select is((select count(*) from public.admin_list_users())::int, 3, 'admin lists all users');
+select is((public.admin_find_user('viewer@test.mn') -> 'rentals' -> 0 ->> 'id'), 'metropolis', 'admin sees rented movie');
+select is((public.admin_find_user('viewer@test.mn') -> 'rentals' -> 0 ->> 'active'), 'true', 'admin sees rental is active');
+select is((select count(*) from public.admin_list_users('active') x where x ->> 'id' = 'aaaaaaaa-0000-4000-8000-000000000001')::int, 1, 'renter is in active filter');
 select is((public.admin_find_user('OTHER@test.mn') ->> 'email'), 'other@test.mn', 'admin finds user by email, any case');
 select ok((public.admin_grant('aaaaaaaa-0000-4000-8000-000000000002', 7) ->> 'subscription_until')::timestamptz > now() + interval '6 days', 'admin grants 7 days');
 select pg_temp.as_service();

@@ -131,7 +131,8 @@ function toUser(x) {
     role: x.is_admin ? 'admin' : undefined,
     blocked: x.blocked,
     subscription: until ? { label: 'Эрх', endsAt: until } : null,
-    rentals: x.rentals || 0,
+    // Кино бүрийн сүүлийн түрээс: { id, title, endsAt, active }
+    rentals: Array.isArray(x.rentals) ? x.rentals : [],
     views: x.views || 0,
     paid: x.paid_mnt || 0,
   }

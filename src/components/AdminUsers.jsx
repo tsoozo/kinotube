@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   adminCancelPlan, adminGrant, adminSetBlocked, adminSetEnd, adminSetPin, adminSetRole, findUser, listUsers,
 } from '../admin.js'
-import { daysLeft, formatDate, formatMoney, isActive, isAdmin, isValidPhone, isValidPin, loadUser, userContact } from '../auth.js'
+import { activeRentals, daysLeft, formatDate, formatMoney, isActive, isAdmin, isValidPhone, isValidPin, loadUser, userContact } from '../auth.js'
 
 const FILTERS = [
   ['all', 'Бүгд'],
@@ -18,6 +18,19 @@ const GRANTS = [
   ['3 сар', { months: 3 }],
   ['1 жил', { months: 12 }],
 ]
+
+// Түрээсийн үлдсэн хоног (эхэлсэн өдөр 3 хоног гэж харагдана).
+const rentalDays = (r) => Math.max(1, Math.ceil((new Date(r.endsAt) - new Date()) / 86400000))
+
+// Жагсаалтын товч төлөв: сарын эрх, нэг киноны эрх эсвэл эрхгүй.
+function PlanPill({ user, long }) {
+  if (isActive(user)) {
+    return <span className="pill ok">{long ? `${formatDate(user.subscription.endsAt)} хүртэл · ` : ''}{daysLeft(user)} хоног</span>
+  }
+  const rents = activeRentals(user)
+  if (rents.length) return <span className="pill ok">{Math.max(...rents.map(rentalDays))} хоногийн эрх</span>
+  return <span className="pill bad">Эрхгүй</span>
+}
 
 const until = (u) => (isActive(u) ? `${formatDate(u.subscription.endsAt)} хүртэл.` : 'эрхгүй.')
 
@@ -149,6 +162,9 @@ export default function AdminUsers({ me, onUser }) {
     <span className="admin-user-text">
       <b>{u.name} {isAdmin(u) && <span className="pill ok">Админ</span>} {u.blocked && <span className="pill bad">Хаагдсан</span>}</b>
       <span className="muted">{userContact(u) || 'Дугааргүй'} · {formatDate(u.createdAt)}</span>
+      {activeRentals(u).length > 0 && (
+        <span className="admin-user-rent">Кино: {activeRentals(u).map((r) => r.title || r.id).join(', ')}</span>
+      )}
     </span>
   )
 
@@ -162,8 +178,22 @@ export default function AdminUsers({ me, onUser }) {
           <h2>Үзэх эрх</h2>
           {isActive(u) ? (
             <p className="plan-status"><span className="pill ok">Идэвхтэй</span> {formatDate(u.subscription.endsAt)} хүртэл ({daysLeft(u)} хоног)</p>
+          ) : activeRentals(u).length ? (
+            <p className="plan-status"><span className="pill ok">Нэг киноны эрх</span> Сарын эрхгүй{u.subscription && `, сүүлийнх ${formatDate(u.subscription.endsAt)}-нд дууссан`}</p>
           ) : (
             <p className="plan-status"><span className="pill bad">Эрхгүй</span> {u.subscription && `Сүүлийнх ${formatDate(u.subscription.endsAt)}-нд дууссан`}</p>
+          )}
+          {u.rentals.length > 0 && (
+            <ul className="rentals">
+              {u.rentals.map((r) => (
+                <li key={r.id}>
+                  <a href={`#watch-${r.id}`}>{r.title || r.id}</a>
+                  {r.active
+                    ? <span className="pill ok">{formatDate(r.endsAt)} хүртэл · {rentalDays(r)} хоног</span>
+                    : <span className="muted">{formatDate(r.endsAt)}-нд дууссан</span>}
+                </li>
+              ))}
+            </ul>
           )}
           <GrantControls user={u} onAction={act} />
         </section>
@@ -177,7 +207,7 @@ export default function AdminUsers({ me, onUser }) {
         </div>
         <PinReset user={u} onAction={act} busy={busy} />
         <p className="muted">
-          Түрээсэлж буй кино: {u.rentals} · Үзсэн кино: {u.views} · Нийт төлсөн: {formatMoney(u.paid)}
+          Түрээсэлж буй кино: {activeRentals(u).length} · Үзсэн кино: {u.views} · Нийт төлсөн: {formatMoney(u.paid)}
         </p>
       </div>
     )
@@ -205,11 +235,7 @@ export default function AdminUsers({ me, onUser }) {
             <div className="grant-user">
               <span className="profile-avatar small">{target.name.slice(0, 1).toUpperCase()}</span>
               {userLine(target)}
-              {isActive(target) ? (
-                <span className="pill ok">{formatDate(target.subscription.endsAt)} хүртэл · {daysLeft(target)} хоног</span>
-              ) : (
-                <span className="pill bad">Эрхгүй</span>
-              )}
+              <PlanPill user={target} long />
             </div>
             <GrantControls user={target} onAction={(fn, text) => run(target, fn, text, setGrantMsg)} />
           </>
@@ -235,7 +261,7 @@ export default function AdminUsers({ me, onUser }) {
                   <span className="profile-avatar small">{u.name.slice(0, 1).toUpperCase()}</span>
                   {userLine(u)}
                   <span className="admin-user-meta">
-                    <span className={`pill ${isActive(u) ? 'ok' : 'bad'}`}>{isActive(u) ? `${daysLeft(u)} хоног` : 'Эрхгүй'}</span>
+                    <PlanPill user={u} />
                     {u.paid > 0 && <span className="muted">{formatMoney(u.paid)}</span>}
                   </span>
                 </button>
