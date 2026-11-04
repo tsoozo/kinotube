@@ -59,10 +59,11 @@ export async function mp4Layout(env, key) {
   return { size, moov: null }
 }
 
-// Үнэгүй хэсгийн байтын хязгаар: хугацааны харьцаагаар (+1 минут, +2 MB нөөц). Урт тодорхойгүй бол 10%.
+// Үнэгүй хэсгийн байтын хязгаар: хугацааны харьцаагаар (+1 минут), бичлэгийн эхэнд bitrate өндөр байж болох тул
+// 2 дахин нөөцтэй +4 MB (үгүй бол 5:00 хүрэхээс өмнө тэг байт ирж видео алдаа өгнө). Урт тодорхойгүй бол 10%.
 export function previewPlan({ size, moov }, durationSec) {
   const head = durationSec > FREE_SECONDS
-    ? Math.min(size, Math.ceil((size * (FREE_SECONDS + 60)) / durationSec) + 2 * MB)
+    ? Math.min(size, Math.ceil((size * 2 * (FREE_SECONDS + 60)) / durationSec) + 4 * MB)
     : durationSec > 0 ? size : Math.min(size, Math.ceil(size * 0.1))
   const regions = [[0, head]]
   if (moov && moov[0] >= head) regions.push([moov[0], Math.min(moov[1], size)])

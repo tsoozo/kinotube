@@ -48,7 +48,7 @@ console.log('ok   CompleteMultipartUpload header signature matches botocore')
 const { planRange, previewPlan, signPreview, verifyPreview } = await import('../server/preview.js')
 const MB = 1024 * 1024
 const plan = previewPlan({ size: 1000 * MB, moov: [999 * MB, 1000 * MB] }, 100 * 60)
-assert.equal(plan.regions[0][1], Math.ceil((1000 * MB * 360) / 6000) + 2 * MB)
+assert.equal(plan.regions[0][1], Math.ceil((1000 * MB * 2 * 360) / 6000) + 4 * MB)
 assert.deepEqual(plan.regions[1], [999 * MB, 1000 * MB])
 assert.deepEqual(planRange('bytes=0-', plan), { start: 0, end: plan.regions[0][1] - 1, real: true })
 assert.equal(planRange(`bytes=${500 * MB}-`, plan).real, false)

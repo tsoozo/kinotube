@@ -6,7 +6,7 @@ import {
   BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, ShareIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
 import { FREE_EPISODES, FREE_SECONDS, episodesOf, formatTime, isFreeEpisode, isSeries, shareItem } from '../data.js'
-import { canWatchMovie, pushHistory, recordView, takePaywall, videoUrl } from '../auth.js'
+import { canWatchMovie, previewUsed, pushHistory, recordView, setPreviewUsed, videoUrl } from '../auth.js'
 
 // Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
 // Цуврал: эхний 2 анги үнэгүй. Нэг ангитай кино: эхний 5 минут үнэгүй. Цааш нь эрх (сервер ч шалгана).
@@ -32,8 +32,9 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
   const [src, setSrc] = useState(null)
   // Нэг ангитай кинонд эрхгүй үед үнэгүй үзэх секунд, limitHit: дууссан.
   const [preview, setPreview] = useState(0)
-  // Төлбөрийн хуудаснаас буцаж ирсэн бол эрхийн сонголтыг шууд харуулна (5 минут үнэгүй хэсэгтэйд).
-  const [limitHit, setLimitHit] = useState(() => (episode.movie || episodesOf(series).length === 1) && takePaywall(series.id))
+  // Үнэгүй 5 минутаа үзсэн бол (буцаж ирсэн, дахин орсон ч) эрхийн сонголт шууд харагдана.
+  const previewKind = (episode.movie || episodesOf(series).length === 1) && !canWatchMovie(user, series.id)
+  const [limitHit, setLimitHit] = useState(() => previewKind && previewUsed(series.id))
 
   useEffect(() => {
     if (!active || src || failed || locked || limitHit) return
@@ -64,7 +65,7 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
         setUi(true)
       })
     } else v.pause()
-  }, [active, src])
+  }, [active, src, limitHit])
 
   // Тоглож байхад удирдлага 3 секундын дараа өөрөө арилна.
   useEffect(() => {
@@ -131,6 +132,7 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
       v.pause()
       v.currentTime = preview
       setLimitHit(true)
+      setPreviewUsed(series.id, true)
     }
   }
 
@@ -139,7 +141,16 @@ function EpisodeSlide({ series, episode, active, muted, locked, user, onEnded })
       <div className="short-ep short-locked player-locked">
         <div className="locked-bg" aria-hidden="true"><ShortPoster short={series} /></div>
         <LockIcon />
-        <Paywall movie={series} user={user} returnTo={series.id} lead={`Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`} />
+        <Paywall
+          movie={series}
+          user={user}
+          returnTo={series.id}
+          lead={`Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`}
+          onReplay={() => {
+            setPreviewUsed(series.id, false)
+            setLimitHit(false)
+          }}
+        />
       </div>
     )
   }

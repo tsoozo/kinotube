@@ -26,6 +26,7 @@ const USER_KEY = 'kino-user'
 const GUEST_HISTORY_KEY = 'kino-history'
 const RETURN_KEY = 'kino-return'
 const PAYWALL_KEY = 'kino-paywall'
+const PREVIEW_KEY = 'kino-preview-used'
 const POLL_MS = 10_000
 
 let memory = {}
@@ -441,27 +442,24 @@ export function takeReturnTo() {
 }
 
 // Төлбөрийн сонголтоос (4,900₮ / 15,900₮) төлбөрийн хуудас руу орсон газар.
-// Төлбөрийн хуудаснаас "Буцах" дарвал тэр сонголт руу буцна.
 export function markPaywall(movieId) {
-  write(PAYWALL_KEY, { id: movieId, from: location.hash, at: Date.now(), back: false })
+  write(PAYWALL_KEY, { id: movieId, from: location.hash, at: Date.now() })
 }
 
-// Төлбөрийн хуудаснаас буцахад: сонголт руу шууд буцаж болох бол true (history.back хийнэ).
+// Төлбөрийн хуудаснаас буцахад: сонголт руу history.back-аар буцаж болох эсэх.
 export function backToPaywall(movieId) {
   const p = read(PAYWALL_KEY, null)
-  if (!p || p.id !== movieId || Date.now() - p.at > 30 * 60000) return false
-  write(PAYWALL_KEY, { ...p, back: true })
-  return Boolean(p.from) && history.length > 1
+  return Boolean(p?.from && p.id === movieId && Date.now() - p.at < 30 * 60000 && history.length > 1)
 }
 
-// Үзэх хуудас/Shorts: төлбөрөөс буцаж ирсэн бол үнэгүй хэсгийг дахин тоглуулалгүй сонголтыг шууд харуулна.
-export function takePaywall(movieId) {
-  const p = read(PAYWALL_KEY, null)
-  if (!p?.back || p.id !== movieId || Date.now() - p.at > 30 * 60000) return false
-  // Нэг л удаа (StrictMode давхар дуудлагад 2 секундын зай).
-  if (p.used) return Date.now() - p.used < 2000
-  write(PAYWALL_KEY, { ...p, used: Date.now() })
-  return true
+// Үнэгүй 5 минутаа үзсэн кино: дахин орсон ч эрхийн сонголт шууд харагдана ("Эхнээс нь үзэх" дарвал дахин).
+export const previewUsed = (movieId) => Boolean(read(PREVIEW_KEY, {})[movieId])
+
+export function setPreviewUsed(movieId, used) {
+  const all = read(PREVIEW_KEY, {})
+  if (used) all[movieId] = Date.now()
+  else delete all[movieId]
+  write(PREVIEW_KEY, all)
 }
 
 // 99112233 → 9911 2233

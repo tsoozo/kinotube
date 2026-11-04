@@ -1,27 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
-import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, SaveIcon, SavedIcon, ShareIcon, SpeedIcon } from './Icons.jsx'
+import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, ResetIcon as ReplayIcon, SaveIcon, SavedIcon, ShareIcon, SpeedIcon } from './Icons.jsx'
 import {
   FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, shareItem, subtitlesOf, timeAgo, watchHref,
 } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
-  recordView, rentPrice, rentalEndsAt, saveProgress, setReturnTo, takePaywall, toggleLater, videoUrl, watchedRatio, markPaywall,
+  recordView, rentPrice, rentalEndsAt, saveProgress, setPreviewUsed, setReturnTo, toggleLater, videoUrl, watchedRatio, markPaywall, previewUsed,
 } from '../auth.js'
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2]
 
 // Төлбөрийн сонголт: нэвтрээгүй бол нэвтрэх товч, үгүй бол нэг кино / сарын эрх.
-export function Paywall({ movie, user, lead, sub, returnTo }) {
+export function Paywall({ movie, user, lead, sub, returnTo, onReplay }) {
   const month = PLANS[0]
   const series = isSeries(movie)
+  const replay = onReplay && (
+    <button type="button" className="btn-secondary paywall-replay" onClick={onReplay}>
+      <ReplayIcon /> Эхнээс нь дахин үзэх
+    </button>
+  )
   if (!user) {
     return (
       <>
         <p className="player-lead">{lead || 'Үргэлжлүүлэн үзэхийн тулд нэвтэрнэ үү'}</p>
         <p className="player-sub">{series ? 'Энэ цуврал' : 'Энэ кино'} {formatMoney(rentPrice(movie))} · бүх кино сард {formatMoney(month.price)}</p>
         <a className="btn-primary" href="#login" onClick={() => setReturnTo(returnTo || movie.id)}>Нэвтрэх</a>
+        {replay}
       </>
     )
   }
@@ -46,6 +52,7 @@ export function Paywall({ movie, user, lead, sub, returnTo }) {
           <small>1 сар хязгааргүй</small>
         </a>
       </div>
+      {replay}
     </>
   )
 }
@@ -62,7 +69,9 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const [src, setSrc] = useState(null)
   // Эрхгүй үед үнэгүй үзэх секунд (кино: 5 минут), limitHit: түүнийг үзэж дууссан.
   const [preview, setPreview] = useState(0)
-  const [limitHit, setLimitHit] = useState(false)
+  const [limitHit, setLimitHit] = useState(
+    () => !canWatchMovie(user, movie.id) && (!isSeries(movie) || episodesOf(movie).length === 1) && previewUsed(movie.id),
+  )
   const videoRef = useRef(null)
   const retried = useRef(false)
   const lastSave = useRef(0)
@@ -75,6 +84,8 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const nextEpisode = episodes.find((e) => e.number > n)
   // Цувралын эхний 2 анги, киноны эхний 5 минут хүн бүрт үнэгүй.
   const locked = series && !canWatch && !isFreeEpisode(n)
+  // Эхний 5 минут үнэгүй хэлбэр (кино, ганц ангитай цуврал).
+  const previewKind = !canWatch && (!series || episodes.length === 1)
   const videoReady = series ? episode?.videoReady !== false && Boolean(episode) : movie.videoReady !== false
   const viewKey = `${movie.id}:${n}`
   const rentEnds = rentalEndsAt(user, movie.id)
@@ -94,7 +105,9 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
     setResumed(0)
     setShape('tall')
     setBgFailed(false)
-    setLimitHit(takePaywall(movie.id))
+    // Үнэгүй хэсгээ үзсэн бол эрхийн сонголт шууд.
+    setLimitHit(previewKind && previewUsed(movie.id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movie.id, n])
 
   // Видеоны хугацаатай линкийг серверээс авна (эрхийг сервер дахин шалгана).
@@ -129,6 +142,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
         v.pause()
         v.currentTime = preview
         setLimitHit(true)
+        setPreviewUsed(movie.id, true)
       }
     }
     v.addEventListener('timeupdate', clamp)
@@ -248,8 +262,14 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
     </div>
   )
 
+  // Үнэгүй 5 минутыг эхнээс нь дахин үзэх.
+  const replay = () => {
+    setPreviewUsed(movie.id, false)
+    setLimitHit(false)
+  }
+
   let player
-  if (locked || limitHit) {
+  if (locked || (limitHit && !canWatch)) {
     player = (
       <div className="player-error player-locked">
         {backdrop}
@@ -264,6 +284,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
               : `Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`
           }
           sub={user?.subscription && !canWatch ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : ''}
+          onReplay={locked ? undefined : replay}
         />
       </div>
     )
@@ -306,7 +327,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
       </Player>
     )
   }
-  const playing = !locked && !limitHit && !videoError
+  const playing = !locked && !(limitHit && !canWatch) && !videoError
 
   return (
     <div className="watch">
