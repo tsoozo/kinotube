@@ -2,6 +2,7 @@
 // Төлбөр: банкны шилжүүлэг → "Гүйлгээ хийсэн" → Telegram бот руу ✅/❌ (functions/) → эрх нээгдэнэ.
 // Үнэ, эрх олгох бүх шийдвэрийг сервер гаргана. Үзсэн түүх, дараа үзэх жагсаалт хөтөч дээр (localStorage).
 import { createClient } from '@supabase/supabase-js'
+import { freeLimit } from '../server/free.js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
@@ -323,7 +324,8 @@ export function watchPayment(id, onChange) {
 export async function videoUrl(item, ep) {
   const local = () => {
     const url = ep ? item.episodes?.find((e) => e.number === ep)?.video : item.video
-    return { url, preview: ep || canWatchMovie(currentUser(), item.id) ? 0 : 300 }
+    const limit = canWatchMovie(currentUser(), item.id) ? Infinity : freeLimit(item, item.episodes?.length ? item.episodes : null, ep)
+    return { url: limit ? url : null, preview: limit === Infinity ? 0 : limit }
   }
   if (!configured) return local()
   try {

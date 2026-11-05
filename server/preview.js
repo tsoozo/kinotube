@@ -1,10 +1,9 @@
-// Үнэгүй үзэх хэсэг (кино: эхний 5 минут). Эрхгүй хэрэглэгчид бүтэн видеоны линк өгөхгүй:
+// Үнэгүй үзэх хэсэг (кино: эхний 5 минут, Shorts: эхний 10 минут). Эрхгүй хэрэглэгчид бүтэн видеоны линк өгөхгүй:
 // /api/preview/<id>?t=<token> нь R2-аас зөвхөн эхний хэсгийн байтыг (мөн moov мэдээллийг) дамжуулна,
 // бусад байтын оронд тэг өгнө. Ингэснээр линкийг хуулж авсан ч бүтэн кино үзэх боломжгүй.
 import { r2Url } from './r2.js'
 
-export const FREE_SECONDS = 5 * 60
-export const FREE_EPISODES = 2
+export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, freeLabel, freeLimit } from './free.js'
 
 const MB = 1024 * 1024
 const enc = new TextEncoder()
@@ -59,11 +58,11 @@ export async function mp4Layout(env, key) {
   return { size, moov: null }
 }
 
-// Үнэгүй хэсгийн байтын хязгаар: хугацааны харьцаагаар (+1 минут), бичлэгийн эхэнд bitrate өндөр байж болох тул
-// 2 дахин нөөцтэй +4 MB (үгүй бол 5:00 хүрэхээс өмнө тэг байт ирж видео алдаа өгнө). Урт тодорхойгүй бол 10%.
-export function previewPlan({ size, moov }, durationSec) {
-  const head = durationSec > FREE_SECONDS
-    ? Math.min(size, Math.ceil((size * 2 * (FREE_SECONDS + 60)) / durationSec) + 4 * MB)
+// Үнэгүй хэсгийн (freeSec секунд) байтын хязгаар: хугацааны харьцаагаар (+1 минут), бичлэгийн эхэнд bitrate өндөр байж болох тул
+// 2 дахин нөөцтэй +4 MB (үгүй бол хязгаарт хүрэхээс өмнө тэг байт ирж видео алдаа өгнө). Урт тодорхойгүй бол 10%.
+export function previewPlan({ size, moov }, durationSec, freeSec) {
+  const head = durationSec > freeSec
+    ? Math.min(size, Math.ceil((size * 2 * (freeSec + 60)) / durationSec) + 4 * MB)
     : durationSec > 0 ? size : Math.min(size, Math.ceil(size * 0.1))
   const regions = [[0, head]]
   if (moov && moov[0] >= head) regions.push([moov[0], Math.min(moov[1], size)])

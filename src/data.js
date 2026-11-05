@@ -79,9 +79,9 @@ export async function loadMovies(refresh = false) {
   return loadCatalog(refresh)
 }
 
-// Үнэгүй үзэх хэмжээ (сервер functions/api/video ижил дүрмээр шалгана).
-export const FREE_SECONDS = 5 * 60
-export const FREE_EPISODES = 2
+// Үнэгүй үзэх дүрэм (сервер functions/api/video ижил server/free.js-ээр шалгана).
+import { FREE_EPISODES } from '../server/free.js'
+export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, freeLabel, freeLimit } from '../server/free.js'
 
 export const isSeries = (item) => item?.kind === 'series'
 // Shorts = босоо кино (олон ангитай цуврал эсвэл нэг ангитай кино).

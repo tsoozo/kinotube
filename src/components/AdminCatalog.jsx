@@ -5,7 +5,7 @@ import { AutoIcon, EditIcon, PlusIcon, ShareIcon, TrashIcon } from './Icons.jsx'
 import AdminEpisodes from './AdminEpisodes.jsx'
 import { cleanItem, deleteCatalogItem, saveCatalogItem, slugify, uploadOgCard, uploadThumbnail, videoDuration, videoSource } from '../admin.js'
 import { bestFrame } from '../frames.js'
-import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, matches } from '../data.js'
+import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, categoryLabel, episodesOf, matches } from '../data.js'
 import { enqueue, isActive, jobKey, subscribe } from '../uploads.js'
 import { RENTAL, formatMoney } from '../auth.js'
 
@@ -244,8 +244,8 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
 
       <p className="muted small">
         {isSeries
-          ? `Олон ангитай кино. Эхний ${FREE_EPISODES} анги үнэгүй, цааш нь төлбөртэй. Босоо бол Shorts-д (хөндлөн гүйлгэж дараагийн анги), хэвтээ нь үзэх хуудсанд.`
-          : `Нэг ангитай кино. Эхний ${FREE_SECONDS / 60} минут үнэгүй, цааш нь төлбөртэй. Босоо кино Shorts-д харагдана.`}
+          ? `Олон ангитай кино. Хэвтээ бол үзэх хуудсанд, эхний ${FREE_EPISODES} анги үнэгүй. Босоо бол Shorts-д (хөндлөн гүйлгэж дараагийн анги), ангиудын нийт эхний ${SHORTS_FREE_SECONDS / 60} минут үнэгүй. Цааш нь төлбөртэй.`
+          : `Нэг ангитай кино. Эхний ${FREE_SECONDS / 60} минут үнэгүй (босоо кино Shorts-д харагдах ба эхний ${SHORTS_FREE_SECONDS / 60} минут), цааш нь төлбөртэй.`}
       </p>
 
       {message && <p className={`toast ${message.ok ? 'ok' : 'bad'}`}>{message.text}</p>}

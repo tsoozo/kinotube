@@ -47,7 +47,7 @@ console.log('ok   CompleteMultipartUpload header signature matches botocore')
 // Үнэгүй хэсгийн байтын хязгаар (server/preview.js).
 const { planRange, previewPlan, signPreview, verifyPreview } = await import('../server/preview.js')
 const MB = 1024 * 1024
-const plan = previewPlan({ size: 1000 * MB, moov: [999 * MB, 1000 * MB] }, 100 * 60)
+const plan = previewPlan({ size: 1000 * MB, moov: [999 * MB, 1000 * MB] }, 100 * 60, 300)
 assert.equal(plan.regions[0][1], Math.ceil((1000 * MB * 2 * 360) / 6000) + 4 * MB)
 assert.deepEqual(plan.regions[1], [999 * MB, 1000 * MB])
 assert.deepEqual(planRange('bytes=0-', plan), { start: 0, end: plan.regions[0][1] - 1, real: true })
@@ -55,8 +55,10 @@ assert.equal(planRange(`bytes=${500 * MB}-`, plan).real, false)
 assert.equal(planRange(`bytes=${500 * MB}-`, plan).end, 501 * MB - 1)
 assert.deepEqual(planRange(`bytes=${999 * MB}-`, plan), { start: 999 * MB, end: 1000 * MB - 1, real: true })
 assert.equal(planRange(`bytes=${1000 * MB}-`, plan), null)
-const fast = previewPlan({ size: 1000 * MB, moov: [32, 4 * MB] }, 100 * 60)
+const fast = previewPlan({ size: 1000 * MB, moov: [32, 4 * MB] }, 100 * 60, 300)
 assert.equal(fast.regions.length, 1)
+// Shorts: 10 минут.
+assert.equal(previewPlan({ size: 1000 * MB, moov: null }, 100 * 60, 600).regions[0][1], Math.ceil((1000 * MB * 2 * 660) / 6000) + 4 * MB)
 const env = { R2_SECRET_ACCESS_KEY: 'x' }
 const tok = await signPreview(env, { id: 'a', exp: Date.now() / 1000 + 60 })
 assert.equal((await verifyPreview(env, tok)).id, 'a')

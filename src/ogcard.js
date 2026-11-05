@@ -1,7 +1,7 @@
 // Хуваалцах карт (Open Graph, 1200×630): бүдгэрүүлсэн нүүр дэвсгэр, нүүр зураг, том гарчиг, "ҮНЭГҮЙ" тэмдэг.
 // Facebook/Messenger-т линк хуваалцахад харагдана (functions/m). Админ кино хадгалахад хөтөч дээр зурж R2 руу хуулна.
 import logoUrl from './assets/logo-k.png'
-import { FREE_EPISODES, FREE_SECONDS } from './data.js'
+import { freeLabel } from './data.js'
 
 const W = 1200
 const H = 630
@@ -186,7 +186,7 @@ export async function makeOgCard(item, cover) {
 
   // "ҮНЭГҮЙ" тэмдэг
   y += 18
-  const badge = item.kind === 'series' ? `Эхний ${FREE_EPISODES} анги ҮНЭГҮЙ` : `Эхний ${FREE_SECONDS / 60} минут ҮНЭГҮЙ`
+  const badge = `${freeLabel(item, item.episodes?.length)} ҮНЭГҮЙ`
   ctx.font = '700 32px Roboto, sans-serif'
   const bw = ctx.measureText(badge).width + 96
   roundRect(ctx, left, y, bw, 64, 32)

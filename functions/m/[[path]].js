@@ -1,12 +1,12 @@
 // GET /m/<id>[/<анги>] — хуваалцах хаяг. Facebook, Messenger, Telegram зэрэг нь hash (#watch-...) уншдаггүй тул
 // кино бүрт тусдаа Open Graph tag-тай жижиг HTML буцааж, хүн бол JS-ээр апп руу (#watch-<id> / #shorts-<id>) шилжүүлнэ.
 import { SLUG_RE, serviceClient } from '../../server/core.js'
-import { FREE_EPISODES, FREE_SECONDS } from '../../server/preview.js'
+import { freeLabel } from '../../server/free.js'
 import { r2Configured, r2Url } from '../../server/r2.js'
 
 const SITE = 'KinoTube'
 const SITE_TITLE = 'KinoTube — Кино, цуврал онлайн'
-const SITE_DESC = 'Монгол, Солонгос, Хятад кино, цуврал, Shorts. Кино бүрийн эхний 5 минут, цувралын эхний 2 анги үнэгүй. Утсаараа хаанаас ч үзээрэй.'
+const SITE_DESC = 'Монгол, Солонгос, Хятад кино, цуврал, Shorts. Кино бүрийн эхний 5 минут, цувралын эхний 2 анги, Shorts-ийн эхний 10 минут үнэгүй. Утсаараа хаанаас ч үзээрэй.'
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const cut = (s, n) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
@@ -27,9 +27,9 @@ async function ogCard(env, id) {
 }
 
 function describe(m, epCount, ep) {
-  // Ганц ангитай цуврал = бүтэн кино (эхний 5 минут үнэгүй).
+  // Ганц ангитай цуврал = бүтэн кино.
   const series = m.kind === 'series' && epCount !== 1
-  const free = series ? `🎁 Эхний ${FREE_EPISODES} анги ҮНЭГҮЙ` : `🎁 Эхний ${FREE_SECONDS / 60} минут ҮНЭГҮЙ`
+  const free = `🎁 ${freeLabel(m, epCount)} ҮНЭГҮЙ`
   const meta = [
     m.year,
     (m.genres || []).slice(0, 2).join(', '),

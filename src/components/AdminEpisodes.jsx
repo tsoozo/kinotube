@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PlusIcon, TrashIcon } from './Icons.jsx'
 import { deleteEpisode, saveEpisode, videoDuration } from '../admin.js'
-import { FREE_EPISODES, episodesOf } from '../data.js'
+import { episodesOf, freeLabel, freeLimit } from '../data.js'
 import { enqueue, isActive, jobKey } from '../uploads.js'
 
 const sizeText = (b) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(2)} GB` : `${Math.max(1, Math.round(b / 1024 ** 2))} MB`)
@@ -85,7 +85,7 @@ export default function AdminEpisodes({ series, jobs, publish, onChange, onMessa
   return (
     <section className="admin-episodes">
       <h3>Ангиуд · {episodes.length}</h3>
-      <p className="muted small">Эхний {FREE_EPISODES} анги хүн бүрт үнэгүй. Олон видео нэг дор сонговол файлын нэрийн дарааллаар анги болно.</p>
+      <p className="muted small">{freeLabel(series, episodes.length)} хүн бүрт үнэгүй{series.orientation === 'vertical' && episodes.length > 1 ? ' (ангиудын нийт хугацаагаар)' : ''}. Олон видео нэг дор сонговол файлын нэрийн дарааллаар анги болно.</p>
       {episodes.length > 0 && (
         <ul className="list episode-list">
           {episodes.map((e) => {
@@ -105,7 +105,8 @@ export default function AdminEpisodes({ series, jobs, publish, onChange, onMessa
                   <p className="admin-pills">
                     <EpisodePill episode={e} job={job} />
                     {e.duration && <span className="muted small">{e.duration}</span>}
-                    {e.number <= FREE_EPISODES && <span className="pill">Үнэгүй</span>}
+                    {episodes.length > 1 && freeLimit(series, episodes, e.number) === Infinity && <span className="pill">Үнэгүй</span>}
+                    {episodes.length > 1 && freeLimit(series, episodes, e.number) > 0 && freeLimit(series, episodes, e.number) !== Infinity && <span className="pill">{Math.ceil(freeLimit(series, episodes, e.number) / 60)} мин үнэгүй</span>}
                   </p>
                 </div>
                 <label className="btn-secondary episode-file">
