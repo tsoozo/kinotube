@@ -67,7 +67,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const [flash, setFlash] = useState('')
   const [bgFailed, setBgFailed] = useState(false)
   const [src, setSrc] = useState(null)
-  // Эрхгүй үед үнэгүй үзэх секунд (кино: 5 минут), limitHit: түүнийг үзэж дууссан.
+  // Эрхгүй үед үнэгүй үзэх секунд (кино: 10 минут), limitHit: түүнийг үзэж дууссан.
   const [preview, setPreview] = useState(0)
   const [limitHit, setLimitHit] = useState(
     () => !canWatchMovie(user, movie.id) && (!isSeries(movie) || episodesOf(movie).length === 1) && previewUsed(movie.id),
@@ -82,9 +82,9 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const n = series ? (episodes.some((e) => e.number === ep) ? ep : episodes[0]?.number || 1) : 0
   const episode = episodes.find((e) => e.number === n)
   const nextEpisode = episodes.find((e) => e.number > n)
-  // Цувралын эхний 2 анги, киноны эхний 5 минут хүн бүрт үнэгүй.
+  // Цувралын эхний 2 анги, киноны эхний 10 минут хүн бүрт үнэгүй.
   const locked = series && !canWatch && !isFreeEpisode(n)
-  // Эхний 5 минут үнэгүй хэлбэр (кино, ганц ангитай цуврал).
+  // Эхний 10 минут үнэгүй хэлбэр (кино, ганц ангитай цуврал).
   const previewKind = !canWatch && (!series || episodes.length === 1)
   const videoReady = series ? episode?.videoReady !== false && Boolean(episode) : movie.videoReady !== false
   const viewKey = `${movie.id}:${n}`
@@ -133,7 +133,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewKey, user?.id, canWatch])
 
-  // Үнэгүй 5 минутаас цааш тоглуулахгүй, гүйлгэхгүй (сервер ч цааших байтыг өгөхгүй).
+  // Үнэгүй 10 минутаас цааш тоглуулахгүй, гүйлгэхгүй (сервер ч цааших байтыг өгөхгүй).
   useEffect(() => {
     const v = videoRef.current
     if (!v || !preview) return
@@ -262,7 +262,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
     </div>
   )
 
-  // Үнэгүй 5 минутыг эхнээс нь дахин үзэх.
+  // Үнэгүй 10 минутыг эхнээс нь дахин үзэх.
   const replay = () => {
     setPreviewUsed(movie.id, false)
     setLimitHit(false)

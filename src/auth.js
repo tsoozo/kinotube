@@ -454,7 +454,7 @@ export function backToPaywall(movieId) {
   return Boolean(p?.from && p.id === movieId && Date.now() - p.at < 30 * 60000 && history.length > 1)
 }
 
-// Үнэгүй 5 минутаа үзсэн кино: дахин орсон ч эрхийн сонголт шууд харагдана ("Эхнээс нь үзэх" дарвал дахин).
+// Үнэгүй 10 минутаа үзсэн кино: дахин орсон ч эрхийн сонголт шууд харагдана ("Эхнээс нь үзэх" дарвал дахин).
 export const previewUsed = (movieId) => Boolean(read(PREVIEW_KEY, {})[movieId])
 
 export function setPreviewUsed(movieId, used) {

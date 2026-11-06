@@ -1,7 +1,7 @@
 // Үнэгүй үзэх дүрэм. Клиент (src/data.js) ба сервер (functions/api/video) хоёул эндээс авна.
-//  Хэвтээ: кино эхний 5 минут, цуврал эхний 2 анги.
+//  Хэвтээ: кино эхний 10 минут, цуврал эхний 2 анги.
 //  Shorts (босоо): эхний 10 минут. Олон ангитай бол 1-р ангиас эхлэн ангиудын нийт хугацаагаар тоолно.
-export const FREE_SECONDS = 5 * 60
+export const FREE_SECONDS = 10 * 60
 export const SHORTS_FREE_SECONDS = 10 * 60
 export const FREE_EPISODES = 2
 

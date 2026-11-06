@@ -1,6 +1,6 @@
 // GET /api/video/<id>[?ep=<анги>] — R2 дээрх видеоны хугацаатай линк.
 //  Эрхтэй (сарын эрх эсвэл тухайн киноны түрээс) бол бүтэн. Эрхгүй бол server/free.js-ийн дүрмээр:
-//  хэвтээ кино эхний 5 минут, хэвтээ цуврал эхний 2 анги, Shorts (босоо) нийт эхний 10 минут (/api/preview).
+//  хэвтээ кино эхний 10 минут, хэвтээ цуврал эхний 2 анги, Shorts (босоо) нийт эхний 10 минут (/api/preview).
 import { SLUG_RE, json, serviceClient, userFromRequest } from '../../../server/core.js'
 import { r2Configured, r2Url } from '../../../server/r2.js'
 import { freeLimit, mp4Layout, previewPlan, signPreview, toSeconds } from '../../../server/preview.js'

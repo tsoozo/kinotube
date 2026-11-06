@@ -1,4 +1,4 @@
-// GET /api/preview/<id>?t=<token> — киноны үнэгүй хэсэг (эхний 5 минут). Токеныг /api/video өгнө.
+// GET /api/preview/<id>?t=<token> — киноны үнэгүй хэсэг (эхний 10 минут). Токеныг /api/video өгнө.
 // Зөвхөн зөвшөөрөгдсөн байтыг R2-аас дамжуулна (server/preview.js).
 import { r2Configured, r2Url } from '../../../server/r2.js'
 import { planRange, verifyPreview } from '../../../server/preview.js'

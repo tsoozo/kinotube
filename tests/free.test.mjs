@@ -6,7 +6,7 @@ const v = { orientation: 'vertical' }
 const h = { orientation: 'horizontal' }
 const eps = [1, 2, 3, 4, 5].map((number) => ({ number, duration: '4:00' }))
 
-assert.equal(freeLimit(h), 300)
+assert.equal(freeLimit(h), 600)
 assert.equal(freeLimit(v), 600)
 assert.equal(freeLimit(v, [{ number: 1, duration: '1:30:00' }], 1), 600)
 assert.equal(freeLimit(h, eps, 2), Infinity)
