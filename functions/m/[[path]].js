@@ -1,12 +1,11 @@
 // GET /m/<id>[/<анги>] — хуваалцах хаяг. Facebook, Messenger, Telegram зэрэг нь hash (#watch-...) уншдаггүй тул
 // кино бүрт тусдаа Open Graph tag-тай жижиг HTML буцааж, хүн бол JS-ээр апп руу (#watch-<id> / #shorts-<id>) шилжүүлнэ.
 import { SLUG_RE, serviceClient } from '../../server/core.js'
-import { freeLabel } from '../../server/free.js'
 import { r2Configured, r2Url } from '../../server/r2.js'
 
 const SITE = 'KinoTube'
 const SITE_TITLE = 'KinoTube — Кино, цуврал онлайн'
-const SITE_DESC = 'Монгол, Солонгос, Хятад кино, цуврал, Shorts. Кино бүрийн эхний 5 минут, цувралын эхний 2 анги, Shorts-ийн эхний 10 минут үнэгүй. Утсаараа хаанаас ч үзээрэй.'
+const SITE_DESC = 'Монгол, Солонгос, Хятад, Орос, AI кино, цуврал, Shorts. Утсаараа хаанаас ч үзээрэй.'
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const cut = (s, n) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s)
@@ -29,14 +28,13 @@ async function ogCard(env, id) {
 function describe(m, epCount, ep) {
   // Ганц ангитай цуврал = бүтэн кино.
   const series = m.kind === 'series' && epCount !== 1
-  const free = `🎁 ${freeLabel(m, epCount)} ҮНЭГҮЙ`
   const meta = [
     m.year,
     (m.genres || []).slice(0, 2).join(', '),
     series ? (epCount ? `${epCount} анги` : '') : m.kind === 'series' ? '' : clock(m.duration),
   ].filter(Boolean).join(' · ')
   const about = m.description ? cut(m.description.replace(/\s+/g, ' ').trim(), 160) : ''
-  return [ep ? `${ep}-р анги.` : '', `${free} — одоо үзээрэй ▶️`, meta && `${meta}.`, about].filter(Boolean).join(' ')
+  return [ep ? `${ep}-р анги.` : '', meta && `${meta}.`, about].filter(Boolean).join(' ')
 }
 
 function page({ title, desc, image, url, app, type = 'video.movie', large = true }) {
@@ -74,7 +72,7 @@ export async function onRequestGet({ request, env, params }) {
   const [rawId = '', rawEp] = [].concat(params.path ?? [])
   const id = decodeURIComponent(rawId)
   const ep = /^\d{1,3}$/.test(rawEp || '') ? Number(rawEp) : 0
-  const site = page({ title: SITE_TITLE, desc: SITE_DESC, image: `${origin}/og.png`, url: `${origin}/`, app: '/', type: 'website' })
+  const site = page({ title: SITE_TITLE, desc: SITE_DESC, image: `${origin}/og.png?v=2`, url: `${origin}/`, app: '/', type: 'website' })
   const html = (body, maxAge = 600) =>
     new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': `public, max-age=${maxAge}` } })
 
@@ -97,7 +95,7 @@ export async function onRequestGet({ request, env, params }) {
   const suffix = ep ? `/${ep}` : ''
   const app = `/#${m.orientation === 'vertical' ? 'shorts' : 'watch'}-${m.id}${suffix}`
   const card = await ogCard(env, m.id)
-  const image = card ? `${origin}${card}` : m.thumbnail ? `${origin}/img/${m.thumbnail}` : `${origin}/og.png`
+  const image = card ? `${origin}${card}` : m.thumbnail ? `${origin}/img/${m.thumbnail}` : `${origin}/og.png?v=2`
   const title = `${m.title}${ep ? ` · ${ep}-р анги` : ''}${m.year ? ` (${m.year})` : ''} | ${SITE}`
   return html(page({
     title,
