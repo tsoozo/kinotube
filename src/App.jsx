@@ -9,14 +9,15 @@ import Shorts from './components/Shorts.jsx'
 import History from './components/History.jsx'
 import Admin from './components/Admin.jsx'
 import Later from './components/Later.jsx'
+import VoiceBank from './components/VoiceBank.jsx'
 import Checkout from './components/Checkout.jsx'
 import UploadIndicator from './components/UploadIndicator.jsx'
 import { CATEGORIES, allGenres, inCategory, isPublic, isShortsItem, loadMovies, matches, watchHref } from './data.js'
 import {
-  canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, takeReturnTo, watchedRatio,
+  canWatchMovie, currentUser, getHistory, isAdmin, loadUser, logout, onAuthChange, peekReturnTo, read, takeReturnTo, watchedRatio, write,
 } from './auth.js'
 
-// Хаяг: #cat-<ангилал>, #watch-<id>[/<анги>], #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>[/<анги>], #history, #later, #profile, #admin, #admin-<таб>, #login, бусад үед нүүр.
+// Хаяг: #cat-<ангилал>, #watch-<id>[/<анги>], #pay-rent-<id>, #pay-month[-<id>], #shorts, #shorts-<id>[/<анги>], #history, #later, #profile, #admin, #admin-<таб>, #login, #hooloi (хоолойн сан), бусад үед нүүр.
 // Хуучин #register, #forgot нь #login руу очно. #login-email: хуучин имэйл бүртгэлээр нэвтрэх (холбоосгүй).
 // "<id>/<анги>" → { id, ep }
 function splitEp(text) {
@@ -32,7 +33,7 @@ function readRoute() {
   if (pay) return { page: 'pay', kind: pay[1], id: pay[2] || '' }
   if (hash === 'shorts' || hash.startsWith('shorts-')) return { page: 'shorts', ...splitEp(hash.slice(7)) }
   if (hash === 'admin' || hash.startsWith('admin-')) return { page: 'admin', id: hash.slice(6) }
-  if (['history', 'later', 'profile', 'login'].includes(hash)) return { page: hash }
+  if (['history', 'later', 'profile', 'login', 'hooloi'].includes(hash)) return { page: hash }
   if (hash === 'register' || hash === 'forgot') return { page: 'login' }
   if (hash === 'login-email') return { page: 'login', legacy: true }
   return { page: 'home' }
@@ -97,7 +98,11 @@ export default function App() {
 
   // Нэвтрээгүй бол профайл руу орох үед нэвтрэх хуудас руу шилжүүлнэ.
   useEffect(() => {
-    if (['profile', 'admin', 'pay'].includes(route.page) && !user) location.hash = 'login'
+    if (['profile', 'admin', 'pay', 'hooloi'].includes(route.page) && !user) {
+      // Хоолойн сан руу нэвтэрсний дараа буцна.
+      if (route.page === 'hooloi') write('kino-after-login', 'hooloi')
+      location.hash = 'login'
+    }
   }, [route, user])
 
   // Ангилал хаягаас (#cat-korean), жанр нь ангиллын дотор шүүнэ.
@@ -159,6 +164,10 @@ export default function App() {
   // Кино үзэх гэж байгаад нэвтэрсэн бол тэр кино руу, үгүй бол нүүр рүү.
   const onLogin = (u) => {
     setUser(u)
+    if (read('kino-after-login', '') === 'hooloi') {
+      write('kino-after-login', '')
+      return go('#hooloi')
+    }
     const r = canWatchMovie(u, returnId()) ? takeReturnTo() : peekReturnTo()
     go(r ? returnHash(r) : isAdmin(u) ? '#admin' : '')
   }
@@ -210,6 +219,7 @@ export default function App() {
   else if (isWatch && allMovies?.length > 0) content = <p className="notice">Энэ кино олдсонгүй.</p>
   else if (page === 'admin') content = user && <Admin tab={route.id} user={user} items={allMovies || []} onCatalog={onCatalog} onUser={setUser} />
   else if (page === 'history') content = <History movies={published} user={user} onUser={setUser} />
+  else if (page === 'hooloi') content = user && <VoiceBank user={user} />
   else if (page === 'later') content = <Later movies={published} user={user} onUser={setUser} />
   else if (!isWatch)
     content = (
@@ -231,7 +241,7 @@ export default function App() {
     )
 
   return (
-    <div className={`app ${isWatch || isAuth || ['profile', 'admin', 'pay'].includes(page) ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
+    <div className={`app ${isWatch || isAuth || ['profile', 'admin', 'pay', 'hooloi'].includes(page) ? 'is-focus' : ''} ${page === 'shorts' ? 'is-shorts' : ''} ${headerHidden ? 'header-hidden' : ''}`}>
       <Header
         query={query}
         user={user}

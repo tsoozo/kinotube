@@ -24,6 +24,7 @@ import {
   Lock,
   LogOut,
   Maximize,
+  Mic,
   Minimize,
   Pause,
   Play,
@@ -35,11 +36,13 @@ import {
   Search,
   ShieldCheck,
   Smartphone,
+  Square,
   SquarePlay,
   Volume2,
   WandSparkles,
   VolumeX,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react'
 
@@ -91,3 +94,6 @@ export const PhoneIcon = icon(Smartphone)
 export const FramesIcon = icon(Images)
 export const AutoIcon = icon(WandSparkles)
 export const ShareIcon = icon(Forward)
+export const MicIcon = icon(Mic)
+export const StopIcon = icon(Square)
+export const UploadIcon = icon(Upload)
