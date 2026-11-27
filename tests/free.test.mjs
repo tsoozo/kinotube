@@ -19,4 +19,9 @@ assert.equal(freeLimit(v, eps, 4), 0)
 assert.equal(freeLimit(v, eps, 9), 0)
 // Урт нь тодорхойгүй анги бүтэн үнэгүй биш.
 assert.equal(freeLimit(v, [{ number: 1, duration: '' }, { number: 2, duration: '' }], 1), 600)
+// Цувралд үнэгүй ангийн тоо тохируулсан бол эхний тэдэн анги бүтэн, бусад нь түгжээтэй.
+assert.equal(freeLimit({ ...v, free_episodes: 1 }, eps, 1), Infinity)
+assert.equal(freeLimit({ ...v, freeEpisodes: 1 }, eps, 2), 0)
+assert.equal(freeLimit({ ...h, free_episodes: 0 }, eps, 1), 0)
+assert.equal(freeLimit({ ...h, freeEpisodes: 3 }, eps, 3), Infinity)
 console.log('free: ok')

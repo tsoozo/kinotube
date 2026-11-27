@@ -5,7 +5,7 @@ import { Paywall } from './Watch.jsx'
 import {
   BackTenIcon, CloseIcon, DownIcon, ForwardTenIcon, PauseIcon, PlayArrowIcon, FullscreenExitIcon, FullscreenIcon, LockIcon, MuteIcon, NextIcon, PrevIcon, ShareIcon, SoundIcon, UpIcon,
 } from './Icons.jsx'
-import { SHORTS_FREE_SECONDS, episodesOf, formatTime, freeLimit, isSeries, shareItem } from '../data.js'
+import { SHORTS_FREE_SECONDS, episodesOf, formatTime, freeLabel, freeLimit, isSeries, shareItem } from '../data.js'
 import { canWatchMovie, previewUsed, pushHistory, recordView, setPreviewUsed, videoUrl } from '../auth.js'
 
 // Shorts = босоо кино. Доош гүйлгэвэл өөр кино, хөндлөн гүйлгэвэл дараагийн анги.
@@ -173,7 +173,7 @@ function EpisodeSlide({ series, episode, active, muted, locked, partial, user, o
           movie={series}
           user={user}
           returnTo={`${series.id}/${episode.number}`}
-          lead={`Эхний ${FREE_MIN} минут үнэгүй. Цааш үзэх эрх авна уу`}
+          lead={`${freeLabel(series, episodesOf(series).length)} үнэгүй. Цааш үзэх эрх авна уу`}
           onReplay={() => {
             setPreviewUsed(series.id, false)
             onFirst()

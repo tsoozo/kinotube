@@ -9,10 +9,10 @@ import { CATEGORIES, FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, categoryL
 import { enqueue, isActive, jobKey, subscribe } from '../uploads.js'
 import { RENTAL, formatMoney } from '../auth.js'
 
-const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], price: String(RENTAL.price), duration: '', description: '', orientation: 'horizontal', added: '', published: true }
+const EMPTY = { id: '', title: '', year: '', genres: '', categories: [], price: String(RENTAL.price), duration: '', description: '', orientation: 'horizontal', freeEpisodes: '', added: '', published: true }
 
 const toForm = (m) => ({
-  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], price: m.price ? String(m.price) : '', orientation: m.orientation || 'horizontal', published: m.published !== false,
+  ...EMPTY, ...m, year: String(m.year ?? ''), genres: (m.genres || []).join(', '), categories: m.categories || [], price: m.price ? String(m.price) : '', orientation: m.orientation || 'horizontal', freeEpisodes: String(m.freeEpisodes ?? m.free_episodes ?? ''), published: m.published !== false,
 })
 
 const sizeText = (b) => (b >= 1024 ** 3 ? `${(b / 1024 ** 3).toFixed(2)} GB` : `${Math.max(1, Math.round(b / 1024 ** 2))} MB`)
@@ -244,7 +244,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
 
       <p className="muted small">
         {isSeries
-          ? `Олон ангитай кино. Хэвтээ бол үзэх хуудсанд, эхний ${FREE_EPISODES} анги үнэгүй. Босоо бол Shorts-д (хөндлөн гүйлгэж дараагийн анги), ангиудын нийт эхний ${SHORTS_FREE_SECONDS / 60} минут үнэгүй. Цааш нь төлбөртэй.`
+          ? `Олон ангитай кино. Хэвтээ бол үзэх хуудсанд, эхний ${FREE_EPISODES} анги үнэгүй. Босоо бол Shorts-д (хөндлөн гүйлгэж дараагийн анги), ангиудын нийт эхний ${SHORTS_FREE_SECONDS / 60} минут үнэгүй. Цааш нь төлбөртэй. Үнэгүй ангийн тоог бичвэл эхний тэдэн анги бүтэн үнэгүй, бусад нь төлбөртэй (0 бол бүгд төлбөртэй).`
           : `Нэг ангитай кино. Эхний ${FREE_SECONDS / 60} минут үнэгүй (босоо кино Shorts-д харагдах ба эхний ${SHORTS_FREE_SECONDS / 60} минут), цааш нь төлбөртэй.`}
       </p>
 
@@ -270,6 +270,7 @@ export default function AdminCatalog({ kind, list, onCatalog }) {
               </select>
             </label>
             {field('price', `Үнэ, ₮ · ${noun} бүтнээр ${RENTAL.days} хоног үзэх`, { inputMode: 'numeric', placeholder: String(RENTAL.price), required: true })}
+            {isSeries && field('freeEpisodes', 'Үнэгүй анги (тоо)', { inputMode: 'numeric', placeholder: form.orientation === 'vertical' ? `Хоосон: эхний ${SHORTS_FREE_SECONDS / 60} минут` : `Хоосон: ${FREE_EPISODES}` })}
             {field('year', 'Он', { inputMode: 'numeric', placeholder: '2026' })}
             {!isSeries && field('duration', 'Урт', { placeholder: '1:18:00' })}
             {field('genres', 'Төрөл (таслалаар)', { placeholder: 'Инээдмийн, Адал явдалт' })}
