@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(37);
+select plan(34);
 
 insert into auth.users (id, email, aud, role) values
   ('bbbbbbbb-0000-4000-8000-000000000001', 'viewer@test.mn',       'authenticated', 'authenticated'),
@@ -93,15 +93,6 @@ select is((select count(*) from public.episodes where series_id = 'draft-series'
 select pg_temp.as_service();
 update public.catalog set video_ready = true, video_size = 123, published = true where id = 'draft-film';
 select is((select video_ready and published from public.catalog where id = 'draft-film'), true, 'service role marks video ready and publishes');
-
--- Цуврал бүрт үнэгүй ангийн тоо.
-select pg_temp.as_user('bbbbbbbb-0000-4000-8000-000000000003');
-select is((public.admin_save_catalog('{"id":"free-series","kind":"series","orientation":"vertical","title":"Цуврал","free_episodes":"1","published":false}')).free_episodes,
-          1, 'admin sets free episodes on a series');
-select is((public.admin_save_catalog('{"id":"free-series","kind":"series","orientation":"vertical","title":"Цуврал","free_episodes":"","published":false}')).free_episodes,
-          null::int, 'blank free episodes = default rule');
-select is((public.admin_save_catalog('{"id":"free-film","kind":"movie","title":"Кино","free_episodes":"3","published":false}')).free_episodes,
-          null::int, 'free episodes ignored for movies');
 
 select * from finish();
 rollback;

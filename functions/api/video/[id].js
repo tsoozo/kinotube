@@ -1,7 +1,6 @@
 // GET /api/video/<id>[?ep=<анги>] — R2 дээрх видеоны хугацаатай линк.
 //  Эрхтэй (сарын эрх эсвэл тухайн киноны түрээс) бол бүтэн. Эрхгүй бол server/free.js-ийн дүрмээр:
-//  хэвтээ кино эхний 10 минут, хэвтээ цуврал эхний 2 анги, Shorts (босоо) нийт эхний 10 минут (/api/preview),
-//  цуврал free_episodes тохируулсан бол эхний тэдэн анги.
+//  хэвтээ кино эхний 10 минут, хэвтээ цуврал эхний 2 анги, Shorts (босоо) нийт эхний 10 минут (/api/preview).
 import { SLUG_RE, json, serviceClient, userFromRequest } from '../../../server/core.js'
 import { r2Configured, r2Url } from '../../../server/r2.js'
 import { freeLimit, mp4Layout, previewPlan, signPreview, toSeconds } from '../../../server/preview.js'
@@ -14,7 +13,7 @@ export async function onRequestGet({ request, env, params }) {
   if (!r2Configured(env)) return json({ error: 'Видео сервер тохируулаагүй байна.' }, 503)
 
   const db = serviceClient(env)
-  const { data: item, error } = await db.from('catalog').select('id, kind, orientation, published, duration, video_ready, free_episodes').eq('id', id).maybeSingle()
+  const { data: item, error } = await db.from('catalog').select('id, kind, orientation, published, duration, video_ready').eq('id', id).maybeSingle()
   if (error) return json({ error: 'Алдаа гарлаа. Дахин оролдоно уу.' }, 500)
   const user = await userFromRequest(request, env)
   // Ноорог: зөвхөн админ.

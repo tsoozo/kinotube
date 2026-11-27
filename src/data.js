@@ -11,7 +11,6 @@ function fromRow(r) {
     genres: r.genres || [],
     categories: r.categories || [],
     price: r.price_mnt || undefined,
-    freeEpisodes: r.free_episodes ?? null,
     duration: r.duration || '',
     description: r.description || '',
     thumbnail: r.thumbnail ? `img/${r.thumbnail}` : '',
@@ -81,15 +80,14 @@ export async function loadMovies(refresh = false) {
 }
 
 // Үнэгүй үзэх дүрэм (сервер functions/api/video ижил server/free.js-ээр шалгана).
-import { freeLimit } from '../server/free.js'
-export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, customFreeEpisodes, freeLabel, freeLimit } from '../server/free.js'
+import { FREE_EPISODES } from '../server/free.js'
+export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, freeLabel, freeLimit } from '../server/free.js'
 
 export const isSeries = (item) => item?.kind === 'series'
 // Shorts = босоо кино (олон ангитай цуврал эсвэл нэг ангитай кино).
 export const isShortsItem = (item) => item?.orientation === 'vertical'
 export const episodesOf = (item) => (item?.episodes || []).slice().sort((a, b) => a.number - b.number)
-// Анги үнэгүй үзэх боломжтой эсэх (бүтэн эсвэл эхний хэсэг).
-export const isFreeEpisode = (item, n) => freeLimit(item, episodesOf(item), n) !== 0
+export const isFreeEpisode = (n) => n <= FREE_EPISODES
 
 // Үзэх хаяг: босоо кино Shorts-д, бусад нь үзэх хуудсанд. ep: ангийн дугаар.
 export function watchHref(item, ep) {

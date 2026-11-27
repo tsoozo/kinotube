@@ -3,7 +3,7 @@ import MovieCard from './MovieCard.jsx'
 import Player from './Player.jsx'
 import { CaptionsIcon, CaptionsOffIcon, CrownIcon, LockIcon, ResetIcon as ReplayIcon, SaveIcon, SavedIcon, ShareIcon, SpeedIcon } from './Icons.jsx'
 import {
-  FREE_SECONDS, categoryLabel, freeLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, shareItem, subtitlesOf, timeAgo, watchHref,
+  FREE_EPISODES, FREE_SECONDS, categoryLabel, episodesOf, formatTime, hue, isFreeEpisode, isSeries, recommended, shareItem, subtitlesOf, timeAgo, watchHref,
 } from '../data.js'
 import {
   PLANS, RENTAL, canWatchMovie, formatDate, formatDateTime, formatMoney, getProgress, isLater, loadUser, pushHistory,
@@ -83,7 +83,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
   const episode = episodes.find((e) => e.number === n)
   const nextEpisode = episodes.find((e) => e.number > n)
   // Цувралын эхний 2 анги, киноны эхний 10 минут хүн бүрт үнэгүй.
-  const locked = series && !canWatch && !isFreeEpisode(movie, n)
+  const locked = series && !canWatch && !isFreeEpisode(n)
   // Эхний 10 минут үнэгүй хэлбэр (кино, ганц ангитай цуврал).
   const previewKind = !canWatch && (!series || episodes.length === 1)
   const videoReady = series ? episode?.videoReady !== false && Boolean(episode) : movie.videoReady !== false
@@ -280,7 +280,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
           returnTo={series ? `${movie.id}/${n}` : movie.id}
           lead={
             locked
-              ? `${freeLabel(movie, episodes.length)} үнэгүй. ${n}-р ангиас цааш үзэх эрх авна уу`
+              ? `Эхний ${FREE_EPISODES} анги үнэгүй. ${n}-р ангиас цааш үзэх эрх авна уу`
               : `Эхний ${FREE_SECONDS / 60} минутыг үнэгүй үзлээ`
           }
           sub={user?.subscription && !canWatch ? `Таны эрх ${formatDate(user.subscription.endsAt)}-нд дууссан` : ''}
@@ -391,7 +391,7 @@ export default function Watch({ movie, ep, movies, user, onUser }) {
             <h2 className="section-title">Ангиуд · {episodes.length}</h2>
             <div className="episode-grid">
               {episodes.map((e) => {
-                const free = isFreeEpisode(movie, e.number)
+                const free = isFreeEpisode(e.number)
                 return (
                   <a key={e.number} className={`episode-btn ${e.number === n ? 'on' : ''}`} href={watchHref(movie, e.number)} aria-current={e.number === n ? 'true' : undefined}>
                     <b>{e.number}</b>

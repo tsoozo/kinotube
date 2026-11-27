@@ -42,10 +42,7 @@ export function cleanItem(kind, form, list, originalId) {
   const priceText = String(form.price || '').replace(/[\s,₮]/g, '')
   const price = priceText ? Number(priceText) : null
   if (price !== null && (!Number.isInteger(price) || price < 100 || price > 1000000)) throw new Error('Үнийг 100–1,000,000₮ хооронд бүхэл тоогоор оруулна уу.')
-  const freeText = kind === 'series' ? String(form.freeEpisodes ?? '').trim() : ''
-  const freeEpisodes = freeText ? Number(freeText) : null
-  if (freeEpisodes !== null && (!Number.isInteger(freeEpisodes) || freeEpisodes < 0 || freeEpisodes > 999)) throw new Error('Үнэгүй ангийн тоог 0–999 бүхэл тоогоор оруулна уу.')
-  return { ...item, year, genres, categories: form.categories || [], price_mnt: price, free_episodes: freeEpisodes }
+  return { ...item, year, genres, categories: form.categories || [], price_mnt: price }
 }
 
 export async function saveCatalogItem(item) {

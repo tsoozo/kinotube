@@ -3,7 +3,7 @@
 // бусад байтын оронд тэг өгнө. Ингэснээр линкийг хуулж авсан ч бүтэн кино үзэх боломжгүй.
 import { r2Url } from './r2.js'
 
-export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, customFreeEpisodes, freeLabel, freeLimit } from './free.js'
+export { FREE_EPISODES, FREE_SECONDS, SHORTS_FREE_SECONDS, freeLabel, freeLimit } from './free.js'
 
 const MB = 1024 * 1024
 const enc = new TextEncoder()
